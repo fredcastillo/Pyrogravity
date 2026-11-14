@@ -1,0 +1,2 @@
+# El hash SHA-256 de procedencia incluye los bytes de fin de línea del CSV.
+/data/raw/**/*.csv -text

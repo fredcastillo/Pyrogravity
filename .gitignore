@@ -29,3 +29,5 @@ coverage/
 # Datos descargados y archivos de Jupyter
 /data/raw/
 .ipynb_checkpoints/
+/infrastructure/demo/snapshot.json
+/infrastructure/aws/.build/
