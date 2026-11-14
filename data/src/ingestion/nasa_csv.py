@@ -31,17 +31,34 @@ def inspect_nasa_csv(path: Path, encoding: str | None = None) -> CsvTable:
 
     # Choose the single delimiter that yields a rectangular, multi-column table.
     candidates = []
+    malformed = []
     for delimiter in (",", ";", "\t", "|"):
         reader = csv.reader(StringIO(text, newline=""), delimiter=delimiter, strict=True)
         try:
             header = next(reader, [])
-            if len(header) < 2:
-                continue
-            rows = list(reader)
         except csv.Error:
             continue
-        if all(len(row) == len(header) for row in rows):
-            candidates.append((tuple(header), rows, delimiter))
+        if len(header) < 2:
+            continue
+
+        rows = []
+        try:
+            for row in reader:
+                if len(row) != len(header):
+                    message = (
+                        f"{path}: CSV line {reader.line_num} has {len(row)} fields; "
+                        f"expected {len(header)}"
+                    )
+                    malformed.append((message, None))
+                    break
+                rows.append(row)
+            else:
+                candidates.append((tuple(header), rows, delimiter))
+        except csv.Error as error:
+            malformed.append((f"{path}: invalid CSV at line {reader.line_num}", error))
+    if not candidates and len(malformed) == 1:
+        message, cause = malformed[0]
+        raise ValueError(message) from cause
     if len(candidates) != 1:
         raise ValueError(f"{path}: expected one unambiguous rectangular CSV dialect")
     header, rows, delimiter = candidates[0]
