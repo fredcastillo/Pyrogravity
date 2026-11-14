@@ -13,8 +13,7 @@ ROOT = AWS_DIR.parent.parent
 
 
 def build(output: Path, etl_python: str) -> None:
-    subprocess.run([etl_python, "-m", "data.src.etl.nasa_etl"], cwd=ROOT, check=True)
-    subprocess.run([etl_python, str(DEMO_DIR / "export_data.py")], cwd=ROOT, check=True)
+    subprocess.run([etl_python, "-m", "infrastructure.demo.export_data"], cwd=ROOT, check=True)
 
     output.parent.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory(prefix="lambda-dependencies-", dir=output.parent) as build_dir:

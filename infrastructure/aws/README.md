@@ -1,6 +1,6 @@
 # Demo de Pyrogravity en AWS
 
-La demo ofrece una comparación de ensayos de combustión con datos de NASA. El ETL de `data/` produce Parquet y `infrastructure/demo/export_data.py` conserva para cada medición su estado, unidad y procedencia. FLEX muestra tiempo de combustión en segundos. BASS-II muestra oxígeno inicial calibrado en porcentaje por volumen. La comparación se limita a ensayos de un mismo estudio.
+La demo ofrece una comparación de ensayos de combustión con datos de NASA. El ETL de `data/` genera tablas para 19 investigaciones. `infrastructure/demo/export_data.py` selecciona FLEX y BASS-II y conserva para cada medición su estado, unidad y procedencia. FLEX muestra tiempo de combustión en segundos. BASS-II muestra oxígeno inicial calibrado en porcentaje por volumen. La comparación se limita a ensayos de un mismo estudio.
 
 ```mermaid
 flowchart LR
@@ -13,7 +13,7 @@ flowchart LR
     Snapshot --> Alias
 ```
 
-El snapshot se regenera al compilar. El dashboard grafica valores exactos y conserva registros parciales o sin evidencia en la tabla. Los números decimales viajan como cadenas para conservar su precisión. La fila y el hash SHA‑256 permiten rastrear una medición hasta el CSV del repositorio. Git conserva los bytes de esos CSV, incluido el fin de línea.
+El snapshot se regenera al compilar. El dashboard grafica valores exactos y conserva registros parciales o sin evidencia en la tabla. Los números decimales viajan como cadenas para conservar su precisión. La fila y el hash SHA‑256 permiten rastrear una medición hasta el CSV del repositorio. Git conserva los bytes de esos CSV, incluido el fin de línea. El exportador ejecuta el ETL en un directorio temporal y lee los hashes de las tablas que acaba de generar.
 
 ## Ejecutar en local
 
@@ -22,8 +22,7 @@ Desde la raíz, con Python 3.12 y el entorno virtual del equipo:
 ```powershell
 python -m pip install -r data/requirements.txt -r infrastructure/demo/requirements.txt uvicorn
 python -m pytest data/tests -v
-python -m data.src.etl.nasa_etl
-python infrastructure/demo/export_data.py
+python -m infrastructure.demo.export_data
 python -m uvicorn app:api --app-dir infrastructure/demo --host 127.0.0.1 --port 8000
 ```
 

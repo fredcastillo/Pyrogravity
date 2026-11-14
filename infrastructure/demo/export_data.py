@@ -1,15 +1,16 @@
-"""Exporta las columnas de la demo desde los Parquet que genera el ETL."""
+"""Exporta las columnas de la demo usando el ETL del repositorio."""
 
 import json
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
-import pyarrow.parquet as parquet
+from data.src.etl.nasa_etl import run_etl
 
-ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = Path(__file__).with_name("snapshot.json")
 
 DATASETS = {
     "flex": {
+        "table": "psi-69_flex",
         "label": "FLEX",
         "trial": "flex_test_number",
         "metric": "burn_time",
@@ -18,6 +19,7 @@ DATASETS = {
         "examples": ["1", "2", "3"],
     },
     "bass_ii": {
+        "table": "psi-25_bass_ii",
         "label": "BASS-II",
         "trial": "test_number",
         "metric": "calibrated_initial_o2",
@@ -29,14 +31,14 @@ DATASETS = {
 
 
 def export() -> None:
+    with TemporaryDirectory(prefix="pyrogravity-etl-") as directory:
+        tables = run_etl(output_dir=Path(directory))
+
     datasets = {}
     for name, fields in DATASETS.items():
         trial, metric, group = (fields[key] for key in ("trial", "metric", "group"))
         status = f"{metric}_status"
-        table = parquet.read_table(
-            ROOT / "data" / "processed" / f"{name}.parquet",
-            columns=[trial, metric, status, group, "source_record", "anomalies"],
-        )
+        table = tables[fields["table"]].select([trial, metric, status, group, "source_record", "anomalies"])
         metadata = table.schema.metadata
         records = []
         for row in table.to_pylist():
