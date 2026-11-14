@@ -1,0 +1,31 @@
+name: Tarea del prototipo
+description: Define una entrega concreta para una de las áreas del equipo.
+title: "[Tarea] "
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área principal
+      options:
+        - Datos y análisis
+        - IA y RAG
+        - Backend y contratos
+        - Frontend y visualización
+        - QA y seguridad
+        - DevOps e integración
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Resultado esperado
+      description: Indica qué se podrá usar o verificar al terminar esta tarea.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Cómo verificarlo
+      description: Incluye una entrada de prueba, una salida esperada o una fuente NASA cuando corresponda.
+    validations:
+      required: true
