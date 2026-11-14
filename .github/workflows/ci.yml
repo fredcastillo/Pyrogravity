@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository:
+    name: Repositorio y Compose
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    outputs:
+      python_modules: ${{ steps.modules.outputs.python }}
+      frontend: ${{ steps.modules.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validar workflows
+        shell: bash
+        run: |
+          archive="$RUNNER_TEMP/actionlint.tar.gz"
+          curl --fail --silent --show-error --location --retry 2 --max-time 45 \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz \
+            --output "$archive"
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $archive" | sha256sum --check
+          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint"
+
+      - name: Detectar módulos con código
+        id: modules
+        shell: bash
+        run: |
+          modules=()
+          for directory in data rag backend tests; do
+            if [[ -n "$(git ls-files -- ":(glob)$directory/**/*.py")" ]]; then
+              modules+=("$directory")
+            fi
+          done
+          python_modules=$(printf '%s\n' "${modules[@]}" | jq -cRn '[inputs | select(length > 0)]')
+          echo "python=$python_modules" >> "$GITHUB_OUTPUT"
+          echo "Módulos Python detectados: $python_modules"
+
+          frontend=false
+          if [[ -f frontend/package.json ]]; then
+            frontend=true
+          fi
+          echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
+          echo "Frontend disponible: $frontend"
+
+      - name: Validar configuración de Compose
+        shell: bash
+        run: |
+          for compose_file in compose.yaml compose.yml docker-compose.yaml docker-compose.yml; do
+            if [[ -f "$compose_file" ]]; then
+              docker compose -f "$compose_file" config --no-interpolate --no-env-resolution --quiet
+              exit 0
+            fi
+          done
+          echo "La configuración de Compose se validará al incorporarla al repositorio."
+
+  python:
+    name: Python (${{ matrix.module }})
+    needs: repository
+    if: ${{ needs.repository.outputs.python_modules != '[]' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJSON(needs.repository.outputs.python_modules) }}
+    env:
+      MODULE: ${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
+      - name: Revisar sintaxis de Python
+        run: python -m compileall -q "$MODULE"
+
+      - name: Ejecutar pytest
+        if: ${{ hashFiles(format('{0}/**/test_*.py', matrix.module), format('{0}/**/*_test.py', matrix.module)) != '' }}
+        shell: bash
+        run: |
+          test_path=tests
+          if [[ "$MODULE" != tests ]]; then
+            cd "$MODULE"
+            test_path=.
+          fi
+          python -m pip install pytest
+          if [[ -f requirements.txt ]]; then
+            python -m pip install -r requirements.txt
+          fi
+          if [[ -f pyproject.toml ]] && grep -Eq '^\[(project|build-system)\]' pyproject.toml; then
+            python -m pip install --editable .
+          fi
+          if [[ -f requirements-dev.txt ]]; then
+            python -m pip install -r requirements-dev.txt
+          fi
+          python -m pytest "$test_path"
+
+  frontend:
+    name: Frontend
+    needs: repository
+    if: ${{ needs.repository.outputs.frontend == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias fijadas
+        run: npm ci
+
+      - name: Ejecutar lint y pruebas del frontend
+        run: |
+          npm run lint --if-present
+          npm test --if-present
+
+      - name: Compilar el frontend
+        run: npm run build
+
+  gate:
+    name: Verificación general
+    if: ${{ always() }}
+    needs: [repository, python, frontend]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Comprobar resultados
+        env:
+          REPOSITORY: ${{ needs.repository.result }}
+          PYTHON: ${{ needs.python.result }}
+          FRONTEND: ${{ needs.frontend.result }}
+        shell: bash
+        run: |
+          echo "Repositorio: $REPOSITORY"
+          echo "Python: $PYTHON"
+          echo "Frontend: $FRONTEND"
+          if [[ "$REPOSITORY" != success || ! "$PYTHON" =~ ^(success|skipped)$ || ! "$FRONTEND" =~ ^(success|skipped)$ ]]; then
+            exit 1
+          fi
