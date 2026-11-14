@@ -27,3 +27,13 @@ Run one live provider request when credentials are configured:
 ```
 
 The Supabase PostgreSQL project already has pgvector enabled. There is no local PostgreSQL extension installation in this step. The future knowledge base uses the `ai` schema; scientific data stays in `scientific`, and backend operational data stays in `app`.
+
+## Database readiness
+
+Place a rotated, server-side PostgreSQL connection URL in the ignored `.env` file as `AI_DATABASE_URL`. The direct endpoint needs IPv6 (unless the project has the IPv4 add-on); use the Supabase session pooler when running on an IPv4-only network. The probe enforces encrypted transport, disables prepared statements for pooler compatibility, and executes only read-only catalog queries.
+
+```powershell
+.venv\Scripts\python.exe scripts\probe_database.py
+```
+
+The probe reports existence and schema-level permissions for `scientific`, `ai`, and `app`, plus the installed `vector` extension. It does not create schemas or tables. For stronger TLS identity verification, configure `sslmode=verify-full` and `sslrootcert` in the connection URL using the certificate from Supabase Database settings.
