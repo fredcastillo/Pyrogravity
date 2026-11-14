@@ -94,8 +94,15 @@ jobs:
       - name: Revisar sintaxis de Python
         run: python -m compileall -q "$MODULE"
 
+      - name: Ejecutar pruebas del módulo científico
+        if: ${{ matrix.module == 'data' && hashFiles('data/tests/**/test_*.py', 'data/tests/**/*_test.py') != '' }}
+        working-directory: .
+        run: |
+          python -m pip install -r data/requirements.txt
+          python -m pytest data/tests -v
+
       - name: Ejecutar pytest
-        if: ${{ hashFiles(format('{0}/**/test_*.py', matrix.module), format('{0}/**/*_test.py', matrix.module)) != '' }}
+        if: ${{ matrix.module != 'data' && hashFiles(format('{0}/**/test_*.py', matrix.module), format('{0}/**/*_test.py', matrix.module)) != '' }}
         shell: bash
         run: |
           test_path=tests
