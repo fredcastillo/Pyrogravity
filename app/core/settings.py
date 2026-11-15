@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 from pydantic import SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -12,8 +13,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     demo_mode: bool = True
-    supabase_url: str | None = None
-    supabase_service_key: SecretStr | None = None
+    pyrogravity_database_url: SecretStr | None = None
+    scientific_data_dir: Path = Path(__file__).resolve().parents[2] / "data"
     ai_model: str = "demo"
     cors_origins: str = "http://localhost:3000"
     rate_limit_per_minute: int = 60
@@ -23,6 +24,6 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def require_creds_when_real(self):
-        if not self.demo_mode and (not self.supabase_url or not self.supabase_service_key):
-            raise ValueError("supabase_url y supabase_service_key son obligatorios si demo_mode=false")
+        if not self.demo_mode and not self.pyrogravity_database_url:
+            raise ValueError("PYROGRAVITY_DATABASE_URL del lector es obligatorio si DEMO_MODE=false")
         return self

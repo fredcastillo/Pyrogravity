@@ -6,12 +6,13 @@ class DemoAIEngine:
     def answer(self, request, context):
         return AiResponse(
             id="demo-1",
-            status="ok",
+            status="fallback",
             answer="Respuesta simulada (demo).",
             claims=[],
             model="demo",
             data_version="demo-v1",
             corpus_version="demo-v1",
+            limitations=["Respuesta simulada; no constituye una conclusion cientifica."],
         )
 
 
