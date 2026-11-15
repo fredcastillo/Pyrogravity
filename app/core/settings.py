@@ -1,6 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
-from pydantic import SecretStr, model_validator
+
+from pydantic import SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,7 +21,14 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = 60
     max_experiments: int = 5
     max_points: int = 1000
-    contract_version: str = "1.0"
+
+    @field_validator("cors_origins")
+    @classmethod
+    def validate_cors_origins(cls, value: str) -> str:
+        origins = [origin.strip() for origin in value.split(",") if origin.strip()]
+        if not origins or "*" in origins:
+            raise ValueError("CORS_ORIGINS debe listar orígenes explícitos; no se permite '*'.")
+        return ",".join(origins)
 
     @model_validator(mode="after")
     def require_creds_when_real(self):
