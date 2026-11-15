@@ -227,7 +227,8 @@ jobs:
     name: Publicar la demo en AWS
     needs: [gate, aws-demo]
     if: >-
-      ${{ github.repository == 'fredcastillo/Pyrogravity' &&
+      ${{ !cancelled() && needs.gate.result == 'success' && needs.aws-demo.result == 'success' &&
+          github.repository == 'fredcastillo/Pyrogravity' &&
           (github.ref == 'refs/heads/main' ||
            (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/infra/aws-demo')) &&
           (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
