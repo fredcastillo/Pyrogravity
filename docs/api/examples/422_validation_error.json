@@ -1,0 +1,10 @@
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "La solicitud no cumple el esquema.",
+    "details": {
+      "errors": []
+    },
+    "request_id": "00000000-0000-0000-0000-000000000422"
+  }
+}

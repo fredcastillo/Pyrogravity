@@ -1,7 +1,11 @@
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Literal, Optional
+from typing import Final, Literal, Optional
+
 from pydantic import BaseModel, Field
+
+
+CONTRACT_VERSION: Final[str] = "1.0"
 
 
 class Evidence(BaseModel):
@@ -63,6 +67,7 @@ class AiQueryRequest(BaseModel):
 
 
 class AiResponse(BaseModel):
+    schema_version: Literal[CONTRACT_VERSION] = CONTRACT_VERSION
     id: str
     status: Literal["ok", "fallback", "insufficient_evidence", "rejected"]
     answer: str
@@ -75,3 +80,38 @@ class AiResponse(BaseModel):
     corpus_version: str
     degraded_source: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class ChartPoint(BaseModel):
+    x: float | str
+    y: float | str
+    trial_code: str | None
+    evidence_id: str | None
+
+
+class ChartSeriesData(BaseModel):
+    label: str
+    unit: str | None
+    validated: bool
+    points: list[ChartPoint]
+
+
+class ChartData(BaseModel):
+    schema_version: Literal[CONTRACT_VERSION] = CONTRACT_VERSION
+    chart_id: str
+    type: Literal["bar", "scatter"]
+    title: str
+    x_label: str
+    y_label: str
+    series: list[ChartSeriesData]
+
+
+class ApiErrorBody(BaseModel):
+    code: str
+    message: str
+    details: dict
+    request_id: str
+
+
+class ApiErrorResponse(BaseModel):
+    error: ApiErrorBody

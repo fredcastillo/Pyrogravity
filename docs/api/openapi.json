@@ -1,0 +1,1636 @@
+{
+  "components": {
+    "examples": {
+      "404_chart_not_found": {
+        "summary": "404 chart not found",
+        "value": {
+          "error": {
+            "code": "CHART_NOT_FOUND",
+            "details": {
+              "chart_id": "unknown"
+            },
+            "message": "No se encontró el gráfico.",
+            "request_id": "00000000-0000-0000-0000-000000000404"
+          }
+        }
+      },
+      "404_experiment_not_found": {
+        "summary": "404 experiment not found",
+        "value": {
+          "error": {
+            "code": "EXPERIMENT_NOT_FOUND",
+            "details": {},
+            "message": "No se encontró el experimento.",
+            "request_id": "00000000-0000-0000-0000-000000000404"
+          }
+        }
+      },
+      "422_validation_error": {
+        "summary": "422 validation error",
+        "value": {
+          "error": {
+            "code": "VALIDATION_ERROR",
+            "details": {
+              "errors": []
+            },
+            "message": "La solicitud no cumple el esquema.",
+            "request_id": "00000000-0000-0000-0000-000000000422"
+          }
+        }
+      },
+      "502_ai_ungrounded_response": {
+        "summary": "502 ai ungrounded response",
+        "value": {
+          "error": {
+            "code": "AI_UNGROUNDED_RESPONSE",
+            "details": {},
+            "message": "La respuesta de IA no quedó fundamentada.",
+            "request_id": "00000000-0000-0000-0000-000000000502"
+          }
+        }
+      },
+      "503_ai_unavailable": {
+        "summary": "503 ai unavailable",
+        "value": {
+          "error": {
+            "code": "AI_UNAVAILABLE",
+            "details": {},
+            "message": "El servicio de IA no está disponible.",
+            "request_id": "00000000-0000-0000-0000-000000000503"
+          }
+        }
+      },
+      "ai_insufficient_evidence": {
+        "summary": "ai insufficient evidence",
+        "value": {
+          "answer": "Ejemplo sintético de respuesta sin evidencia suficiente.",
+          "chart": null,
+          "claims": [],
+          "confidence": "low",
+          "corpus_version": "demo-v1",
+          "created_at": "2026-11-15T12:00:00Z",
+          "data_version": "demo-v1",
+          "degraded_source": null,
+          "id": "demo-1",
+          "limitations": [
+            "sintético de ejemplo"
+          ],
+          "model": "demo",
+          "schema_version": "1.0",
+          "status": "insufficient_evidence"
+        }
+      },
+      "chart_psi69_flex_burn_time": {
+        "summary": "chart psi69 flex burn time",
+        "value": {
+          "chart_id": "psi69-flex-burn-time",
+          "schema_version": "1.0",
+          "series": [
+            {
+              "label": "Burn time",
+              "points": [
+                {
+                  "evidence_id": "PSI-69:source_record:1",
+                  "trial_code": "20CAL08",
+                  "x": 1,
+                  "y": 4.3
+                },
+                {
+                  "evidence_id": "PSI-69:source_record:2",
+                  "trial_code": "20CAL10",
+                  "x": 2,
+                  "y": 5.0
+                }
+              ],
+              "unit": "s",
+              "validated": false
+            }
+          ],
+          "title": "PSI-69 FLEX burn time by test",
+          "type": "bar",
+          "x_label": "FLEX test number",
+          "y_label": "Burn time"
+        }
+      }
+    },
+    "schemas": {
+      "AiQueryRequest": {
+        "properties": {
+          "experiment_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Experiment Ids",
+            "type": "array"
+          },
+          "language": {
+            "default": "es",
+            "enum": [
+              "es",
+              "en"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "query_type": {
+            "enum": [
+              "exact_value",
+              "concept",
+              "comparison",
+              "summary",
+              "mixed"
+            ],
+            "title": "Query Type",
+            "type": "string"
+          },
+          "question": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Question"
+          },
+          "variables": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Variables",
+            "type": "array"
+          },
+          "want_chart": {
+            "default": false,
+            "title": "Want Chart",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "query_type"
+        ],
+        "title": "AiQueryRequest",
+        "type": "object"
+      },
+      "AiResponse": {
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "chart": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChartSpec"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "claims": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Claim"
+            },
+            "title": "Claims",
+            "type": "array"
+          },
+          "confidence": {
+            "default": "low",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Confidence",
+            "type": "string"
+          },
+          "corpus_version": {
+            "title": "Corpus Version",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "data_version": {
+            "title": "Data Version",
+            "type": "string"
+          },
+          "degraded_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Degraded Source"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "limitations": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Limitations",
+            "type": "array"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "enum": [
+              "1.0"
+            ],
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "fallback",
+              "insufficient_evidence",
+              "rejected"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "answer",
+          "model",
+          "data_version",
+          "corpus_version"
+        ],
+        "title": "AiResponse",
+        "type": "object"
+      },
+      "ApiErrorBody": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "details": {
+            "title": "Details",
+            "type": "object"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "details",
+          "request_id"
+        ],
+        "title": "ApiErrorBody",
+        "type": "object"
+      },
+      "ApiErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ApiErrorBody"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "title": "ApiErrorResponse",
+        "type": "object"
+      },
+      "ChartData": {
+        "properties": {
+          "chart_id": {
+            "title": "Chart Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "enum": [
+              "1.0"
+            ],
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/ChartSeriesData"
+            },
+            "title": "Series",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "bar",
+              "scatter"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "x_label": {
+            "title": "X Label",
+            "type": "string"
+          },
+          "y_label": {
+            "title": "Y Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "chart_id",
+          "type",
+          "title",
+          "x_label",
+          "y_label",
+          "series"
+        ],
+        "title": "ChartData",
+        "type": "object"
+      },
+      "ChartPoint": {
+        "properties": {
+          "evidence_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Id"
+          },
+          "trial_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Code"
+          },
+          "x": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "X"
+          },
+          "y": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Y"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "trial_code",
+          "evidence_id"
+        ],
+        "title": "ChartPoint",
+        "type": "object"
+      },
+      "ChartSeries": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
+          "x": {
+            "items": {
+              "type": "number"
+            },
+            "title": "X",
+            "type": "array"
+          },
+          "y": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Y",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "x",
+          "y",
+          "unit"
+        ],
+        "title": "ChartSeries",
+        "type": "object"
+      },
+      "ChartSeriesData": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/ChartPoint"
+            },
+            "title": "Points",
+            "type": "array"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "validated": {
+            "title": "Validated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "label",
+          "unit",
+          "validated",
+          "points"
+        ],
+        "title": "ChartSeriesData",
+        "type": "object"
+      },
+      "ChartSpec": {
+        "properties": {
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/ChartSeries"
+            },
+            "title": "Series",
+            "type": "array"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "x_axis": {
+            "title": "X Axis",
+            "type": "string"
+          },
+          "x_unit": {
+            "title": "X Unit",
+            "type": "string"
+          },
+          "y_axis": {
+            "title": "Y Axis",
+            "type": "string"
+          },
+          "y_unit": {
+            "title": "Y Unit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "series",
+          "x_axis",
+          "y_axis",
+          "x_unit",
+          "y_unit"
+        ],
+        "title": "ChartSpec",
+        "type": "object"
+      },
+      "Citation": {
+        "properties": {
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "document_version": {
+            "title": "Document Version",
+            "type": "string"
+          },
+          "passage_id": {
+            "title": "Passage Id",
+            "type": "string"
+          },
+          "quote_span": {
+            "title": "Quote Span",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "document_version",
+          "passage_id",
+          "quote_span",
+          "source_id"
+        ],
+        "title": "Citation",
+        "type": "object"
+      },
+      "Claim": {
+        "properties": {
+          "citations": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "evidence": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "numeric",
+              "conceptual"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "statement": {
+            "title": "Statement",
+            "type": "string"
+          }
+        },
+        "required": [
+          "statement",
+          "kind"
+        ],
+        "title": "Claim",
+        "type": "object"
+      },
+      "Evidence": {
+        "properties": {
+          "dataset_id": {
+            "title": "Dataset Id",
+            "type": "string"
+          },
+          "dataset_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset Sha256"
+          },
+          "dataset_version": {
+            "title": "Dataset Version",
+            "type": "string"
+          },
+          "experiment_id": {
+            "title": "Experiment Id",
+            "type": "string"
+          },
+          "metric": {
+            "title": "Metric",
+            "type": "string"
+          },
+          "nasa_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nasa Version"
+          },
+          "psi_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Psi Code"
+          },
+          "source_header": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Header"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_row_ref": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Row Ref"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "trial_id": {
+            "title": "Trial Id",
+            "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "variable": {
+            "title": "Variable",
+            "type": "string"
+          }
+        },
+        "required": [
+          "experiment_id",
+          "variable",
+          "metric",
+          "dataset_id",
+          "dataset_version",
+          "trial_id",
+          "source_id"
+        ],
+        "title": "Evidence",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Flame in Freefall API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/ai/analyses/comparison": {
+      "post": {
+        "operationId": "comparison_api_v1_ai_analyses_comparison_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiQueryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiResponse"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Identificador de trazabilidad.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Served-From": {
+                "description": "Procedencia de la respuesta.",
+                "schema": {
+                  "enum": [
+                    "live",
+                    "cache",
+                    "demo",
+                    "degraded"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "422_validation_error": {
+                    "$ref": "#/components/examples/422_validation_error"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Identificador de trazabilidad.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Served-From": {
+                "description": "Procedencia de la respuesta.",
+                "schema": {
+                  "enum": [
+                    "live",
+                    "cache",
+                    "demo",
+                    "degraded"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "502_ai_ungrounded_response": {
+                    "$ref": "#/components/examples/502_ai_ungrounded_response"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Ungrounded AI response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Identificador de trazabilidad.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Served-From": {
+                "description": "Procedencia de la respuesta.",
+                "schema": {
+                  "enum": [
+                    "live",
+                    "cache",
+                    "demo",
+                    "degraded"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "503_ai_unavailable": {
+                    "$ref": "#/components/examples/503_ai_unavailable"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "AI unavailable",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Identificador de trazabilidad.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Served-From": {
+                "description": "Procedencia de la respuesta.",
+                "schema": {
+                  "enum": [
+                    "live",
+                    "cache",
+                    "demo",
+                    "degraded"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Comparison",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/analyses/summary": {
+      "post": {
+        "operationId": "summary_api_v1_ai_analyses_summary_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiQueryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiResponse"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Identificador de trazabilidad.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Served-From": {
+                "description": "Procedencia de la respuesta.",
+                "schema": {
+                  "enum": [
+                    "live",
+                    "cache",
+                    "demo",
+                    "degraded"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "422_validation_error": {
+                    "$ref": "#/components/examples/422_validation_error"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Identificador de trazabilidad.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Served-From": {
+                "description": "Procedencia de la respuesta.",
+                "schema": {
+                  "enum": [
+                    "live",
+                    "cache",
+                    "demo",
+                    "degraded"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "502_ai_ungrounded_response": {
+                    "$ref": "#/components/examples/502_ai_ungrounded_response"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Ungrounded AI response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Identificador de trazabilidad.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Served-From": {
+                "description": "Procedencia de la respuesta.",
+                "schema": {
+                  "enum": [
+                    "live",
+                    "cache",
+                    "demo",
+                    "degraded"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "503_ai_unavailable": {
+                    "$ref": "#/components/examples/503_ai_unavailable"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "AI unavailable",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Identificador de trazabilidad.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Served-From": {
+                "description": "Procedencia de la respuesta.",
+                "schema": {
+                  "enum": [
+                    "live",
+                    "cache",
+                    "demo",
+                    "degraded"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Summary",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/query": {
+      "post": {
+        "operationId": "query_api_v1_ai_query_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiQueryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiResponse"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Identificador de trazabilidad.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Served-From": {
+                "description": "Procedencia de la respuesta.",
+                "schema": {
+                  "enum": [
+                    "live",
+                    "cache",
+                    "demo",
+                    "degraded"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "422_validation_error": {
+                    "$ref": "#/components/examples/422_validation_error"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Identificador de trazabilidad.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Served-From": {
+                "description": "Procedencia de la respuesta.",
+                "schema": {
+                  "enum": [
+                    "live",
+                    "cache",
+                    "demo",
+                    "degraded"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "502_ai_ungrounded_response": {
+                    "$ref": "#/components/examples/502_ai_ungrounded_response"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Ungrounded AI response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Identificador de trazabilidad.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Served-From": {
+                "description": "Procedencia de la respuesta.",
+                "schema": {
+                  "enum": [
+                    "live",
+                    "cache",
+                    "demo",
+                    "degraded"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "503_ai_unavailable": {
+                    "$ref": "#/components/examples/503_ai_unavailable"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "AI unavailable",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Identificador de trazabilidad.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Served-From": {
+                "description": "Procedencia de la respuesta.",
+                "schema": {
+                  "enum": [
+                    "live",
+                    "cache",
+                    "demo",
+                    "degraded"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Query",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/ai/{request_id}/charts/{chart_id}": {
+      "get": {
+        "operationId": "get_chart_api_v1_ai__request_id__charts__chart_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "chart_id",
+            "required": true,
+            "schema": {
+              "title": "Chart Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChartData"
+                }
+              }
+            },
+            "description": "Successful Response",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Identificador de trazabilidad.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Served-From": {
+                "description": "Procedencia de la respuesta.",
+                "schema": {
+                  "enum": [
+                    "live",
+                    "cache",
+                    "demo",
+                    "degraded"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "404_chart_not_found": {
+                    "$ref": "#/components/examples/404_chart_not_found"
+                  },
+                  "404_experiment_not_found": {
+                    "$ref": "#/components/examples/404_experiment_not_found"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Request or chart not found",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Identificador de trazabilidad.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Served-From": {
+                "description": "Procedencia de la respuesta.",
+                "schema": {
+                  "enum": [
+                    "live",
+                    "cache",
+                    "demo",
+                    "degraded"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "422_validation_error": {
+                    "$ref": "#/components/examples/422_validation_error"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Validation Error",
+            "headers": {
+              "X-Request-ID": {
+                "description": "Identificador de trazabilidad.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-Served-From": {
+                "description": "Procedencia de la respuesta.",
+                "schema": {
+                  "enum": [
+                    "live",
+                    "cache",
+                    "demo",
+                    "degraded"
+                  ],
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get Chart",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/api/v1/analyses": {
+      "get": {
+        "operationId": "catalog_api_v1_analyses_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Catalog",
+        "tags": [
+          "science"
+        ]
+      }
+    },
+    "/api/v1/analyses/comparison": {
+      "post": {
+        "operationId": "comparison_api_v1_analyses_comparison_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiQueryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Ungrounded AI response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "AI unavailable"
+          }
+        },
+        "summary": "Comparison",
+        "tags": [
+          "analyses"
+        ]
+      }
+    },
+    "/api/v1/analyses/summary": {
+      "post": {
+        "operationId": "summary_api_v1_analyses_summary_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiQueryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "Ungrounded AI response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponse"
+                }
+              }
+            },
+            "description": "AI unavailable"
+          }
+        },
+        "summary": "Summary",
+        "tags": [
+          "analyses"
+        ]
+      }
+    },
+    "/api/v1/analyses/{analysis_id}": {
+      "get": {
+        "operationId": "analysis_api_v1_analyses__analysis_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "analysis_id",
+            "required": true,
+            "schema": {
+              "title": "Analysis Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pi",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pi"
+            }
+          },
+          {
+            "in": "query",
+            "name": "material",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 240,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Material"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Analysis",
+        "tags": [
+          "science"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    }
+  }
+}

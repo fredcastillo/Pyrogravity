@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "AI_UNGROUNDED_RESPONSE",
+    "message": "La respuesta de IA no quedó fundamentada.",
+    "details": {},
+    "request_id": "00000000-0000-0000-0000-000000000502"
+  }
+}
