@@ -1,39 +1,41 @@
 # Pyrogravity Frontend
 
-Primer incremento del Command Center científico. Incluye navegación, galaxia 3D interactiva, explorador, comparación, fuentes, estado y un modo snapshot local para que la demo no dependa de servicios externos.
+Command Center científico con navegación, cámara 3D, explorador, comparación, fuentes y consultas de evidencia.
 
-## Desarrollo
+## Desarrollo y verificación
 
 ```bash
 npm ci
 npm run dev
-```
-
-## Verificación
-
-```bash
 npm run lint
 npm test
 npm run build
 ```
 
-Los datos visibles son un snapshot de demostración basado en las investigaciones listadas por el proyecto. Las series están normalizadas para navegación y no deben interpretarse como una simulación física validada. La integración definitiva consumirá contratos versionados de FastAPI y ChartSpec.
+Los datos generales visibles son un snapshot de navegación y no una simulación física validada.
 
-## Contrato de consultas IA
+## Contrato público de IA
 
-El contrato versionado vive en `src/contracts/ai.ts`. El frontend envía `AiQueryRequest 1.0` y exige una respuesta `AiResponse 1.0` con el mismo `request_id`. La interfaz representa explícitamente:
+La frontera del navegador está fijada en `src/contracts/ai.ts` y `src/services/ai.ts`:
 
-- estados `supported`, `partially_supported`, `insufficient_evidence`, `invalid_request` y `upstream_unavailable`;
-- afirmaciones enlazadas a `evidence_ids`;
-- citas documentales con fuente y página;
-- citas científicas con dataset, variable, medición y unidad;
-- limitaciones generales y específicas de cada `ChartSpec`;
-- latencia, intención y versión del contrato.
+- única operación: `POST /api/v1/ai/query` en el mismo origen;
+- el navegador no llama a Cohere, Supabase ni endpoints internos de IA;
+- solicitud con pregunta, ensayos seleccionados, variables y preferencia de gráfico;
+- soporte separado en `supported`, `partially_supported` e `insufficient_evidence`;
+- errores de servicio representados exclusivamente como errores HTTP;
+- respuesta con afirmaciones, citas resueltas, limitaciones, gráficos y `provenance` (`live`, `cache`, `demo`, `degraded`);
+- cifras presentadas siempre con unidad y procedencia;
+- gráficos renderizados solo cuando el backend entrega series con `validated: true` y puntos hidratados;
+- `data_ref` solo admite rutas relativas bajo `/api/v1/`; nunca se consulta una referencia externa.
 
-Para conectar FastAPI, define la URL completa del endpoint de consultas:
+La estructura actual es una frontera provisional basada en los campos acordados. Antes de conectar producción se debe reemplazar o confirmar contra el ejemplo JSON público definitivo y la versión de contrato publicada por Gregori.
+
+## Demostración explícita
+
+El modo demo es opt-in:
 
 ```bash
-VITE_AI_QUERY_ENDPOINT=https://api.example.org/v1/ai/query
+VITE_AI_DEMO_MODE=true npm run dev
 ```
 
-Sin esa variable se usa un adaptador local de demostración. Los `ChartSpec` nunca incorporan datos arbitrarios: `data_ref` se muestra bloqueado y el navegador no lo consulta hasta que backend defina el endpoint autorizado de datos de gráficos.
+En demo, la respuesta usa `provenance: demo`, `status: insufficient_evidence`, no contiene citas, mediciones ni gráficos, y la interfaz muestra una advertencia inequívoca. Sin ese modo, el frontend intenta `/api/v1/ai/query`; si el backend no está disponible, muestra un error de servicio.
