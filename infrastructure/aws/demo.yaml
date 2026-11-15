@@ -162,13 +162,34 @@ Resources:
 
   HttpStage:
     Type: AWS::ApiGatewayV2::Stage
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Correlate public API requests without storing query strings or user content.
+        must:
+          - Keep access logs bounded by retention and include the Gateway request ID.
     Properties:
       ApiId: !Ref HttpApi
       StageName: '$default'
       AutoDeploy: true
+      AccessLogSettings:
+        DestinationArn: !GetAtt HttpAccessLogs.Arn
+        Format: '{"requestId":"$context.requestId","requestTime":"$context.requestTime","routeKey":"$context.routeKey","status":"$context.status","responseLength":"$context.responseLength","integrationStatus":"$context.integrationStatus"}'
       DefaultRouteSettings:
         ThrottlingBurstLimit: 10
         ThrottlingRateLimit: 5
+
+  HttpAccessLogs:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Trace HTTP status and integration failures independently of Lambda logs.
+        must:
+          - Do not record request bodies, authorization headers or query strings.
+    Properties:
+      LogGroupName: !Sub '/aws/vendedlogs/apigateway/${AWS::StackName}'
+      RetentionInDays: 14
 
   HttpIntegration:
     Type: AWS::ApiGatewayV2::Integration
@@ -198,6 +219,20 @@ Resources:
     Properties:
       ApiId: !Ref HttpApi
       RouteKey: 'GET /api/v1/compare'
+      Target: !Sub 'integrations/${HttpIntegration}'
+
+  AnalysesRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'GET /api/v1/analyses'
+      Target: !Sub 'integrations/${HttpIntegration}'
+
+  AnalysisRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'GET /api/v1/analyses/{analysis_id}'
       Target: !Sub 'integrations/${HttpIntegration}'
 
   ApiInvokePermission:

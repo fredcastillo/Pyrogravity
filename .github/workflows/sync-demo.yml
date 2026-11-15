@@ -1,0 +1,27 @@
+name: Comprobar publicación cada cinco minutos
+
+on:
+  schedule:
+    - cron: '2-57/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: pyrogravity-publication-watchdog
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Comparar main con la versión pública
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python infrastructure/aws/reconcile.py

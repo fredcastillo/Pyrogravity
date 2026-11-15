@@ -176,7 +176,8 @@ jobs:
         shell: bash
         run: |
           python -m pip install -r data/requirements.txt -r infrastructure/demo/requirements.txt uvicorn==0.40.0 cfn-lint==1.60.1
-          cfn-lint --regions us-east-1 --template infrastructure/aws/artifacts.yaml infrastructure/aws/demo.yaml
+          cfn-lint --regions us-east-1 --template infrastructure/aws/artifacts.yaml infrastructure/aws/demo.yaml infrastructure/aws/monitoring.yaml
+          python -m unittest discover -s infrastructure/aws/tests
           python infrastructure/aws/build.py
           python -m uvicorn app:api --app-dir infrastructure/demo --host 127.0.0.1 --port 8000 &
           server=$!
