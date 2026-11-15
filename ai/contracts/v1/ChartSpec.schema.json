@@ -1,0 +1,126 @@
+{
+  "$defs": {
+    "ChartAxis": {
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+          "title": "Field",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "categorical",
+            "numeric",
+            "temporal"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "field",
+        "label",
+        "kind"
+      ],
+      "title": "ChartAxis",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "chart_id": {
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+      "title": "Chart Id",
+      "type": "string"
+    },
+    "data_ref": {
+      "pattern": "^[a-zA-Z][a-zA-Z0-9:_-]{0,299}$",
+      "title": "Data Ref",
+      "type": "string"
+    },
+    "dataset_ref_ids": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Dataset Ref Ids",
+      "type": "array"
+    },
+    "filters": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Filters",
+      "type": "object"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "title": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "type": {
+      "enum": [
+        "bar",
+        "line",
+        "scatter",
+        "histogram",
+        "box",
+        "heatmap"
+      ],
+      "title": "Type",
+      "type": "string"
+    },
+    "x": {
+      "$ref": "#/$defs/ChartAxis"
+    },
+    "y": {
+      "$ref": "#/$defs/ChartAxis"
+    }
+  },
+  "required": [
+    "chart_id",
+    "type",
+    "title",
+    "data_ref",
+    "x",
+    "y",
+    "dataset_ref_ids"
+  ],
+  "title": "ChartSpec",
+  "type": "object"
+}

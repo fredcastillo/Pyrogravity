@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.1",
+  "request_id": "750cb32c-48a6-4a6e-88c4-8eb147633ae7",
+  "status": "supported",
+  "intent": "scientific_analysis",
+  "answer": "En este ejemplo sintético, la duración es 12,5 s.",
+  "claims": [{
+    "claim_id": "claim_1",
+    "kind": "numeric",
+    "text": "La duración registrada es 12,5 s.",
+    "evidence_ids": ["evidence_1"]
+  }],
+  "evidence": [{
+    "kind": "scientific",
+    "evidence_id": "evidence_1",
+    "result_id": "result_1",
+    "datum_id": "datum_1"
+  }],
+  "visualizations": [{
+    "chart_id": "chart_1",
+    "type": "scatter",
+    "title": "Duración sintética",
+    "data_ref": "analysis:flex:synthetic_1",
+    "x_field": "trial_code",
+    "y_field": "burn_time",
+    "y_unit": "s"
+  }],
+  "limitations": ["Ejemplo sintético; no representa datos NASA."]
+}
