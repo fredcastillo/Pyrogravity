@@ -1,0 +1,22 @@
+# Datos e IA
+/data/ @StanleyCM
+/rag/ @Johanvasquezdev
+
+# Aplicación
+/backend/ @GregoriEJimenezDev
+/frontend/ @Brlamafia
+/shared/contracts/ @StanleyCM @Johanvasquezdev @GregoriEJimenezDev
+
+# QA e infraestructura
+/tests/ @fredcastillo
+/infrastructure/ @iClexi
+/compose.* @iClexi
+/docker-compose.* @iClexi
+/.github/ @iClexi @fredcastillo
+/.gitignore @iClexi @fredcastillo
+/README.md @iClexi @fredcastillo
+/CONTRIBUTING.md @iClexi @fredcastillo
+
+/app/ @GregoriEJimenezDev
+/scripts/load_to_supabase.py @StanleyCM @GregoriEJimenezDev
+/supabase/ @StanleyCM @GregoriEJimenezDev

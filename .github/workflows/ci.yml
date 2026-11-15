@@ -1,0 +1,272 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  repository:
+    name: Repositorio y Compose
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    outputs:
+      python_modules: ${{ steps.modules.outputs.python }}
+      frontend: ${{ steps.modules.outputs.frontend }}
+      aws_demo: ${{ steps.modules.outputs.aws_demo }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validar workflows
+        shell: bash
+        run: |
+          archive="$RUNNER_TEMP/actionlint.tar.gz"
+          curl --fail --silent --show-error --location --retry 2 --max-time 45 \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz \
+            --output "$archive"
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $archive" | sha256sum --check
+          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint"
+
+      - name: Detectar módulos con código
+        id: modules
+        shell: bash
+        run: |
+          modules=()
+          for directory in data rag backend tests; do
+            if [[ -n "$(git ls-files -- ":(glob)$directory/**/*.py")" ]]; then
+              modules+=("$directory")
+            fi
+          done
+          python_modules=$(printf '%s\n' "${modules[@]}" | jq -cRn '[inputs | select(length > 0)]')
+          echo "python=$python_modules" >> "$GITHUB_OUTPUT"
+          echo "Módulos Python detectados: $python_modules"
+
+          frontend=false
+          if [[ -f frontend/package.json ]]; then
+            frontend=true
+          fi
+          echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
+          echo "Frontend disponible: $frontend"
+          aws_demo=false
+          if [[ -f infrastructure/aws/demo.yaml ]]; then
+            aws_demo=true
+          fi
+          echo "aws_demo=$aws_demo" >> "$GITHUB_OUTPUT"
+
+      - name: Validar configuración de Compose
+        shell: bash
+        run: |
+          for compose_file in compose.yaml compose.yml docker-compose.yaml docker-compose.yml; do
+            if [[ -f "$compose_file" ]]; then
+              docker compose -f "$compose_file" config --no-interpolate --no-env-resolution --quiet
+              exit 0
+            fi
+          done
+          echo "La configuración de Compose se validará al incorporarla al repositorio."
+
+  python:
+    name: Python (${{ matrix.module }})
+    needs: repository
+    if: ${{ needs.repository.outputs.python_modules != '[]' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJSON(needs.repository.outputs.python_modules) }}
+    env:
+      MODULE: ${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+
+      - name: Revisar sintaxis de Python
+        run: python -m compileall -q "$MODULE"
+
+      - name: Ejecutar pruebas del módulo científico
+        if: ${{ matrix.module == 'data' && hashFiles('data/tests/**/test_*.py', 'data/tests/**/*_test.py') != '' }}
+        working-directory: .
+        run: |
+          python -m pip install -r data/requirements.txt
+          python -m pytest data/tests -v
+
+      - name: Ejecutar pytest
+        if: ${{ matrix.module != 'data' && hashFiles(format('{0}/**/test_*.py', matrix.module), format('{0}/**/*_test.py', matrix.module)) != '' }}
+        shell: bash
+        run: |
+          test_path=tests
+          if [[ "$MODULE" != tests ]]; then
+            cd "$MODULE"
+            test_path=.
+          fi
+          python -m pip install pytest
+          if [[ -f requirements.txt ]]; then
+            python -m pip install -r requirements.txt
+          fi
+          if [[ -f pyproject.toml ]] && grep -Eq '^\[(project|build-system)\]' pyproject.toml; then
+            python -m pip install --editable .
+          fi
+          if [[ -f requirements-dev.txt ]]; then
+            python -m pip install -r requirements-dev.txt
+          fi
+          python -m pytest "$test_path"
+
+  postgres:
+    name: PostgreSQL y RLS reales
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_PASSWORD: ci-disposable-only
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Probar migraciones, carga, equivalencia científica y permisos
+        env:
+          PYRO_TEST_DATABASE_URL: postgresql://postgres:ci-disposable-only@localhost:5432/postgres
+        run: |
+          python -m pip install -r data/requirements.txt -r requirements.txt
+          python -m pytest data/integration -v
+
+  frontend:
+    name: Frontend
+    needs: repository
+    if: ${{ needs.repository.outputs.frontend == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias fijadas
+        run: npm ci
+
+      - name: Ejecutar lint y pruebas del frontend
+        run: |
+          npm run lint --if-present
+          npm test --if-present
+
+      - name: Compilar el frontend
+        run: npm run build
+
+  aws-demo:
+    name: Demo de AWS
+    needs: repository
+    if: ${{ needs.repository.outputs.aws_demo == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Compilar y verificar la demo
+        shell: bash
+        run: |
+          python -m pip install -r data/requirements.txt -r infrastructure/demo/requirements.txt uvicorn==0.40.0 cfn-lint==1.60.1 playwright==1.58.0
+          cfn-lint --regions us-east-1 --template infrastructure/aws/artifacts.yaml infrastructure/aws/demo.yaml infrastructure/aws/monitoring.yaml
+          python -m unittest discover -s infrastructure/aws/tests
+          python infrastructure/aws/build.py
+          python -m uvicorn app:api --app-dir infrastructure/demo --host 127.0.0.1 --port 8000 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          curl --fail --silent --show-error --retry 10 --retry-connrefused --max-time 2 http://127.0.0.1:8000/api/v1/health
+          python infrastructure/aws/smoke.py http://127.0.0.1:8000
+          python -m playwright install --with-deps chromium
+          python infrastructure/aws/browser_smoke.py http://127.0.0.1:8000
+      - name: Preparar los archivos probados
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          release="$RUNNER_TEMP/pyrogravity-release"
+          mkdir -p "$release"
+          cp infrastructure/aws/.build/lambda.zip "$release/"
+          cp -R infrastructure/demo/web "$release/site"
+      - name: Guardar la compilación
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pyrogravity-demo-${{ github.sha }}
+          path: ${{ runner.temp }}/pyrogravity-release/
+          if-no-files-found: error
+          retention-days: 7
+
+  gate:
+    name: Verificación general
+    if: ${{ always() }}
+    needs: [repository, python, frontend, aws-demo, postgres]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Comprobar resultados
+        env:
+          REPOSITORY: ${{ needs.repository.result }}
+          PYTHON: ${{ needs.python.result }}
+          FRONTEND: ${{ needs.frontend.result }}
+          AWS_DEMO: ${{ needs.aws-demo.result }}
+          POSTGRES: ${{ needs.postgres.result }}
+        shell: bash
+        run: |
+          echo "Repositorio: $REPOSITORY"
+          echo "Python: $PYTHON"
+          echo "Frontend: $FRONTEND"
+          echo "Demo AWS: $AWS_DEMO"
+          echo "PostgreSQL: $POSTGRES"
+          if [[ "$POSTGRES" != success || "$REPOSITORY" != success || ! "$PYTHON" =~ ^(success|skipped)$ || ! "$FRONTEND" =~ ^(success|skipped)$ || ! "$AWS_DEMO" =~ ^(success|skipped)$ ]]; then
+            exit 1
+          fi
+
+  deploy:
+    name: Publicar la demo en AWS
+    needs: [gate, aws-demo]
+    if: >-
+      ${{ !cancelled() && needs.gate.result == 'success' && needs.aws-demo.result == 'success' &&
+          github.repository == 'fredcastillo/Pyrogravity' &&
+          github.ref == 'refs/heads/main' &&
+          (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+          vars.PYROGRAVITY_AWS_DEMO != '' }}
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/deploy-aws-demo.yml
+    with:
+      deployment: ${{ vars.PYROGRAVITY_AWS_DEMO }}

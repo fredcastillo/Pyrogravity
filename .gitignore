@@ -1,0 +1,35 @@
+# Entornos virtuales y variables de entorno
+.venv/
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Cach?s de Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Archivos temporales
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Dependencias y compilados del frontend
+node_modules/
+dist/
+.vite/
+coverage/
+
+# Datos descargados y archivos de Jupyter
+/data/raw/
+.ipynb_checkpoints/
+/infrastructure/demo/snapshot.json
+/infrastructure/demo/analyses.json
+/infrastructure/demo/web/assets/catalog.json
+/infrastructure/aws/.build/

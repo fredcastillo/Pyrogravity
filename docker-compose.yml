@@ -1,0 +1,13 @@
+services:
+  api:
+    build: .
+    ports: ["127.0.0.1:8000:8000"]
+    environment:
+      DEMO_MODE: "true"
+  db:
+    image: postgres:17.6
+    profiles: ["database"]
+    ports: ["127.0.0.1:5432:5432"]
+    environment:
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD para usar el perfil database}"
+      POSTGRES_DB: postgres
