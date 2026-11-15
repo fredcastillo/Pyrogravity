@@ -41,6 +41,19 @@ def verify(base_url: str, release_id: str | None = None) -> None:
     assert csv_hashes and len(source_catalog) == len(csv_hashes)
     assert published_hashes == csv_hashes, "El catálogo publicado debe corresponder a todos los CSV del commit."
     assert json.loads(fetch("/api/v1/health")) == {"status": "ok", "mode": "demo"}
+    science = json.loads(fetch("/api/v1/analyses"))
+    assert {item["analysis_id"] for item in science} == {"bass-ii", "flex", "flame-design", "cfi-g", "spice"}
+    for item in science:
+        with urlopen(base_url + "/api/v1/analyses/" + item["analysis_id"], timeout=12) as response:
+            assert response.headers.get("X-Request-Id"), "La API debe devolver una referencia trazable."
+            analysis = json.load(response)
+        assert analysis["analysis_id"] == item["analysis_id"] and analysis["contract_version"] == "1.0"
+        result = analysis["result"]
+        sources = [part["dataset"] for part in result["configurations"].values()] if "configurations" in result else [result["dataset"]]
+        for source in sources:
+            assert source["sha256"] == csv_hashes[source["relative_path"]]
+    assert "science-analysis" in page
+    assert b"selectCohort" in fetch(asset_directory + "/science.js")
     catalog = json.loads(fetch("/api/v1/datasets"))
     assert {item["study"]: item["count"] for item in catalog} == {"PSI-25": 129, "PSI-69": 274}
 
@@ -69,7 +82,7 @@ def verify(base_url: str, release_id: str | None = None) -> None:
     else:
         raise AssertionError("Un estudio desconocido debe devolver 422.")
 
-    print(f"Verificado {base_url}: {len(source_catalog)} CSV en el catálogo y comparaciones de FLEX y BASS-II.")
+    print(f"Verificado {base_url}: {len(source_catalog)} CSV, cinco análisis trazables y comparaciones de FLEX y BASS-II.")
 
 
 if __name__ == "__main__":

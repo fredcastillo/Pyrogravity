@@ -39,7 +39,7 @@ def build(output: Path, etl_python: str) -> None:
                 relative = file.relative_to(dependencies)
                 if file.is_file() and "__pycache__" not in relative.parts and relative.parts[0] != "bin":
                     write_file(archive, relative.as_posix(), file)
-            for name in ("app.py", "snapshot.json"):
+            for name in ("app.py", "snapshot.json", "analyses.json"):
                 write_file(archive, name, DEMO_DIR / name)
     print(f"{output}: {output.stat().st_size:,} B")
 

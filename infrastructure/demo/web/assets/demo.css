@@ -40,6 +40,11 @@ a { color: #ffc182; text-underline-offset: .18rem; }
 .catalog-table th:first-child, .catalog-table td:first-child { min-width: 5rem; }
 .catalog-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin-top: 1rem; }
 .catalog-pagination button { width: auto; }
+#science-chart { width: 100%; min-width: 300px; max-height: 420px; }
+#science-chart text { fill: #cec2b1; font: 12px system-ui; }
+#science-method { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; }
+#science-result figure { margin: 1rem 0; overflow-x: auto; }
+#science-result figcaption { color: #cec2b1; font-size: .85rem; }
 @media (max-width: 630px) {
   main { padding-top: 1.75rem; }
   form { grid-template-columns: 1fr; }
