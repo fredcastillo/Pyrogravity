@@ -1,6 +1,6 @@
 # Demo de Pyrogravity en AWS
 
-La demo ofrece una comparación de ensayos de combustión con datos de NASA. El ETL de `data/` genera tablas para 19 investigaciones. `infrastructure/demo/export_data.py` selecciona FLEX y BASS-II y conserva para cada medición su estado, unidad y procedencia. FLEX muestra tiempo de combustión en segundos. BASS-II muestra oxígeno inicial calibrado en porcentaje por volumen. La comparación se limita a ensayos de un mismo estudio.
+El catálogo de la demo se genera a partir de todas las tablas validadas por el ETL de `data/`. Muestra las filas con datos, los encabezados originales, las unidades declaradas y la fuente de NASA. El comparador interactivo admite FLEX, con el tiempo de combustión en segundos, y BASS-II, con el oxígeno inicial calibrado en porcentaje por volumen.
 
 ```mermaid
 flowchart LR
@@ -13,7 +13,7 @@ flowchart LR
     Snapshot --> Alias
 ```
 
-El snapshot se regenera al compilar. El dashboard grafica valores exactos y conserva registros parciales o sin evidencia en la tabla. Los números decimales viajan como cadenas para conservar su precisión. La fila y el hash SHA‑256 permiten rastrear una medición hasta el CSV del repositorio. Git conserva los bytes de esos CSV, incluido el fin de línea. El exportador ejecuta el ETL en un directorio temporal y lee los hashes de las tablas que acaba de generar.
+El snapshot y el catálogo se regeneran al compilar. El comparador grafica valores exactos y conserva registros parciales o sin evidencia en la tabla. Los números decimales viajan como cadenas para conservar su precisión. La fila y el hash SHA‑256 permiten rastrear una medición hasta el CSV del repositorio. Git conserva los bytes de esos CSV, incluido el fin de línea. El exportador ejecuta el ETL en un directorio temporal y lee los hashes de las tablas que acaba de generar.
 
 ## Ejecutar en local
 
@@ -26,7 +26,7 @@ python -m infrastructure.demo.export_data
 python -m uvicorn app:api --app-dir infrastructure/demo --host 127.0.0.1 --port 8000
 ```
 
-Abre [localhost:8000](http://127.0.0.1:8000). En otra terminal, ejecuta `python infrastructure/aws/smoke.py http://127.0.0.1:8000` para verificar los dos estudios, la procedencia y la evidencia insuficiente.
+Abre [localhost:8000](http://127.0.0.1:8000). En otra terminal, ejecuta `python infrastructure/aws/smoke.py http://127.0.0.1:8000` para verificar la cobertura del catálogo, las comparaciones, la procedencia y la evidencia insuficiente.
 
 ## Publicar
 

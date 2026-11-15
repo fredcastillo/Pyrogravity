@@ -5,8 +5,10 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from data.src.etl.nasa_etl import run_etl
+from data.src.etl.nasa_tables import INVESTIGATION_TITLES
 
 OUTPUT = Path(__file__).with_name("snapshot.json")
+CATALOG = Path(__file__).with_name("web") / "assets" / "catalog.json"
 
 DATASETS = {
     "flex": {
@@ -68,6 +70,45 @@ def export() -> None:
         }
 
     OUTPUT.write_text(json.dumps(datasets, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    catalog = [catalog_entry(name, table) for name, table in tables.items()]
+    CATALOG.write_text(json.dumps(catalog, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+
+
+def catalog_entry(name, table) -> dict:
+    metadata = {key.decode(): value.decode() for key, value in table.schema.metadata.items()}
+    study = metadata["source_investigation"].rsplit("/", 1)[-1]
+    source_file = Path(metadata["source_path"])
+    source_columns = [field for field in table.schema if field.metadata and b"source_header" in field.metadata]
+    columns = [
+        {
+            "label": field.metadata[b"source_header"].decode(),
+            "unit": field.metadata.get(b"source_unit", b"").decode(),
+        }
+        for field in source_columns
+    ]
+    input_names = set(table.column_names)
+    original_values = [
+        f"{field.name}_raw" if f"{field.name}_raw" in input_names else field.name
+        for field in source_columns
+    ]
+    rows = table.select(["source_record", "source_row_empty", *original_values]).to_pylist()
+    return {
+        "id": name,
+        "study": study,
+        "title": INVESTIGATION_TITLES[study],
+        "label": source_file.stem.split("_", 2)[-1].replace("_", " "),
+        "source": metadata["source_investigation"],
+        "source_path": metadata["source_path"],
+        "source_sha256": metadata["source_sha256"],
+        "scope": metadata["source_scope"],
+        "row_count": table.num_rows,
+        "columns": columns,
+        "rows": [
+            [row["source_record"], *(row[column] for column in original_values)]
+            for row in rows
+            if not row["source_row_empty"]
+        ],
+    }
 
 
 if __name__ == "__main__":

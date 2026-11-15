@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Compara ensayos de combustión en microgravedad con datos de NASA.">
+  <meta name="description" content="Explora las tablas de NASA y compara ensayos de combustión en microgravedad.">
   <title>Pyrogravity | Explorador de ensayos</title>
   <link rel="stylesheet" href="/assets/demo.css">
   <script src="/assets/demo.js" defer></script>
@@ -13,8 +13,29 @@
     <header>
       <p class="project">PYROGRAVITY <span>NASA SPACE APPS</span></p>
       <h1>Combustión en microgravedad</h1>
-      <p class="subtitle">Compara mediciones de NASA y consulta la fila que respalda cada valor.</p>
+      <p class="subtitle">Explora las tablas de NASA y compara los ensayos de FLEX y BASS-II.</p>
     </header>
+
+    <section class="panel" aria-labelledby="catalog-title">
+      <h2 id="catalog-title">Tablas de NASA</h2>
+      <p id="catalog-count" role="status">Cargando el catálogo…</p>
+      <label>Tabla <select id="catalog-dataset" disabled></select></label>
+      <div id="catalog-results" hidden>
+        <p id="catalog-details"></p>
+        <div class="table-wrap catalog-table" role="region" aria-label="Filas del CSV seleccionado" tabindex="0">
+          <table>
+            <thead><tr id="catalog-columns"></tr></thead>
+            <tbody id="catalog-rows"></tbody>
+          </table>
+        </div>
+        <div class="catalog-pagination" aria-label="Paginación de filas">
+          <button type="button" id="catalog-previous">Anterior</button>
+          <span id="catalog-page" role="status"></span>
+          <button type="button" id="catalog-next">Siguiente</button>
+        </div>
+        <p class="source"><a id="catalog-source" target="_blank" rel="noopener noreferrer"></a> <span id="catalog-file"></span></p>
+      </div>
+    </section>
 
     <section class="panel" aria-labelledby="comparison-title">
       <h2 id="comparison-title">Comparar ensayos</h2>
