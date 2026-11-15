@@ -21,7 +21,7 @@ describe('Pyrogravity frontend', () => {
     expect(screen.getByRole('heading', { name: 'Burning and Suppression of Solids II' })).toBeInTheDocument()
   })
 
-  it('mantiene operativos los controles del Command Center', () => {
+  it('mantiene operativos los controles y renderiza evidencia contractual', async () => {
     render(<MemoryRouter initialEntries={['/']}><App /></MemoryRouter>)
     const moon = screen.getByRole('button', { name: /Luna/ })
     fireEvent.click(moon)
@@ -29,7 +29,10 @@ describe('Pyrogravity frontend', () => {
 
     fireEvent.change(screen.getByLabelText('Pregunta para el copiloto'), { target: { value: '¿Cuántas muestras hay?' } })
     fireEvent.click(screen.getByRole('button', { name: 'Enviar pregunta' }))
-    expect(screen.getByText(/contiene 184 muestras/)).toBeInTheDocument()
+    expect(await screen.findByText('Respaldada')).toBeInTheDocument()
+    expect(screen.getByText(/El perfil validado contiene 184 muestras/)).toBeInTheDocument()
+    expect(screen.getByText('Documento · p. 42')).toBeInTheDocument()
+    expect(screen.getByText('Datos no solicitados')).toBeInTheDocument()
   })
 
   it('expone fichas navegables en lugar de botones deshabilitados', () => {

@@ -1,6 +1,7 @@
-import { ArrowRight, Bot, CircleGauge, DatabaseZap, Orbit, Send, Sparkles } from 'lucide-react'
-import { lazy, Suspense, useMemo, useState, type FormEvent } from 'react'
+import { ArrowRight, CircleGauge, DatabaseZap, Orbit, Sparkles } from 'lucide-react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { AiCopilot } from '../components/AiCopilot'
 import { LineChart } from '../components/LineChart'
 import { PageHeader } from '../components/PageHeader'
 import { experiments, missionContexts, statusLabel } from '../data/experiments'
@@ -11,16 +12,7 @@ const GalaxyScene = lazy(() => import('../components/GalaxyScene').then((module)
 export function CommandCenter() {
   const [selectedId, setSelectedId] = useState('flex')
   const [mission, setMission] = useState('iss')
-  const [question, setQuestion] = useState('')
-  const [answer, setAnswer] = useState('Selecciona una investigación o pregunta por la evidencia disponible.')
   const selected = useMemo(() => experiments.find((item) => item.id === selectedId) ?? experiments[0], [selectedId])
-
-  function askCopilot(event: FormEvent) {
-    event.preventDefault()
-    if (!question.trim()) return
-    setAnswer(`${selected.shortName} contiene ${selected.sampleCount} muestras con ${selected.completeness}% de cobertura. Puedo comparar variables compatibles; las inferencias se marcarán como tales.`)
-    setQuestion('')
-  }
 
   return (
     <div className="page page--command">
@@ -85,12 +77,7 @@ export function CommandCenter() {
           <LineChart series={selected.series} color={selected.color} label={selected.shortName} />
           <p className="chart-caption">Visualización normalizada para exploración. Consulta la unidad y la variable original en el detalle de la fuente.</p>
         </section>
-        <section className="panel copilot-panel">
-          <div className="panel__header"><div><p className="eyebrow">COPILOTO CIENTÍFICO</p><h2>Consulta contextual</h2></div><Bot /></div>
-          <div className="copilot-answer"><Sparkles /><p>{answer}</p></div>
-          <form onSubmit={askCopilot}><label htmlFor="copilot-question" className="sr-only">Pregunta para el copiloto</label><input id="copilot-question" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder={`Pregunta sobre ${selected.shortName}…`} /><button type="submit" aria-label="Enviar pregunta"><Send /></button></form>
-          <small>Las respuestas de esta fase usan el snapshot local y no sustituyen cálculos científicos.</small>
-        </section>
+        <AiCopilot key={selected.id} experimentId={selected.id} experimentName={selected.shortName} />
       </div>
     </div>
   )
