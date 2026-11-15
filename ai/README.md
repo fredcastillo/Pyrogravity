@@ -26,7 +26,7 @@ Run one live provider request when credentials are configured:
 .venv\Scripts\python.exe scripts\test_cohere.py
 ```
 
-The Supabase PostgreSQL project already has pgvector enabled. There is no local PostgreSQL extension installation in this step. The future knowledge base uses the `ai` schema; scientific data stays in `scientific`, and backend operational data stays in `app`.
+The Supabase PostgreSQL project has pgvector enabled in `extensions` as confirmed by the live probe on 2026-11-14. There is no local PostgreSQL extension installation. The knowledge base belongs in `ai`; scientific data stays in `scientific`, and backend operational data stays in `app`.
 
 ## Database readiness
 
@@ -41,3 +41,16 @@ The probe reports existence and schema-level permissions for `scientific`, `ai`,
 ## Scientific sources
 
 The [source registry design](docs/source-registry.md) defines catalog, PDF artifact, chunk and citation provenance. The first curated NASA NTRS record is in `sources/ntrs_20130014061.json`; its DOI and declared version are left null because the publisher's catalog does not list either.
+
+The [database schema proposal](docs/database-schema.md) specifies five private `ai` tables for provenance, chunks, embeddings and ingestion runs. It is a design for review; no migration has been applied.
+
+## Inspect the first PDF
+
+The source manifest pins the SHA-256 of the NASA PDF. The script downloads it into ignored `.cache/` if absent, rejects changed bytes, extracts text with original 1-based page numbers, normalizes typographic ligatures, and creates page-bounded chunks. It does not send the document to Cohere or write to Supabase.
+
+```powershell
+.venv\Scripts\python.exe scripts\inspect_source.py
+.venv\Scripts\python.exe scripts\inspect_source.py --page 5
+```
+
+Review the reported page count, text quality and sample chunks before using the document for retrieval. PDF text extraction may need a document-specific adjustment for columns, tables or scanned pages.
