@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "id": "demo-1",
+  "status": "insufficient_evidence",
+  "answer": "Ejemplo sintético de respuesta sin evidencia suficiente.",
+  "claims": [],
+  "chart": null,
+  "limitations": [
+    "sintético de ejemplo"
+  ],
+  "confidence": "low",
+  "model": "demo",
+  "data_version": "demo-v1",
+  "corpus_version": "demo-v1",
+  "degraded_source": null,
+  "created_at": "2026-11-15T12:00:00Z"
+}

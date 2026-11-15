@@ -1,0 +1,10 @@
+{
+  "error": {
+    "code": "CHART_NOT_FOUND",
+    "message": "No se encontró el gráfico.",
+    "details": {
+      "chart_id": "unknown"
+    },
+    "request_id": "00000000-0000-0000-0000-000000000404"
+  }
+}

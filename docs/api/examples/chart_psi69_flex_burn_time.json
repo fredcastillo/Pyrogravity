@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "chart_id": "psi69-flex-burn-time",
+  "type": "bar",
+  "title": "PSI-69 FLEX burn time by test",
+  "x_label": "FLEX test number",
+  "y_label": "Burn time",
+  "series": [
+    {
+      "label": "Burn time",
+      "unit": "s",
+      "validated": false,
+      "points": [
+        {
+          "x": 1,
+          "y": 4.3,
+          "trial_code": "20CAL08",
+          "evidence_id": "PSI-69:source_record:1"
+        },
+        {
+          "x": 2,
+          "y": 5.0,
+          "trial_code": "20CAL10",
+          "evidence_id": "PSI-69:source_record:2"
+        }
+      ]
+    }
+  ]
+}
