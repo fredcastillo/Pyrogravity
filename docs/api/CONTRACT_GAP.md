@@ -30,3 +30,15 @@ Los ejemplos supported y partially_supported no pueden validarse contra el model
 - GET /api/v1/analyses/{analysis_id}
 
 El cambio añade GET /api/v1/ai/{request_id}/charts/{chart_id} para el gráfico demo PSI-69. No existen rutas /experiments ni /sources. No hay Parquet de PSI-69 en el árbol actual; el gráfico lee el CSV fuente y normaliza LF a los finales CRLF de origen para comprobar que el contenido coincide con el SHA-256 de data/source_manifest.csv. El resolvedor general basado en data_ref queda TODO(PENDIENTE: Johan).
+
+## Diferencias con frontend/src/contracts/ai.ts
+
+- La petición TypeScript envía id y chart_preference; AiQueryRequest del backend requiere query_type y usa want_chart.
+- El TypeScript acepta status supported, partially_supported e insufficient_evidence; el backend acepta ok, fallback, insufficient_evidence y rejected.
+- El TypeScript modela claims como id/text/citation_ids y citas en el nivel superior; el backend usa statement/kind/evidence/citations dentro de cada claim.
+- El frontend expone charts como lista de HydratedChart con provenance, data_ref y limitations; el backend expone chart singular dentro de AiResponse. La ruta ChartData añadida tiene chart_id, series y validated, sin data_ref.
+- ChartType del frontend incluye line; ChartData del backend limita el tipo a bar o scatter.
+- ValidatedChartSeries exige validated=true, mientras que el gráfico demo debe responder validated=false hasta verificación contra la base.
+- El frontend no incluye confidence, model, data_version, corpus_version, degraded_source ni created_at que sí aparecen en AiResponse.
+
+No cambié el contrato TypeScript ni la semántica de AiResponse; queda pendiente acordar y alinear ambos contratos.
