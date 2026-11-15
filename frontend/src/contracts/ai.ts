@@ -1,82 +1,64 @@
-export type AnalysisId = 'bass-ii' | 'flex' | 'flame-design' | 'cfi-g' | 'spice'
+export const AI_QUERY_PATH = '/api/v1/ai/query' as const
+
+export type AiSupportStatus = 'supported' | 'partially_supported' | 'insufficient_evidence'
+export type AiProvenance = 'live' | 'cache' | 'demo' | 'degraded'
+export type ChartType = 'line' | 'bar' | 'scatter'
 
 export type AiQueryRequest = {
-  schema_version: '1.0'
-  request_id: string
+  id: string
   question: string
   language: 'es' | 'en'
-  analysis_id?: AnalysisId | null
-  filters?: Record<string, string | null>
+  experiment_ids: string[]
+  variables: string[]
+  chart_preference: ChartType | null
 }
 
-export type DatasetRef = {
-  ref_id: string
-  psi_code: string
-  relative_path: string
-  sha256: string
-  nasa_psi_url: string
-  database_dataset_id?: number | null
-}
-
-export type ScientificDatum = {
-  datum_id: string
-  dataset_ref_id: string
-  variable_code: string
-  value: string
-  unit: string
-  validation_status: 'validated'
-  kind: 'measurement' | 'derived'
-  source_record?: string | null
-  column_ordinal?: number | null
-  method?: string | null
-  sample_count?: number | null
-}
-
-export type DocumentEvidence = {
-  kind: 'document'
-  evidence_id: string
-  source_id: string
-  document_sha256: string
-  chunk_sha256: string
-  page_number: number
-  source_url: string
-  doi?: string | null
-}
-
-export type ScientificEvidence = {
-  kind: 'scientific'
-  evidence_id: string
-  dataset: DatasetRef
-  datum: ScientificDatum
-}
-
-export type Evidence = DocumentEvidence | ScientificEvidence
-
-export type ChartSpec = {
-  schema_version: '1.0'
-  chart_id: string
-  type: 'bar' | 'line' | 'scatter' | 'histogram' | 'box' | 'heatmap'
+export type ResolvedCitation = {
+  id: string
+  kind: 'document' | 'scientific'
   title: string
-  data_ref: string
-  x: { field: string; label: string; kind: 'categorical' | 'numeric' | 'temporal'; unit?: string | null }
-  y: { field: string; label: string; kind: 'categorical' | 'numeric' | 'temporal'; unit?: string | null }
-  filters: Record<string, string>
-  dataset_ref_ids: string[]
+  url: string
+  page: number | null
+  snippet: string
+  source: string
+  measurement?: {
+    variable: string
+    value: number | string
+    unit: string
+    provenance: AiProvenance
+  } | null
+}
+
+export type ValidatedChartPoint = { x: number | string; y: number }
+
+export type ValidatedChartSeries = {
+  id: string
+  label: string
+  unit: string | null
+  validated: true
+  points: ValidatedChartPoint[]
+}
+
+export type HydratedChart = {
+  id: string
+  type: ChartType
+  title: string
+  x_label: string
+  y_label: string
+  provenance: AiProvenance
+  data_ref: string | null
+  series: ValidatedChartSeries[]
   limitations: string[]
 }
-
-export type AiResponseStatus = 'supported' | 'partially_supported' | 'insufficient_evidence' | 'invalid_request' | 'upstream_unavailable'
-export type AiIntent = 'scientific_analysis' | 'document_question' | 'combined' | 'unknown'
 
 export type AiResponse = {
-  schema_version: '1.0'
-  request_id: string
-  status: AiResponseStatus
-  intent: AiIntent
+  schema_version: string
+  id: string
+  status: AiSupportStatus
   answer: string
-  claims: Array<{ claim_id: string; text: string; evidence_ids: string[] }>
-  evidence: Evidence[]
-  visualizations: ChartSpec[]
+  claims: Array<{ id: string; text: string; citation_ids: string[] }>
+  citations: ResolvedCitation[]
   limitations: string[]
-  metrics: { latency_ms?: number | null }
+  charts: HydratedChart[]
+  provenance: AiProvenance
 }
