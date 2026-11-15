@@ -37,11 +37,12 @@ export function AppShell({ children }: PropsWithChildren) {
       <a className="skip-link" href="#main-content">Saltar al contenido</a>
       <header className="mobile-header">
         <div className="brand brand--compact"><img src={pyrogravityMark} alt="" /><span><b>Pyro</b>Gravity</span></div>
-        <button className="icon-button" onClick={() => setOpen((value) => !value)} aria-label="Abrir navegación">
+        <button type="button" className="icon-button" onClick={() => setOpen((value) => !value)} aria-label={open ? 'Cerrar navegación' : 'Abrir navegación'} aria-expanded={open} aria-controls="primary-sidebar">
           {open ? <X /> : <Menu />}
         </button>
       </header>
-      <aside className={`sidebar ${open ? 'sidebar--open' : ''}`}>
+      {open && <button type="button" className="sidebar-scrim" aria-label="Cerrar navegación" onClick={() => setOpen(false)} />}
+      <aside id="primary-sidebar" className={`sidebar ${open ? 'sidebar--open' : ''}`}>
         <div className="brand">
           <img src={pyrogravityLogo} alt="PyroGravity" className="brand__logo" />
           <span className="brand__descriptor">MICROGRAVITY FIRE INTELLIGENCE</span>

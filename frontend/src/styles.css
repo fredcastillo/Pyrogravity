@@ -512,3 +512,85 @@ body::before {
 .kpi-card:nth-child(2) { animation: interface-float 6s 1s ease-in-out infinite; }
 .kpi-card:nth-child(4) { animation: interface-float 7s 2.4s ease-in-out infinite; }
 @keyframes interface-float { 0%,100% { translate: 0 0; } 50% { translate: 0 -3px; } }
+
+/* Full-screen command experience + GPU-backed motion */
+.panel--galaxy { background: #02070c; animation: none; }
+.combustion-backdrop {
+  position: absolute;
+  inset: -7%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(1,5,9,.42), rgba(1,5,9,.08) 48%, rgba(1,5,9,.56)),
+    linear-gradient(0deg, rgba(1,5,9,.48), transparent 48%),
+    var(--flame-lab) center / cover no-repeat;
+  filter: saturate(1.34) contrast(1.08) brightness(1.1);
+  transform: translate3d(-1.5%, 0, 0) scale(1.1);
+  will-change: transform;
+  animation: combustion-camera-drift 18s ease-in-out infinite alternate;
+}
+.combustion-canvas canvas { filter: saturate(1.36) contrast(1.12) brightness(1.1); }
+@keyframes combustion-camera-drift {
+  from { transform: translate3d(-2.5%, -1%, 0) scale(1.1); }
+  to { transform: translate3d(2.5%, 1.5%, 0) scale(1.15); }
+}
+
+.sidebar-scrim { display: none; }
+
+@media (min-width: 1181px) {
+  .page--command { position: relative; max-width: none; padding: 0 0 54px; }
+  .page--command > .page-header {
+    position: absolute;
+    z-index: 12;
+    top: 26px;
+    left: 34px;
+    right: 34px;
+    min-height: 92px;
+    margin: 0;
+    padding: 14px 18px 14px 20px;
+    background: linear-gradient(90deg, rgba(2,8,13,.78), rgba(2,8,13,.28) 70%, transparent);
+    border-radius: 0 12px 12px 0;
+    backdrop-filter: blur(8px);
+    pointer-events: none;
+  }
+  .page--command > .page-header .page-header__actions { pointer-events: auto; }
+  .page--command > .kpi-grid {
+    position: absolute;
+    z-index: 12;
+    top: 140px;
+    left: 34px;
+    right: 390px;
+    margin: 0;
+    pointer-events: none;
+  }
+  .page--command > .kpi-grid .kpi-card { min-height: 76px; background: linear-gradient(135deg, rgba(7,18,27,.78), rgba(3,10,16,.62)); backdrop-filter: blur(10px); }
+  .page--command .command-grid { position: relative; display: block; width: 100%; height: max(760px, 100vh); }
+  .page--command .panel--galaxy { width: 100%; height: 100%; min-height: 100%; border: 0; border-radius: 0; }
+  .page--command .panel--galaxy > .panel__header { position: absolute; z-index: 12; top: 235px; left: 34px; right: 390px; padding: 0; }
+  .page--command .combustion-canvas { height: 100%; }
+  .page--command .detail-panel {
+    position: absolute;
+    z-index: 13;
+    top: 138px;
+    right: 28px;
+    bottom: 26px;
+    width: 332px;
+    min-height: 0;
+    padding: 18px;
+    overflow: auto;
+    background: linear-gradient(155deg, rgba(9,20,29,.86), rgba(3,9,14,.77));
+    border-color: color-mix(in srgb, var(--accent) 28%, rgba(125,193,226,.2));
+    backdrop-filter: blur(18px) saturate(1.2);
+    box-shadow: 0 24px 80px rgba(0,0,0,.34);
+  }
+  .page--command .detail-panel h2 { font-size: clamp(36px, 4vw, 56px); }
+  .page--command .mission-strip, .page--command .analysis-grid { margin-left: 34px; margin-right: 34px; }
+  .page--command .mission-strip { margin-top: 22px; }
+  .page--command .analysis-grid { content-visibility: auto; contain-intrinsic-size: 760px; }
+}
+
+@media (max-width: 900px) {
+  .sidebar-scrim { display: block; position: fixed; inset: 64px 0 0; z-index: 29; border: 0; background: rgba(0,5,10,.68); backdrop-filter: blur(4px); }
+  .page--command .panel--galaxy { overflow: hidden; }
+  .combustion-backdrop { inset: -10%; filter: saturate(1.28) contrast(1.05) brightness(1.06); }
+}

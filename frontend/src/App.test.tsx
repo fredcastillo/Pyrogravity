@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import App from './App'
@@ -19,5 +19,24 @@ describe('Pyrogravity frontend', () => {
     render(<MemoryRouter initialEntries={['/explorer?experiment=bass-ii']}><App /></MemoryRouter>)
     expect(screen.getByRole('heading', { name: 'Explorador de experimentos' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Burning and Suppression of Solids II' })).toBeInTheDocument()
+  })
+
+  it('mantiene operativos los controles del Command Center', () => {
+    render(<MemoryRouter initialEntries={['/']}><App /></MemoryRouter>)
+    const moon = screen.getByRole('button', { name: /Luna/ })
+    fireEvent.click(moon)
+    expect(moon).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.change(screen.getByLabelText('Pregunta para el copiloto'), { target: { value: '¿Cuántas muestras hay?' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar pregunta' }))
+    expect(screen.getByText(/contiene 184 muestras/)).toBeInTheDocument()
+  })
+
+  it('expone fichas navegables en lugar de botones deshabilitados', () => {
+    render(<MemoryRouter initialEntries={['/sources']}><App /></MemoryRouter>)
+    const links = screen.getAllByRole('link', { name: /Abrir ficha científica/ })
+    expect(links).toHaveLength(5)
+    expect(links[0]).toHaveAttribute('href', '/explorer?experiment=flex')
+    expect(screen.queryByRole('button', { name: /Localizador NASA/ })).not.toBeInTheDocument()
   })
 })

@@ -40,6 +40,7 @@ export function CommandCenter() {
 
       <div className="command-grid">
         <section className="panel panel--galaxy" style={{ '--flame-lab': `url(${flameLab})` } as React.CSSProperties}>
+          <div className="combustion-backdrop" aria-hidden="true" />
           <div className="panel__header">
             <div><p className="eyebrow">VOLUMETRIC COMBUSTION LAB</p><h2>Cámara experimental 4D</h2></div>
             <div className="legend"><span><i className="legend__verified" /> Flujo térmico</span><span><i className="legend__partial" /> Sondas activas</span></div>
@@ -71,7 +72,7 @@ export function CommandCenter() {
         <div><p className="eyebrow">CONTEXTO OPERATIVO</p><h2>Entornos de misión</h2></div>
         <div className="mission-list">
           {missionContexts.map((item) => (
-            <button key={item.id} className={mission === item.id ? 'mission-card mission-card--active' : 'mission-card'} onClick={() => setMission(item.id)} style={{ '--mission-accent': item.accent } as React.CSSProperties}>
+            <button type="button" key={item.id} aria-pressed={mission === item.id} className={mission === item.id ? 'mission-card mission-card--active' : 'mission-card'} onClick={() => setMission(item.id)} style={{ '--mission-accent': item.accent } as React.CSSProperties}>
               <span className="mission-card__planet" /><span><strong>{item.name}</strong><small>{item.label}</small></span><span><b>{item.gravity}</b><small>{item.atmosphere}</small></span>
             </button>
           ))}
@@ -87,7 +88,7 @@ export function CommandCenter() {
         <section className="panel copilot-panel">
           <div className="panel__header"><div><p className="eyebrow">COPILOTO CIENTÍFICO</p><h2>Consulta contextual</h2></div><Bot /></div>
           <div className="copilot-answer"><Sparkles /><p>{answer}</p></div>
-          <form onSubmit={askCopilot}><label htmlFor="copilot-question" className="sr-only">Pregunta para el copiloto</label><input id="copilot-question" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder={`Pregunta sobre ${selected.shortName}…`} /><button aria-label="Enviar pregunta"><Send /></button></form>
+          <form onSubmit={askCopilot}><label htmlFor="copilot-question" className="sr-only">Pregunta para el copiloto</label><input id="copilot-question" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder={`Pregunta sobre ${selected.shortName}…`} /><button type="submit" aria-label="Enviar pregunta"><Send /></button></form>
           <small>Las respuestas de esta fase usan el snapshot local y no sustituyen cálculos científicos.</small>
         </section>
       </div>

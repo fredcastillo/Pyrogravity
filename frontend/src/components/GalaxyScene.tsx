@@ -1,4 +1,4 @@
-import { OrbitControls } from '@react-three/drei'
+import { AdaptiveDpr, OrbitControls } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { AdditiveBlending, Color, IcosahedronGeometry, Vector3, type Group, type Points, type ShaderMaterial } from 'three'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -63,7 +63,7 @@ function FlameLayer({ scale, hot, cool, opacity, speed, turbulence }: { scale: n
 
   return (
     <mesh scale={[scale * 1.08, scale, scale * 0.94]} rotation={[0.12, 0, -0.2]}>
-      <icosahedronGeometry args={[1, 7]} />
+      <icosahedronGeometry args={[1, 4]} />
       <shaderMaterial ref={material} uniforms={uniforms} vertexShader={flameVertex} fragmentShader={flameFragment} transparent depthWrite={false} blending={AdditiveBlending} />
     </mesh>
   )
@@ -72,8 +72,8 @@ function FlameLayer({ scale, hot, cool, opacity, speed, turbulence }: { scale: n
 function Embers() {
   const points = useRef<Points>(null)
   const positions = useMemo(() => {
-    const values = new Float32Array(270)
-    for (let index = 0; index < 90; index += 1) {
+    const values = new Float32Array(156)
+    for (let index = 0; index < 52; index += 1) {
       const angle = index * 2.39996
       const radius = 1.4 + ((index * 17) % 31) / 18
       values[index * 3] = Math.cos(angle) * radius
@@ -103,8 +103,9 @@ function ExperimentMeteorite({ experiment, index, active, onSelect }: { experime
   const [hovered, setHovered] = useState(false)
   const seed = index + 1
   const rockColor = ['#3a332e', '#4b4540', '#302d2a', '#53483f', '#393a3b'][index % 5]
+  const scaleTarget = useMemo(() => new Vector3(1, 1, 1), [])
   const geometry = useMemo(() => {
-    const shape = new IcosahedronGeometry(0.23 + (seed % 3) * 0.035, 4)
+    const shape = new IcosahedronGeometry(0.23 + (seed % 3) * 0.035, 2)
     const position = shape.attributes.position
     const vector = new Vector3()
     for (let vertex = 0; vertex < position.count; vertex += 1) {
@@ -133,7 +134,8 @@ function ExperimentMeteorite({ experiment, index, active, onSelect }: { experime
     group.current.rotation.x = clock.elapsedTime * (0.11 + seed * 0.025)
     group.current.rotation.y = clock.elapsedTime * (0.16 + seed * 0.018)
     const targetScale = active ? 1.28 : hovered ? 1.16 : 1
-    group.current.scale.lerp(new Vector3(targetScale, targetScale, targetScale), 0.08)
+    scaleTarget.setScalar(targetScale)
+    group.current.scale.lerp(scaleTarget, 0.08)
   })
 
   return (
@@ -173,20 +175,31 @@ function CombustionChamber({ experiments, selectedId, onSelect }: GalaxyScenePro
         <FlameLayer scale={0.92} hot="#fff0aa" cool="#1598ff" opacity={0.68} speed={1.35} turbulence={1.7} />
         <FlameLayer scale={0.55} hot="#ffffff" cool="#3fd7ff" opacity={0.7} speed={1.8} turbulence={2.2} />
         <Embers />
-        <mesh><sphereGeometry args={[2.3, 64, 64]} /><meshPhysicalMaterial color="#8bd9ff" transparent opacity={0.045} roughness={0.05} metalness={0.05} transmission={0.78} thickness={0.15} depthWrite={false} /></mesh>
-        <mesh rotation={[Math.PI / 2.25, 0.08, 0]}><torusGeometry args={[2.52, 0.025, 8, 150]} /><meshBasicMaterial color="#48cfff" transparent opacity={0.2} /></mesh>
-        <mesh rotation={[Math.PI / 2.25, 0.08, 0]}><torusGeometry args={[2.68, 0.008, 6, 150]} /><meshBasicMaterial color="#ff7a35" transparent opacity={0.34} /></mesh>
+        <mesh><sphereGeometry args={[2.3, 36, 36]} /><meshPhongMaterial color="#8bd9ff" transparent opacity={0.04} shininess={80} depthWrite={false} /></mesh>
+        <mesh rotation={[Math.PI / 2.25, 0.08, 0]}><torusGeometry args={[2.52, 0.025, 6, 96]} /><meshBasicMaterial color="#48cfff" transparent opacity={0.28} /></mesh>
+        <mesh rotation={[Math.PI / 2.25, 0.08, 0]}><torusGeometry args={[2.68, 0.008, 5, 96]} /><meshBasicMaterial color="#ff7a35" transparent opacity={0.48} /></mesh>
         {experiments.map((experiment, index) => <ExperimentMeteorite key={experiment.id} experiment={experiment} index={index} active={experiment.id === selectedId} onSelect={() => onSelect(experiment.id)} />)}
       </group>
-      <OrbitControls enablePan={false} minDistance={5.6} maxDistance={9} autoRotate autoRotateSpeed={0.16} />
+      <AdaptiveDpr />
+      <OrbitControls enableDamping dampingFactor={0.07} enablePan={false} minDistance={5.6} maxDistance={9} autoRotate autoRotateSpeed={0.14} />
     </>
   )
 }
 
 export function GalaxyScene(props: GalaxySceneProps) {
+  const container = useRef<HTMLDivElement>(null)
+  const [isVisible, setIsVisible] = useState(true)
+
+  useEffect(() => {
+    if (!container.current || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(([entry]) => setIsVisible(entry.isIntersecting), { threshold: 0.04 })
+    observer.observe(container.current)
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <div className="galaxy-canvas combustion-canvas" aria-label="Cámara tridimensional interactiva de combustión en microgravedad">
-      <Canvas camera={{ position: [0, 0.2, 7], fov: 47 }} dpr={[1, 1.45]} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}>
+    <div ref={container} className="galaxy-canvas combustion-canvas" aria-label="Cámara tridimensional interactiva de combustión en microgravedad">
+      <Canvas frameloop={isVisible ? 'always' : 'never'} camera={{ position: [0, 0.2, 7], fov: 47 }} dpr={[0.75, 1.1]} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }} performance={{ min: 0.55 }}>
         <CombustionChamber {...props} />
       </Canvas>
       <div className="combustion-readout"><span>LIVE VOLUME</span><b>4D FLOW / 120 FPS</b></div>
