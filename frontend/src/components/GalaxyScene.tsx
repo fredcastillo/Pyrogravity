@@ -1,7 +1,7 @@
 import { OrbitControls } from '@react-three/drei'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { AdditiveBlending, Color, type Group, type Points, type ShaderMaterial } from 'three'
-import { useMemo, useRef, useState } from 'react'
+import { AdditiveBlending, Color, IcosahedronGeometry, Vector3, type Group, type Points, type ShaderMaterial } from 'three'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Experiment } from '../types'
 
 interface GalaxySceneProps {
@@ -98,18 +98,60 @@ function Embers() {
   )
 }
 
-function ExperimentProbe({ experiment, active, onSelect }: { experiment: Experiment; active: boolean; onSelect: () => void }) {
+function ExperimentMeteorite({ experiment, index, active, onSelect }: { experiment: Experiment; index: number; active: boolean; onSelect: () => void }) {
+  const group = useRef<Group>(null)
   const [hovered, setHovered] = useState(false)
-  const position: [number, number, number] = [experiment.position[0] * 0.72, experiment.position[1] * 0.62, experiment.position[2] * 0.45]
+  const seed = index + 1
+  const rockColor = ['#3a332e', '#4b4540', '#302d2a', '#53483f', '#393a3b'][index % 5]
+  const geometry = useMemo(() => {
+    const shape = new IcosahedronGeometry(0.23 + (seed % 3) * 0.035, 4)
+    const position = shape.attributes.position
+    const vector = new Vector3()
+    for (let vertex = 0; vertex < position.count; vertex += 1) {
+      vector.fromBufferAttribute(position, vertex)
+      const noise = Math.sin(vector.x * 19 + seed * 4.7) * Math.cos(vector.y * 17 - seed) * Math.sin(vector.z * 23 + seed * 2.3)
+      const baseLength = vector.length()
+      vector.normalize().multiplyScalar(baseLength + noise * 0.045)
+      position.setXYZ(vertex, vector.x, vector.y, vector.z)
+    }
+    position.needsUpdate = true
+    shape.computeVertexNormals()
+    return shape
+  }, [seed])
+
+  useEffect(() => () => geometry.dispose(), [geometry])
+
+  useFrame(({ clock, pointer }) => {
+    if (!group.current) return
+    const time = clock.elapsedTime * (0.09 + seed * 0.012) + seed * 1.27
+    const radius = 1.62 + seed * 0.22
+    group.current.position.set(
+      Math.cos(time) * radius + pointer.x * 0.12,
+      Math.sin(time * 1.18) * (0.85 + seed * 0.05) + pointer.y * 0.08,
+      Math.sin(time) * 0.72 + (seed % 2 ? 0.18 : -0.28),
+    )
+    group.current.rotation.x = clock.elapsedTime * (0.11 + seed * 0.025)
+    group.current.rotation.y = clock.elapsedTime * (0.16 + seed * 0.018)
+    const targetScale = active ? 1.28 : hovered ? 1.16 : 1
+    group.current.scale.lerp(new Vector3(targetScale, targetScale, targetScale), 0.08)
+  })
+
   return (
-    <group position={position}>
-      <mesh onClick={(event) => { event.stopPropagation(); onSelect() }} onPointerOver={(event) => { event.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer' }} onPointerOut={() => { setHovered(false); document.body.style.cursor = 'default' }} scale={active || hovered ? 1.25 : 1}>
-        <octahedronGeometry args={[0.16, 0]} />
-        <meshStandardMaterial color={experiment.color} emissive={experiment.color} emissiveIntensity={active ? 4 : 2} roughness={0.18} metalness={0.5} />
+    <group ref={group}>
+      <mesh geometry={geometry} onClick={(event) => { event.stopPropagation(); onSelect() }} onPointerOver={(event) => { event.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer' }} onPointerOut={() => { setHovered(false); document.body.style.cursor = 'default' }} castShadow>
+        <meshStandardMaterial color={active ? '#62564d' : rockColor} emissive={active ? '#39150a' : '#030303'} emissiveIntensity={active ? 0.2 : hovered ? 0.08 : 0.02} roughness={0.98} metalness={0.04} />
       </mesh>
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[active ? 0.32 : 0.24, 0.008, 6, 48]} />
-        <meshBasicMaterial color={experiment.color} transparent opacity={active ? 0.75 : 0.25} />
+      <mesh position={[0.08, 0.04, 0.2]} scale={[1, 0.7, 0.24]}>
+        <sphereGeometry args={[0.065, 14, 10]} />
+        <meshStandardMaterial color="#17191a" roughness={1} />
+      </mesh>
+      <mesh position={[-0.1, -0.07, 0.18]} scale={[1, 0.78, 0.2]}>
+        <sphereGeometry args={[0.045, 12, 8]} />
+        <meshStandardMaterial color="#202122" roughness={1} />
+      </mesh>
+      <mesh>
+        <sphereGeometry args={[0.31, 24, 24]} />
+        <meshBasicMaterial color={experiment.color} transparent opacity={active ? 0.12 : hovered ? 0.075 : 0.025} depthWrite={false} blending={AdditiveBlending} />
       </mesh>
     </group>
   )
@@ -122,9 +164,10 @@ function CombustionChamber({ experiments, selectedId, onSelect }: GalaxyScenePro
   })
   return (
     <>
-      <ambientLight intensity={0.35} />
-      <pointLight position={[-2, 2, 3]} intensity={24} color="#ff742f" />
-      <pointLight position={[2, -1, 2]} intensity={14} color="#25bfff" />
+      <ambientLight intensity={0.48} />
+      <hemisphereLight args={['#9bdcff', '#24140d', 0.8]} />
+      <pointLight position={[-2, 2, 3]} intensity={9} color="#ff742f" />
+      <pointLight position={[2, -1, 2]} intensity={6} color="#25bfff" />
       <group ref={rig} position={[-0.15, 0, 0]}>
         <FlameLayer scale={1.23} hot="#ffb02e" cool="#ee391f" opacity={0.82} speed={1} turbulence={1.1} />
         <FlameLayer scale={0.92} hot="#fff0aa" cool="#1598ff" opacity={0.68} speed={1.35} turbulence={1.7} />
@@ -133,7 +176,7 @@ function CombustionChamber({ experiments, selectedId, onSelect }: GalaxyScenePro
         <mesh><sphereGeometry args={[2.3, 64, 64]} /><meshPhysicalMaterial color="#8bd9ff" transparent opacity={0.045} roughness={0.05} metalness={0.05} transmission={0.78} thickness={0.15} depthWrite={false} /></mesh>
         <mesh rotation={[Math.PI / 2.25, 0.08, 0]}><torusGeometry args={[2.52, 0.025, 8, 150]} /><meshBasicMaterial color="#48cfff" transparent opacity={0.2} /></mesh>
         <mesh rotation={[Math.PI / 2.25, 0.08, 0]}><torusGeometry args={[2.68, 0.008, 6, 150]} /><meshBasicMaterial color="#ff7a35" transparent opacity={0.34} /></mesh>
-        {experiments.map((experiment) => <ExperimentProbe key={experiment.id} experiment={experiment} active={experiment.id === selectedId} onSelect={() => onSelect(experiment.id)} />)}
+        {experiments.map((experiment, index) => <ExperimentMeteorite key={experiment.id} experiment={experiment} index={index} active={experiment.id === selectedId} onSelect={() => onSelect(experiment.id)} />)}
       </group>
       <OrbitControls enablePan={false} minDistance={5.6} maxDistance={9} autoRotate autoRotateSpeed={0.16} />
     </>

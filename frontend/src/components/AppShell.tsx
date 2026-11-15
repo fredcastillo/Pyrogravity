@@ -27,6 +27,13 @@ export function AppShell({ children }: PropsWithChildren) {
 
   return (
     <div className="app-shell">
+      <div className="ambient-field" aria-hidden="true">
+        <span className="ambient-field__stars ambient-field__stars--far" />
+        <span className="ambient-field__stars ambient-field__stars--near" />
+        <i className="meteor-streak meteor-streak--one" />
+        <i className="meteor-streak meteor-streak--two" />
+        <i className="meteor-streak meteor-streak--three" />
+      </div>
       <a className="skip-link" href="#main-content">Saltar al contenido</a>
       <header className="mobile-header">
         <div className="brand brand--compact"><img src={pyrogravityMark} alt="" /><span><b>Pyro</b>Gravity</span></div>
