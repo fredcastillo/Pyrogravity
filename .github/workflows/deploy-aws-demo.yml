@@ -1,0 +1,63 @@
+name: Despliegue de la demo de AWS
+
+on:
+  workflow_call:
+    inputs:
+      deployment:
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  publish:
+    name: Publicar y verificar la página
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    concurrency:
+      group: pyrogravity-public-demo
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: pyrogravity-demo-${{ github.sha }}
+          path: ${{ runner.temp }}/pyrogravity-release
+      - name: Comprobar que el commit sigue vigente
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/${GITHUB_REF#refs/}" --jq .object.sha)
+          if [[ "$current" == "$GITHUB_SHA" ]]; then
+            echo 'current=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'Ya hay un commit más reciente en la rama.'
+          fi
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        if: steps.release.outputs.current == 'true'
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ fromJSON(inputs.deployment).roleArn }}
+          role-duration-seconds: 1800
+          role-session-name: pyrogravity-${{ github.run_id }}-${{ github.run_attempt }}
+          mask-aws-account-id: true
+          retry-max-attempts: 4
+      - name: Publicar el paquete probado
+        if: steps.release.outputs.current == 'true'
+        shell: pwsh
+        env:
+          APPROVED_TEMPLATE_URL: ${{ fromJSON(inputs.deployment).templateUrl }}
+        run: |
+          ./infrastructure/aws/publish.ps1 `
+            -ReleaseDirectory (Join-Path $env:RUNNER_TEMP 'pyrogravity-release') `
+            -ReleaseId $env:GITHUB_SHA `
+            -TemplateUrl $env:APPROVED_TEMPLATE_URL

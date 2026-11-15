@@ -1,0 +1,26 @@
+name: Fallo o dato incorrecto
+description: Reporta un fallo de la aplicación o una discrepancia en la evidencia científica.
+title: "[Fallo] "
+labels: [bug]
+body:
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Cómo reproducirlo
+      description: Indica la consulta, pantalla, comando o ensayo y la versión que estabas usando.
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Qué ocurrió
+      description: Incluye la respuesta, el valor con su unidad o el mensaje de error.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Qué esperabas
+      description: Si afecta un dato o una cita, añade el DOI y la fila, variable o página.
+    validations:
+      required: true
