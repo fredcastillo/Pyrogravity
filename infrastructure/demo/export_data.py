@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 
 from data.src.etl.nasa_etl import run_etl
 from data.src.etl.nasa_tables import INVESTIGATION_TITLES
+from data.src.analysis.scientific_catalog import list_analyses, run_analysis
 
 OUTPUT = Path(__file__).with_name("snapshot.json")
 CATALOG = Path(__file__).with_name("web") / "assets" / "catalog.json"
@@ -34,7 +35,15 @@ DATASETS = {
 
 def export() -> None:
     with TemporaryDirectory(prefix="pyrogravity-etl-") as directory:
-        tables = run_etl(output_dir=Path(directory))
+        root = Path(directory)
+        tables = run_etl(output_dir=root / "processed", manifest_path=root / "source_manifest.csv")
+        analyses = {
+            "catalog": list_analyses(),
+            "results": {item["analysis_id"]: run_analysis(item["analysis_id"], data_dir=root)
+                        for item in list_analyses()},
+        }
+        OUTPUT.with_name("analyses.json").write_text(
+            json.dumps(analyses, ensure_ascii=False, allow_nan=False) + "\n", encoding="utf-8")
 
     datasets = {}
     for name, fields in DATASETS.items():

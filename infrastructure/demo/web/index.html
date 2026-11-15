@@ -7,13 +7,14 @@
   <title>Pyrogravity | Explorador de ensayos</title>
   <link rel="stylesheet" href="/assets/demo.css">
   <script src="/assets/demo.js" defer></script>
+  <script src="/assets/science.js" defer></script>
 </head>
 <body>
   <main>
     <header>
       <p class="project">PYROGRAVITY <span>NASA SPACE APPS</span></p>
       <h1>Combustión en microgravedad</h1>
-      <p class="subtitle">Explora las tablas de NASA y compara los ensayos de FLEX y BASS-II.</p>
+      <p class="subtitle">Explora las tablas de NASA y cinco análisis de combustión con resultados trazables.</p>
     </header>
 
     <section class="panel" aria-labelledby="catalog-title">
@@ -34,6 +35,24 @@
           <button type="button" id="catalog-next">Siguiente</button>
         </div>
         <p class="source"><a id="catalog-source" target="_blank" rel="noopener noreferrer"></a> <span id="catalog-file"></span></p>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="science-title">
+      <h2 id="science-title">Análisis científicos</h2>
+      <p>Resultados calculados sobre la versión publicada de los CSV. Las configuraciones y cohortes se muestran por separado.</p>
+      <label>Análisis <select id="science-analysis" disabled></select></label>
+      <label>Configuración o cohorte <select id="science-cohort" disabled></select></label>
+      <p id="science-status" role="status">Cargando análisis…</p>
+      <div id="science-result" hidden>
+        <p id="science-description"></p>
+        <label>Grupo <select id="science-group"></select></label>
+        <figure><svg id="science-chart" viewBox="0 0 700 350" role="img" aria-label="Dispersión de mediciones científicas"></svg><figcaption id="science-caption"></figcaption></figure>
+        <div class="table-wrap" tabindex="0" aria-label="Mediciones del análisis"><table><thead><tr id="science-columns"></tr></thead><tbody id="science-rows"></tbody></table></div>
+        <div class="catalog-pagination"><button id="science-prev" type="button">Anterior</button><span id="science-page"></span><button id="science-next" type="button">Siguiente</button></div>
+        <p id="science-source" class="source"></p>
+        <details><summary>Criterios y advertencias del análisis</summary><pre id="science-method"></pre></details>
+        <a id="science-download" target="_blank" rel="noopener">Ver resultado completo (JSON)</a>
       </div>
     </section>
 

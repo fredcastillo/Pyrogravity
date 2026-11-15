@@ -3,8 +3,9 @@ from collections import defaultdict
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Literal
+from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from mangum import Mangum
@@ -14,6 +15,34 @@ DEMO_DIR = Path(__file__).resolve().parent
 WEB_DIR = DEMO_DIR / "web"
 DatasetName = Literal["flex", "bass_ii"]
 api = FastAPI(title="Pyrogravity | Demo científica", docs_url=None, redoc_url=None, openapi_url=None)
+
+
+@api.middleware("http")
+async def request_trace(request: Request, call_next):
+    context = request.scope.get("aws.event", {}).get("requestContext", {})
+    request_id = context.get("requestId") or str(uuid4())
+    response = await call_next(request)
+    response.headers["X-Request-Id"] = request_id
+    return response
+
+
+@lru_cache(maxsize=1)
+def science_snapshot():
+    return json.loads((DEMO_DIR / "analyses.json").read_text(encoding="utf-8"))
+
+
+@api.get("/api/v1/analyses")
+def analyses():
+    # Available filters describe the scientific engine; this immutable demo exposes its default cohort.
+    return [{**item, "mode": "snapshot", "filters": []} for item in science_snapshot()["catalog"]]
+
+
+@api.get("/api/v1/analyses/{analysis_id}")
+def analysis(analysis_id: str):
+    result = science_snapshot()["results"].get(analysis_id)
+    if result is None:
+        raise HTTPException(404, "Análisis desconocido.")
+    return result
 
 
 class Measurement(BaseModel):

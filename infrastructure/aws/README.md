@@ -51,6 +51,58 @@ Los archivos de `infrastructure/demo/web`, las rutas de FastAPI en `infrastructu
 
 ## Operación y siguientes cambios
 
+### Publicación y recuperación automáticas
+
+`ci.yml` prueba datos, PostgreSQL/RLS, API y navegador antes de publicar un commit de
+`main`. `sync-demo.yml` comprueba la versión pública cada cinco minutos mediante
+`reconcile.py`. GitHub puede retrasar sus horarios; el evento `push` es el camino
+principal. Todo se ejecuta en GitHub y AWS aunque los equipos personales estén apagados.
+
+Si hay una publicación pendiente, el reconciliador solicita CI, nunca publica sin
+pruebas y no duplica una ejecución activa del mismo commit. Tras tres intentos de un
+commit detiene los reintentos y marca un error para intervención. Un commit nuevo
+tiene un nuevo presupuesto. El índice usa escritura condicional y los assets son
+inmutables por commit; `publish.ps1` recupera el índice y el backend anteriores si
+falla la verificación pública. Las plantillas de infraestructura siguen sujetas a
+la aprobación explícita del rol OIDC: el rol de publicación no puede ampliar IAM.
+
+### Cinco análisis trazables
+
+`GET /api/v1/analyses` enumera `bass-ii`, `flex`, `flame-design`, `cfi-g` y `spice`.
+`GET /api/v1/analyses/{id}` devuelve el resultado del catálogo de Stanley generado
+en CI, con metodología, unidades, exclusiones, fuente y SHA-256. La demo no necesita
+credenciales de PostgreSQL. La interfaz permite cambiar configuración, cohorte,
+grupo y página. Los decimales permanecen como cadenas en el contrato; solo las
+coordenadas de dibujo se convierten a números. Las gráficas no representan series
+temporales cuando la fuente no las contiene.
+
+### Alarmas y diagnóstico
+
+`monitoring.yaml` añade seis alarmas: disponibilidad pública, HTTP 4xx, HTTP 5xx,
+latencia p95, errores Lambda y throttling Lambda. EventBridge verifica la página,
+la salud de la API y el catálogo cada cinco minutos. Dos sondas fallidas o ausentes
+disparan disponibilidad. SNS envía fallos y recuperaciones cuando el destinatario
+confirma la suscripción. Las alarmas no dependen de una visita a la página.
+
+Los logs de acceso `/aws/vendedlogs/apigateway/pyrogravity-demo` conservan 14 días
+y registran request ID, ruta, estado y tamaño; no guardan consultas, cuerpos,
+direcciones IP ni cabeceras de autorización. El encabezado `X-Request-Id` de la API
+permite buscar la misma solicitud. Lambda y la sonda también conservan 14 días.
+
+`security.guard` valida controles acotados de almacenamiento, retención y Lambda;
+no constituye una certificación CIS. El smoke HTTP comprueba hashes de todos los
+CSV, los cinco resultados y la versión pública; `browser_smoke.py` comprueba ocho
+combinaciones de análisis/cohorte, paginación y tamaños de escritorio y móvil.
+
+### PostgreSQL de CI
+
+El servicio PostgreSQL 17 es desechable. CI aplica las migraciones de `supabase/`,
+carga los 21 datasets con el rol de ingesta, repite la carga para verificar
+idempotencia y compara los cinco análisis SQL con Parquet. Comprueba que un rol
+sin políticas no ve filas y que el lector de API y el cargador no pueden destruir
+datos. `PYRO_TEST_DATABASE_URL` nunca debe apuntar a una base real; la prueba se
+niega a migrar si ya existe el esquema `scientific`.
+
 - Para investigar errores, revisa el grupo de logs `/aws/lambda/pyrogravity-demo-api` y prueba `/api/v1/health`. El script de verificación usa la misma URL que el navegador.
 - Para volver a una versión anterior, despliega el commit correspondiente y las dependencias verificadas con el mismo comando. Los paquetes anteriores quedan en el bucket de artefactos y S3 mantiene versiones del frontend.
 - Fred administra las reglas de protección de `main`. Como las actualizaciones de esa rama se publican, las reglas de revisión y CI determinan qué cambios pueden llegar al sitio.
