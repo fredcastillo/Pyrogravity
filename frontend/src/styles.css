@@ -80,6 +80,9 @@ body::before {
 .live-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 11px; border: 1px solid rgba(67,240,182,.18); border-radius: 99px; font: 9px 'DM Mono'; color: #8fe6c7; }
 .live-badge > span { width: 6px; height: 6px; background: var(--green); border-radius: 50%; box-shadow: 0 0 9px var(--green); }
 .utc-clock { font: 10px 'DM Mono'; color: #6c8292; }
+.header-volume-readout { display: grid; gap: 2px; min-width: 104px; text-align: right; font-family: 'DM Mono'; }
+.header-volume-readout span { color: #78909f; font-size: 7px; letter-spacing: .18em; }
+.header-volume-readout b { color: #77ddff; font-size: 8px; font-weight: 500; white-space: nowrap; }
 .mobile-header { display: none; }
 .icon-button { display: grid; place-items: center; background: transparent; border: 0; }
 
@@ -405,9 +408,6 @@ body::before {
 .combustion-canvas { height: 515px; z-index: 2; }
 .combustion-canvas::after { content: ''; position: absolute; inset: 9% 11%; pointer-events: none; border: 1px solid rgba(93, 205, 255, .1); border-radius: 50%; box-shadow: inset 0 0 60px rgba(30, 161, 225, .05), 0 0 45px rgba(255, 95, 31, .035); }
 .combustion-canvas canvas { position: relative; z-index: 2; filter: saturate(1.12) contrast(1.05); }
-.combustion-readout { position: absolute; right: 18px; top: 16px; z-index: 4; display: grid; gap: 3px; text-align: right; font-family: 'DM Mono'; }
-.combustion-readout span { color: #78909f; font-size: 7px; letter-spacing: .18em; }
-.combustion-readout b { color: #77ddff; font-size: 8px; font-weight: 500; }
 .galaxy-canvas__hint { z-index: 4; color: #8195a3; }
 .legend { position: relative; z-index: 4; }
 
@@ -446,7 +446,7 @@ body::before {
   .page-header { padding-inline: 16px; }
   .panel--galaxy { min-height: 505px; background-position: 38% center; }
   .combustion-canvas { height: 430px; }
-  .combustion-readout { top: 12px; right: 12px; }
+  .header-volume-readout { display: none; }
 }
 
 /* Living spatial field */
@@ -538,26 +538,36 @@ body::before {
 .sidebar-scrim { display: none; }
 
 @media (min-width: 1181px) {
-  .page--command { position: relative; max-width: none; padding: 0 0 54px; }
+  .page--command {
+    --command-header-top: 22px;
+    --command-kpi-top: 178px;
+    --command-stage-title-top: 280px;
+    position: relative;
+    max-width: none;
+    padding: 0 0 54px;
+  }
   .page--command > .page-header {
     position: absolute;
     z-index: 12;
-    top: 26px;
+    top: var(--command-header-top);
     left: 34px;
     right: 34px;
-    min-height: 92px;
+    min-height: 142px;
     margin: 0;
-    padding: 14px 18px 14px 20px;
+    padding: 14px 18px 20px 20px;
     background: linear-gradient(90deg, rgba(2,8,13,.78), rgba(2,8,13,.28) 70%, transparent);
     border-radius: 0 12px 12px 0;
     backdrop-filter: blur(8px);
     pointer-events: none;
   }
+  .page--command > .page-header > div:first-child { min-width: 0; padding-right: 24px; }
+  .page--command > .page-header h1 { line-height: 1.05; }
+  .page--command > .page-header > div > p:last-child { max-width: min(720px, calc(100vw - 760px)); line-height: 1.55; }
   .page--command > .page-header .page-header__actions { pointer-events: auto; }
   .page--command > .kpi-grid {
     position: absolute;
     z-index: 12;
-    top: 140px;
+    top: var(--command-kpi-top);
     left: 34px;
     right: 390px;
     margin: 0;
@@ -566,18 +576,19 @@ body::before {
   .page--command > .kpi-grid .kpi-card { min-height: 76px; background: linear-gradient(135deg, rgba(7,18,27,.78), rgba(3,10,16,.62)); backdrop-filter: blur(10px); }
   .page--command .command-grid { position: relative; display: block; width: 100%; height: max(760px, 100vh); }
   .page--command .panel--galaxy { width: 100%; height: 100%; min-height: 100%; border: 0; border-radius: 0; }
-  .page--command .panel--galaxy > .panel__header { position: absolute; z-index: 12; top: 235px; left: 34px; right: 390px; padding: 0; }
+  .page--command .panel--galaxy > .panel__header { position: absolute; z-index: 12; top: var(--command-stage-title-top); left: 34px; right: 390px; padding: 0; }
   .page--command .combustion-canvas { height: 100%; }
   .page--command .detail-panel {
     position: absolute;
     z-index: 13;
-    top: 138px;
+    top: var(--command-kpi-top);
     right: 28px;
     bottom: 26px;
     width: 332px;
     min-height: 0;
     padding: 18px;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
     background: linear-gradient(155deg, rgba(9,20,29,.86), rgba(3,9,14,.77));
     border-color: color-mix(in srgb, var(--accent) 28%, rgba(125,193,226,.2));
     backdrop-filter: blur(18px) saturate(1.2);
