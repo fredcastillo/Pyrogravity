@@ -41,9 +41,17 @@ El script carga el ZIP con su SHA‑256 como clave, crea una versión de Lambda 
 
 La demo usa dos buckets privados con versionado, un alias de Lambda y tres rutas GET de datos públicos. API Gateway limita inicialmente a 5 solicitudes por segundo con una ráfaga de 10, como objetivo de regulación. La API regional también acepta solicitudes directas a estas rutas públicas. Tanto el dashboard como las consultas quedan disponibles a través de HTTPS en CloudFront. El despliegue no requiere adjuntar Lambda a una VPC.
 
+## Publicación desde GitHub
+
+Cada actualización de `main` ejecuta el CI. Si pasa la verificación general, el job **Publicar la demo en AWS** descarga el ZIP y los archivos web verificados en esa ejecución. Comprueba que el commit sigue vigente, publica la versión de FastAPI, actualiza el sitio de CloudFront y prueba la URL pública. Las ramas de trabajo ejecutan el CI de los PR.
+
+GitHub Actions solicita una sesión temporal de AWS por OIDC. La variable de repositorio `PYROGRAVITY_AWS_DEMO` contiene un JSON con `roleArn` y `templateUrl`. El rol solo puede publicar en los buckets de esta demo, actualizar su pila con la versión aprobada de la plantilla e invalidar su distribución. La lista de permisos se administra en AWS.
+
+Los archivos de `infrastructure/demo/web`, las rutas de FastAPI en `infrastructure/demo/app.py` y los datos usados por el exportador se publican con este flujo. Para cambiar la infraestructura, un administrador aplica las plantillas con `deploy.ps1` y registra la nueva versión aprobada antes del siguiente despliegue, actualizando la política y la variable de GitHub.
+
 ## Operación y siguientes cambios
 
 - Para investigar errores, revisa el grupo de logs `/aws/lambda/pyrogravity-demo-api` y prueba `/api/v1/health`. El script de verificación usa la misma URL que el navegador.
 - Para volver a una versión anterior, despliega el commit correspondiente y las dependencias verificadas con el mismo comando. Los paquetes anteriores quedan en el bucket de artefactos y S3 mantiene versiones del frontend.
-- Fred administra las reglas de protección de `main`. Cuando el equipo habilite revisión y CI obligatorio, añade el rol OIDC para el trabajo de publicación y limita su confianza al repositorio y a la rama. La demo actual se publica con un perfil AWS.
+- Fred administra las reglas de protección de `main`. Como las actualizaciones de esa rama se publican, las reglas de revisión y CI determinan qué cambios pueden llegar al sitio.
 - Gregori y Bryant integran luego el backend y el dashboard del equipo con este recorrido. Stanley conserva la procedencia y Johan añade el RAG y las citas. Para habilitar consultas en vivo, conecta Supabase y Cohere desde el servidor, limita las credenciales de Lambda a los secretos del proyecto y protege las rutas que invocan el modelo. ECR queda para cuando se empaquete el backend en contenedor.
