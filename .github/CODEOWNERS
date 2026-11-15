@@ -16,3 +16,7 @@
 /.gitignore @iClexi @fredcastillo
 /README.md @iClexi @fredcastillo
 /CONTRIBUTING.md @iClexi @fredcastillo
+
+/app/ @GregoriEJimenezDev
+/scripts/load_to_supabase.py @StanleyCM @GregoriEJimenezDev
+/supabase/ @StanleyCM @GregoriEJimenezDev

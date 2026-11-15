@@ -91,3 +91,40 @@ def test_api_reader_cannot_insert(database):
     with psycopg.connect(database[2]) as conn:
         with pytest.raises(psycopg.errors.InsufficientPrivilege):
             conn.execute("INSERT INTO scientific.investigations VALUES ('PSI-99999','forbidden','https://example.org')")
+
+@pytest.mark.parametrize("analysis_id", [item["analysis_id"] for item in list_analyses()])
+def test_backend_api_uses_read_only_postgres(database, analysis_id):
+    from fastapi.testclient import TestClient
+    from app.main import app
+    from app.core.settings import Settings, get_settings
+    from pydantic import SecretStr
+    _, _, reader, directory, _ = database
+    app.dependency_overrides[get_settings] = lambda: Settings(
+        demo_mode=False, scientific_data_dir=directory, pyrogravity_database_url=SecretStr(reader))
+    try:
+        with TestClient(app) as client:
+            response = client.get("/api/v1/analyses/" + analysis_id)
+            assert response.status_code == 200
+            assert response.json()["source"] == "postgres"
+            with psycopg.connect(reader) as conn:
+                expected = run_analysis(analysis_id, source="postgres", connection=conn, data_dir=directory)
+            assert response.json() == expected
+            assert client.get("/health").json()["scientific_database"] == "ok"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_compatibility_cli_writes_idempotently(database, monkeypatch):
+    from scripts.load_to_supabase import main
+    monkeypatch.setenv("PYROGRAVITY_DATABASE_URL", database[1])
+    assert main(["--data-dir", str(database[3])]) == 0
+
+
+def test_backend_dataset_reader_uses_current_schema(database):
+    from app.infrastructure.supabase_repos import PostgresDatasetReader
+    with psycopg.connect(database[2]) as conn:
+        reader = PostgresDatasetReader(conn)
+        datasets = reader.list()
+        assert len(datasets) == len(database[4])
+        assert reader.get(datasets[0]["id"])["sha256"] == datasets[0]["sha256"]
+        assert reader.get("not-an-id") is None

@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
@@ -7,7 +8,7 @@ class Evidence(BaseModel):
     experiment_id: str
     variable: str
     metric: str
-    value: Optional[float] = None
+    value: Optional[Decimal] = None
     unit: Optional[str] = None
     dataset_id: str
     dataset_version: str
@@ -73,4 +74,4 @@ class AiResponse(BaseModel):
     data_version: str
     corpus_version: str
     degraded_source: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
