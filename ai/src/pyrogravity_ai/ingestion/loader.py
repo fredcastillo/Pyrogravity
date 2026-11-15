@@ -3,17 +3,21 @@
 from __future__ import annotations
 
 import hashlib
+from collections import Counter
 from dataclasses import dataclass
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
 import httpx
-import pymupdf
+from pypdf import PdfReader
+from pypdf.errors import PdfReadError
 
 from pyrogravity_ai.schemas.source import SourceRecord
 
 
 MAX_PDF_BYTES = 20 * 1024 * 1024
+EXTRACTION_VERSION = "pypdf-7.0.0-header-v1"
 LIGATURES = str.maketrans({
     "ﬀ": "ff", "ﬁ": "fi", "ﬂ": "fl", "ﬃ": "ffi", "ﬄ": "ffl", "ﬅ": "st", "ﬆ": "st",
 })
@@ -34,6 +38,23 @@ class LoadedDocument:
     sha256: str
     pages: tuple[PageText, ...]
     size_bytes: int
+    extraction_version: str = EXTRACTION_VERSION
+
+
+def _remove_repeated_headers(pages: tuple[PageText, ...]) -> tuple[PageText, ...]:
+    """Drop only identical first lines repeated across most pages."""
+    first_lines = [page.text.splitlines()[0].strip() for page in pages if page.text]
+    if len(pages) < 3 or len(first_lines) < 3:
+        return pages
+    line, count = Counter(first_lines).most_common(1)[0]
+    if len(line) < 20 or count < 3 or count * 2 < len(pages):
+        return pages
+    cleaned = []
+    for page in pages:
+        head, separator, rest = page.text.partition("\n")
+        text = rest.strip() if separator and head.strip() == line else page.text
+        cleaned.append(PageText(number=page.number, text=text))
+    return tuple(cleaned)
 
 
 def _validate_pdf_bytes(data: bytes, expected_sha256: str | None = None) -> str:
@@ -102,15 +123,16 @@ def load_pdf(path: Path) -> LoadedDocument:
     data = path.read_bytes()
     digest = _validate_pdf_bytes(data)
     try:
-        with pymupdf.open(stream=data, filetype="pdf") as document:
-            if document.is_encrypted:
-                raise InvalidDocumentError("Encrypted PDF cannot be indexed")
-            pages = tuple(
-                PageText(number=index + 1, text=page.get_text("text", sort=True).translate(LIGATURES).strip())
-                for index, page in enumerate(document)
-            )
-    except (pymupdf.FileDataError, RuntimeError):
+        document = PdfReader(BytesIO(data), strict=True)
+        if document.is_encrypted:
+            raise InvalidDocumentError("Encrypted PDF cannot be indexed")
+        pages = tuple(
+            PageText(number=index + 1, text=(page.extract_text() or "").translate(LIGATURES).strip())
+            for index, page in enumerate(document.pages)
+        )
+    except (PdfReadError, ValueError, OSError):
         raise InvalidDocumentError("PDF text extraction failed") from None
+    pages = _remove_repeated_headers(pages)
     if not any(page.text for page in pages):
         raise InvalidDocumentError("PDF contains no extractable text")
     return LoadedDocument(sha256=digest, pages=pages, size_bytes=len(data))

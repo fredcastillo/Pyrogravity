@@ -32,6 +32,7 @@ def main() -> int:
         parser.error(f"--page must be between 1 and {len(document.pages)}")
     print(f"source_id: {source.source_id}")
     print(f"sha256: {document.sha256}")
+    print(f"extraction_version: {document.extraction_version}")
     print(f"pages: {len(document.pages)}")
     print(f"pages_with_text: {sum(bool(page.text) for page in document.pages)}")
     print(f"replacement_characters: {sum(page.text.count(chr(0xfffd)) for page in document.pages)}")
