@@ -1,0 +1,25 @@
+let buckets = Resources.*[ Type == "AWS::S3::Bucket" ]
+let logs = Resources.*[ Type == "AWS::Logs::LogGroup" ]
+let functions = Resources.*[ Type == "AWS::Lambda::Function" ]
+
+rule private_versioned_buckets when %buckets !empty {
+    %buckets.Properties.PublicAccessBlockConfiguration {
+        BlockPublicAcls == true
+        BlockPublicPolicy == true
+        IgnorePublicAcls == true
+        RestrictPublicBuckets == true
+    }
+    %buckets.Properties.VersioningConfiguration.Status == "Enabled"
+    %buckets.Properties.BucketEncryption exists
+    %buckets.DeletionPolicy == "Retain"
+}
+
+rule bounded_log_retention when %logs !empty {
+    %logs.Properties.RetentionInDays IN [7, 14, 30]
+}
+
+rule bounded_lambda_runtime when %functions !empty {
+    %functions.Properties.Timeout <= 45
+    %functions.Properties.MemorySize <= 512
+    %functions.Properties.Role exists
+}

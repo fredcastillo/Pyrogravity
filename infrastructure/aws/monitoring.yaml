@@ -45,7 +45,8 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Effect: Allow
+          - Sid: AllowProjectAlarms
+            Effect: Allow
             Principal: {Service: cloudwatch.amazonaws.com}
             Action: sns:Publish
             Resource: !Ref Alerts
@@ -54,7 +55,8 @@ Resources:
                 aws:SourceAccount: !Ref AWS::AccountId
               ArnLike:
                 aws:SourceArn: !Sub 'arn:${AWS::Partition}:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:${AWS::StackName}-*'
-          - Effect: Deny
+          - Sid: RequireTLS
+            Effect: Deny
             Principal: '*'
             Action: sns:Publish
             Resource: !Ref Alerts
