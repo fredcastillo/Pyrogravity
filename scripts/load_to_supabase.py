@@ -1,14 +1,8 @@
-<<<<<<< HEAD
-"""Carga los Parquet del ETL (data/processed) y el manifiesto en Supabase.
+"""Carga los Parquet del ETL y el manifiesto en Supabase o PostgreSQL.
 
-Antes: cd data && python -m src.etl.nasa_etl   (ojo: reescribe data/source_manifest.csv)
-
-Uso:
-  python scripts/load_to_supabase.py --dry-run
-  python scripts/load_to_supabase.py --sink memory --repeat 2     # verifica idempotencia sin base
-  SUPABASE_URL=... SUPABASE_SERVICE_KEY=... python scripts/load_to_supabase.py
-
-Salida: 0 sin rechazos; 1 si algun dataset tuvo problema estructural; 2 por uso incorrecto.
+Modos:
+- Ingesta por lotes (por defecto): usa app.application.ingestion_service.
+- Compatibilidad PostgreSQL (--data-dir): delega en data.src.database.nasa_loader.
 """
 from __future__ import annotations
 
@@ -18,18 +12,17 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.application.ingestion_service import ingest
-from app.domain.errors import DomainError
-from app.domain.ingestion import IngestionSink
-from app.infrastructure.ingestion.parquet_reader import iter_batches
-from app.infrastructure.ingestion.sinks import CountingSink, InMemorySink, SupabaseSink
+from data.src.database.nasa_loader import DATABASE_URL, LoadError, load_datasets, prepare_load
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-def build_sink(kind: str) -> IngestionSink:
+def build_sink(kind: str):
+    from app.infrastructure.ingestion.sinks import CountingSink, InMemorySink, SupabaseSink
+
     if kind == "count":
         return CountingSink()
     if kind == "memory":
@@ -38,35 +31,55 @@ def build_sink(kind: str) -> IngestionSink:
     if not url or not key:
         raise SystemExit("Faltan SUPABASE_URL y SUPABASE_SERVICE_KEY (la clave solo vive en el servidor).")
     from supabase import create_client  # import tardio: no se necesita en dry-run
+
     return SupabaseSink(create_client(url, key))
 
 
-def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--parquet-dir", type=Path, default=REPO_ROOT / "data" / "processed")
-    p.add_argument("--manifest", type=Path, default=REPO_ROOT / "data" / "source_manifest.csv")
-    p.add_argument("--dry-run", action="store_true", help="no escribe nada")
-    p.add_argument("--sink", choices=["supabase", "memory"], default="supabase")
-    p.add_argument("--repeat", type=int, default=1, help="repite la carga N veces con el mismo destino (solo memory)")
-    args = p.parse_args(argv)
+def run_compatibility_mode(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
+    root = args.data_dir.resolve()
+    if args.manifest and args.manifest.resolve() != root / "source_manifest.csv":
+        parser.error("--manifest debe ser source_manifest.csv dentro de --data-dir")
+    if args.parquet_dir and args.parquet_dir.resolve() != root / "processed":
+        parser.error("--parquet-dir debe ser processed dentro de --data-dir")
+
+    try:
+        datasets = prepare_load(root)
+        inserted = 0 if args.dry_run else load_datasets(datasets, os.environ.get(DATABASE_URL, ""))
+    except LoadError as error:
+        print(f"Error: {error}", file=sys.stderr)
+        return 1
+
+    print(f"datasets={len(datasets)} records={sum(len(d.records) for d in datasets)} inserted={inserted}")
+    if args.dry_run:
+        print("dry-run: datos y procedencia validados; sin conexion ni escrituras")
+    return 0
+
+
+def run_ingestion_mode(args: argparse.Namespace) -> int:
+    from app.application.ingestion_service import ingest
+    from app.domain.errors import DomainError
+    from app.infrastructure.ingestion.parquet_reader import iter_batches
+
+    parquet_dir = args.parquet_dir or (REPO_ROOT / "data" / "processed")
+    manifest = args.manifest or (REPO_ROOT / "data" / "source_manifest.csv")
 
     if args.repeat > 1 and (args.dry_run or args.sink != "memory"):
         print("--repeat solo tiene sentido con --sink memory", file=sys.stderr)
         return 2
-    if not args.parquet_dir.is_dir() or not args.manifest.is_file():
-        print(f"No existen {args.parquet_dir} o {args.manifest}. Ejecuta el ETL primero.", file=sys.stderr)
+    if not parquet_dir.is_dir() or not manifest.is_file():
+        print(f"No existen {parquet_dir} o {manifest}. Ejecuta el ETL primero.", file=sys.stderr)
         return 2
 
     sink = build_sink("count" if args.dry_run else args.sink)
     exit_code = 0
     try:
         for run in range(1, args.repeat + 1):
-            report = ingest(iter_batches(args.parquet_dir, args.manifest), sink)
+            report = ingest(iter_batches(parquet_dir, manifest), sink)
             label = "DRY-RUN" if args.dry_run else f"carga {run}/{args.repeat}"
             print(f"== {label} ==")
             print(json.dumps(report.summary(), indent=2, ensure_ascii=False))
-            for o in report.problems:
-                print(f"RECHAZADO {o.name}: {o.problem}", file=sys.stderr)
+            for outcome in report.problems:
+                print(f"RECHAZADO {outcome.name}: {outcome.problem}", file=sys.stderr)
             if not report.ok:
                 exit_code = 1
             if run > 1 and report.summary()["filas_escritas"] == 0:
@@ -76,40 +89,21 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     return exit_code
 
-=======
-"""Delegate ingestion to Stanley's validated scientific loader."""
-import argparse
-import os
-import sys
-from pathlib import Path
-if __package__ in (None, ""):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from data.src.database.nasa_loader import DATABASE_URL, LoadError, load_datasets, prepare_load
-from data.src.etl.nasa_etl import DATA_DIR
 
-def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--data-dir", type=Path, default=DATA_DIR)
-    parser.add_argument("--manifest", type=Path)
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--data-dir", type=Path)
     parser.add_argument("--parquet-dir", type=Path)
-    parser.add_argument("--dry-run", "--validate-only", action="store_true")
+    parser.add_argument("--manifest", type=Path)
+    parser.add_argument("--dry-run", "--validate-only", action="store_true", help="no escribe nada")
+    parser.add_argument("--sink", choices=["supabase", "memory"], default="supabase")
+    parser.add_argument("--repeat", type=int, default=1, help="repite la carga N veces con el mismo destino (solo memory)")
     args = parser.parse_args(argv)
-    root = args.data_dir.resolve()
-    if args.manifest and args.manifest.resolve() != root / "source_manifest.csv":
-        parser.error("--manifest debe ser source_manifest.csv dentro de --data-dir")
-    if args.parquet_dir and args.parquet_dir.resolve() != root / "processed":
-        parser.error("--parquet-dir debe ser processed dentro de --data-dir")
-    try:
-        datasets = prepare_load(root)
-        inserted = 0 if args.dry_run else load_datasets(datasets, os.environ.get(DATABASE_URL, ""))
-    except LoadError as error:
-        print(f"Error: {error}", file=sys.stderr)
-        return 1
-    print(f"datasets={len(datasets)} records={sum(len(d.records) for d in datasets)} inserted={inserted}")
-    if args.dry_run:
-        print("dry-run: datos y procedencia validados; sin conexion ni escrituras")
-    return 0
->>>>>>> 7ad59a647870515d77c63a86d3d9cec6502af92b
+
+    if args.data_dir is not None:
+        return run_compatibility_mode(args, parser)
+    return run_ingestion_mode(args)
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
