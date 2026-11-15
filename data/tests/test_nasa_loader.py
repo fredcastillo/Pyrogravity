@@ -117,6 +117,33 @@ def test_rejects_numeric_payload_on_ambiguous_cell(etl_outputs, datasets):
         loader.map_rows(modified, bass.columns, [row[1] for row in bass.records], "PSI-25")
 
 
+@pytest.mark.parametrize("alteration", ("cell_status", "quality_flag"))
+def test_rejects_parquet_quality_drift_with_unchanged_counts(etl_outputs, monkeypatch, alteration):
+    source = next(source for source in loader.discover_sources(etl_outputs) if source.study == "PSI-107")
+    entry = loader.read_manifest(etl_outputs / "source_manifest.csv")[source.path.as_posix()]
+    table = pq.read_table(etl_outputs / "processed" / entry["parquet_filename"])
+
+    if alteration == "cell_status":
+        field = "air_rate_cm_s_status"
+        row = table[field].to_pylist().index("exact")
+        changes = {field: (row, "blank"), "air_rate_cm_s": (row, None)}
+    else:
+        field = "anomalies"
+        row = next(index for index, flags in enumerate(table[field].to_pylist()) if flags)
+        changes = {field: (row, ["different_flag"])}
+
+    for name, (row, value) in changes.items():
+        index = table.schema.get_field_index(name)
+        values = table[name].to_pylist()
+        values[row] = value
+        arrow_field = table.schema.field(index)
+        table = table.set_column(index, arrow_field, pa.array(values, type=arrow_field.type))
+
+    monkeypatch.setattr(loader.pq, "read_table", lambda _: table)
+    with pytest.raises(loader.LoadError, match=rf"differs from the ETL \({field}\)"):
+        loader.prepare_dataset(etl_outputs, source, entry)
+
+
 def test_connection_errors_do_not_disclose_dsn(monkeypatch):
     def refuse(*args, **kwargs):
         raise psycopg.OperationalError("postgresql://account:secret@127.0.0.1/test")

@@ -13,8 +13,8 @@ import pyarrow.parquet as pq
 from psycopg.types.json import Jsonb
 
 from ..etl.nasa_etl import (
-    BASS_II, DATA_DIR, FLEX, INTEGER, MEASUREMENT, Source, discover_sources,
-    is_empty_row, parse_cell, profile_columns,
+    BASS_II, DATA_DIR, FLEX, INTEGER, MEASUREMENT, Source, classify_rows, discover_sources,
+    is_empty_row, parse_cell, profile_columns, transform, transform_profile,
 )
 from ..etl.nasa_tables import INVESTIGATION_TITLES
 from ..ingestion.nasa_csv import inspect_nasa_csv
@@ -151,6 +151,15 @@ def prepare_dataset(data_dir: Path, source: Source, entry: dict[str, str]) -> Da
         raise LoadError("Parquet column order, headers, types or units differ from the CSV profile")
 
     records, measurements = map_rows(table, columns, original.rows, source.study)
+    # Aggregate counts alone cannot detect a changed cell status or moved quality flag.
+    reference = transform(adapter, data_dir, original) if adapter else transform_profile(source, original)
+    reference = classify_rows(reference, original, source.profile)
+    quality_fields = [f"{name}_status" for _, name, *_ in columns]
+    quality_fields.extend(("anomalies", "quantitative_candidate"))
+    for field in quality_fields:
+        if not table[field].equals(reference[field]):
+            raise LoadError(f"Parquet interpretation or quality differs from the ETL ({field})")
+
     empty = sum(row[3] for row in records)
     candidates = sum(row[4] for row in records)
     flagged = sum(bool(row[5]) for row in records)
