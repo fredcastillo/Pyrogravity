@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
 vi.mock('./components/GalaxyScene', () => ({
@@ -8,6 +8,7 @@ vi.mock('./components/GalaxyScene', () => ({
 }))
 
 describe('Pyrogravity frontend', () => {
+  beforeEach(() => vi.stubEnv('VITE_AI_DEMO_MODE', 'true'))
   it('muestra el Command Center y sus indicadores científicos', async () => {
     render(<MemoryRouter initialEntries={['/']}><App /></MemoryRouter>)
     expect(screen.getByRole('heading', { name: 'Flame Intelligence Center' })).toBeInTheDocument()
@@ -29,10 +30,10 @@ describe('Pyrogravity frontend', () => {
 
     fireEvent.change(screen.getByLabelText('Pregunta para el copiloto'), { target: { value: '¿Cuántas muestras hay?' } })
     fireEvent.click(screen.getByRole('button', { name: 'Enviar pregunta' }))
-    expect(await screen.findByText('Respaldada')).toBeInTheDocument()
-    expect(screen.getByText(/El perfil validado contiene 184 muestras/)).toBeInTheDocument()
-    expect(screen.getByText('Documento · p. 42')).toBeInTheDocument()
-    expect(screen.getByText('Datos no solicitados')).toBeInTheDocument()
+    expect(await screen.findByText('Evidencia insuficiente')).toBeInTheDocument()
+    expect(screen.getByText('DEMOSTRACIÓN · contenido no científico')).toBeInTheDocument()
+    expect(screen.getByText(/No representa datos de NASA/)).toBeInTheDocument()
+    expect(screen.queryByText(/812/)).not.toBeInTheDocument()
   })
 
   it('expone fichas navegables en lugar de botones deshabilitados', () => {
