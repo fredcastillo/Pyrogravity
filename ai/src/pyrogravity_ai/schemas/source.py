@@ -23,6 +23,7 @@ class SourceRecord(BaseModel):
     report_numbers: list[str] = Field(default_factory=list)
     doi: str | None = None
     document_version: str | None = None
+    expected_document_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     catalog_status: Literal["candidate", "catalog_verified", "rejected"]
 
     @model_validator(mode="after")

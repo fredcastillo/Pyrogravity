@@ -11,5 +11,6 @@
   "report_numbers": ["Paper-70HE-0303", "GRC-E-DAA-TN9229"],
   "doi": null,
   "document_version": null,
+  "expected_document_sha256": "1488bbb461f2ea0f97c2c2fab6ac0a01603a6837509ab6ac6d1ef02bbf72050b",
   "catalog_status": "catalog_verified"
 }

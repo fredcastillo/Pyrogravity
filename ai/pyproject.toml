@@ -12,6 +12,7 @@ dependencies = [
     "httpx==0.28.1",
     "pydantic==2.14.3",
     "psycopg[binary]==3.3.9",
+    "pymupdf==2.1",
     "python-dotenv==1.2.4",
 ]
 
