@@ -2,7 +2,6 @@ import {
   Activity,
   Atom,
   Database,
-  Flame,
   GitCompareArrows,
   LayoutDashboard,
   Menu,
@@ -12,6 +11,8 @@ import {
 } from 'lucide-react'
 import { useState, type PropsWithChildren } from 'react'
 import { NavLink } from 'react-router-dom'
+import pyrogravityLogo from '../assets/pyrogravity-logo.png'
+import pyrogravityMark from '../assets/pyrogravity-mark.png'
 
 const navigation = [
   { to: '/', label: 'Command Center', icon: LayoutDashboard, end: true },
@@ -28,15 +29,15 @@ export function AppShell({ children }: PropsWithChildren) {
     <div className="app-shell">
       <a className="skip-link" href="#main-content">Saltar al contenido</a>
       <header className="mobile-header">
-        <div className="brand brand--compact"><Flame aria-hidden="true" /><span>Pyrogravity</span></div>
+        <div className="brand brand--compact"><img src={pyrogravityMark} alt="" /><span><b>Pyro</b>Gravity</span></div>
         <button className="icon-button" onClick={() => setOpen((value) => !value)} aria-label="Abrir navegación">
           {open ? <X /> : <Menu />}
         </button>
       </header>
       <aside className={`sidebar ${open ? 'sidebar--open' : ''}`}>
         <div className="brand">
-          <span className="brand__mark"><Flame aria-hidden="true" /></span>
-          <span><strong>PYRO</strong>GRAVITY<small>Scientific command</small></span>
+          <img src={pyrogravityLogo} alt="PyroGravity" className="brand__logo" />
+          <span className="brand__descriptor">MICROGRAVITY FIRE INTELLIGENCE</span>
         </div>
         <nav aria-label="Navegación principal">
           <p className="eyebrow">OPERACIONES</p>

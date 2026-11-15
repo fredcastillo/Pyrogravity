@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { LineChart } from '../components/LineChart'
 import { PageHeader } from '../components/PageHeader'
 import { experiments, missionContexts, statusLabel } from '../data/experiments'
+import flameLab from '../assets/microgravity-flame-lab.jpg'
 
 const GalaxyScene = lazy(() => import('../components/GalaxyScene').then((module) => ({ default: module.GalaxyScene })))
 
@@ -24,9 +25,9 @@ export function CommandCenter() {
   return (
     <div className="page page--command">
       <PageHeader
-        eyebrow="CONTROL DE MISIÓN / LIVE"
-        title="Flame in Freefall"
-        description="Explora el ecosistema de combustión en microgravedad sin perder la trazabilidad científica."
+        eyebrow="PYROGRAPH / COMBUSTION DIGITAL TWIN"
+        title="Flame Intelligence Center"
+        description="Observa, compara y comprende el fuego en microgravedad mediante un gemelo visual 4D conectado a evidencia científica."
         actions={<><span className="live-badge"><span /> DATA LINK</span><span className="utc-clock">UTC · 05:42:18</span></>}
       />
 
@@ -38,10 +39,10 @@ export function CommandCenter() {
       </section>
 
       <div className="command-grid">
-        <section className="panel panel--galaxy">
+        <section className="panel panel--galaxy" style={{ '--flame-lab': `url(${flameLab})` } as React.CSSProperties}>
           <div className="panel__header">
-            <div><p className="eyebrow">MAPA DE INVESTIGACIONES</p><h2>Galaxia experimental</h2></div>
-            <div className="legend"><span><i className="legend__verified" /> Verificado</span><span><i className="legend__partial" /> Parcial</span></div>
+            <div><p className="eyebrow">VOLUMETRIC COMBUSTION LAB</p><h2>Cámara experimental 4D</h2></div>
+            <div className="legend"><span><i className="legend__verified" /> Flujo térmico</span><span><i className="legend__partial" /> Sondas activas</span></div>
           </div>
           <Suspense fallback={<div className="galaxy-loading"><span /> Inicializando navegación orbital…</div>}>
             <GalaxyScene experiments={experiments} selectedId={selectedId} onSelect={setSelectedId} />
@@ -50,7 +51,7 @@ export function CommandCenter() {
 
         <aside className="panel detail-panel" style={{ '--accent': selected.color } as React.CSSProperties}>
           <div className="detail-panel__top"><span className={`status-tag status-tag--${selected.status}`}>{statusLabel[selected.status]}</span><span>{selected.code}</span></div>
-          <p className="eyebrow">OBJETO SELECCIONADO</p>
+          <p className="eyebrow">ENSAYO SELECCIONADO</p>
           <h2>{selected.shortName}</h2>
           <p className="detail-panel__title">{selected.title}</p>
           <p className="muted">{selected.summary}</p>
