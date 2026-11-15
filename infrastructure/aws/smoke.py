@@ -4,8 +4,12 @@ import argparse
 import json
 import re
 import urllib.error
+from hashlib import sha256
+from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import urlopen
+
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
 
 def verify(base_url: str, release_id: str | None = None) -> None:
@@ -26,6 +30,16 @@ def verify(base_url: str, release_id: str | None = None) -> None:
         assert script[1].startswith(prefix) and stylesheet[1].startswith(prefix), "CloudFront aún sirve otra versión."
     assert b"async function compare" in fetch(script[1])
     assert b"#bars" in fetch(stylesheet[1])
+    asset_directory = script[1].rsplit("/", 1)[0]
+    source_catalog = json.loads(fetch(f"{asset_directory}/catalog.json"))
+    csv_hashes = {
+        path.relative_to(DATA_DIR).as_posix(): sha256(path.read_bytes()).hexdigest()
+        for path in (DATA_DIR / "raw").iterdir()
+        if path.is_file() and path.suffix.lower() == ".csv"
+    }
+    published_hashes = {table["source_path"]: table["source_sha256"] for table in source_catalog}
+    assert csv_hashes and len(source_catalog) == len(csv_hashes)
+    assert published_hashes == csv_hashes, "El catálogo publicado debe corresponder a todos los CSV del commit."
     assert json.loads(fetch("/api/v1/health")) == {"status": "ok", "mode": "demo"}
     catalog = json.loads(fetch("/api/v1/datasets"))
     assert {item["study"]: item["count"] for item in catalog} == {"PSI-25": 129, "PSI-69": 274}
@@ -55,7 +69,7 @@ def verify(base_url: str, release_id: str | None = None) -> None:
     else:
         raise AssertionError("Un estudio desconocido debe devolver 422.")
 
-    print(f"Verificado {base_url}: dashboard, API, ambos estudios, valores exactos y evidencia insuficiente.")
+    print(f"Verificado {base_url}: {len(source_catalog)} CSV en el catálogo y comparaciones de FLEX y BASS-II.")
 
 
 if __name__ == "__main__":

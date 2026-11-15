@@ -14,7 +14,7 @@ header { margin-bottom: 2.25rem; }
 .project span { color: #c3b7a6; }
 h1 { font-size: clamp(2rem, 6vw, 4rem); line-height: 1.05; letter-spacing: -.035em; margin: .55rem 0 .9rem; }
 h2 { margin: 0 0 .9rem; font-size: 1.23rem; }
-.subtitle, #message, .source { color: #cec2b1; }
+.subtitle, #message, #catalog-count, #catalog-details, .source { color: #cec2b1; }
 .panel { background: #211f1a; border: 1px solid #4c4234; border-radius: 1rem; padding: clamp(1rem, 3vw, 1.65rem); margin: 0 0 1rem; }
 form { display: grid; grid-template-columns: minmax(8rem, 1fr) minmax(10rem, 2fr) auto; align-items: end; gap: .75rem; }
 label { display: grid; gap: .3rem; font-weight: 600; }
@@ -36,6 +36,10 @@ th { font-size: .85rem; color: #e4d5bf; }
 a { color: #ffc182; text-underline-offset: .18rem; }
 .source { margin-bottom: 0; font-size: .9rem; overflow-wrap: anywhere; }
 .source span { display: block; }
+.catalog-table th, .catalog-table td { min-width: 7rem; max-width: 20rem; overflow-wrap: anywhere; vertical-align: top; }
+.catalog-table th:first-child, .catalog-table td:first-child { min-width: 5rem; }
+.catalog-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin-top: 1rem; }
+.catalog-pagination button { width: auto; }
 @media (max-width: 630px) {
   main { padding-top: 1.75rem; }
   form { grid-template-columns: 1fr; }

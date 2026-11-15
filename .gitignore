@@ -30,4 +30,5 @@ coverage/
 /data/raw/
 .ipynb_checkpoints/
 /infrastructure/demo/snapshot.json
+/infrastructure/demo/web/assets/catalog.json
 /infrastructure/aws/.build/
