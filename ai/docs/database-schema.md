@@ -1,6 +1,6 @@
 # Propuesta de tablas para el esquema `ai`
 
-**Estado:** diseño para revisión; no se ha ejecutado SQL. El 2026-11-14 se verificó PostgreSQL 17.11, `vector` 0.8.2 en `extensions` y ninguna tabla en `ai`. Cohere `embed-v5.0-fast` devolvió 1024 dimensiones en una prueba real.
+**Estado:** la migración `20261115120000_ai_initial.sql` se aplicó en Supabase el 2026-11-15 mediante Supabase CLI y quedó registrada en `supabase_migrations.schema_migrations`. Se verificaron cinco tablas vacías con RLS activo, cero políticas y sin acceso de esquema ni permisos de tabla para `anon`, `authenticated` o `service_role`. La copia compartida está publicada en `users/johan` como `8687f8e` y pendiente de fusión a `main`. La vista de citas propuesta para v1.1 no se desplegó. Cohere `embed-v5.0-fast` devolvió 1024 dimensiones en una prueba real anterior.
 
 ## Cinco tablas principales
 
@@ -35,4 +35,6 @@ No crear tablas de respuestas, claims, gráficas ni conversaciones en `ai`: los 
 - `ai.retrieval_evaluations`: resultados de evaluaciones reproducibles. Comenzar con casos versionados en tests; persistir corridas cuando se necesite comparar modelos.
 - `ai.query_traces`: métricas de latencia, costos y errores saneados. Preferir primero la observabilidad del servicio; nunca guardar claves ni prompts sensibles sin política explícita.
 
-**Decisiones antes de migrar:** ubicación definitiva de los PDFs (bucket privado o AWS), rol de servicio y permisos, contrato de identificadores con Stanley y revisión humana de los estados de validación. La migración SQL se preparará en un cambio separado y no se aplicará sin autorización.
+**Decisiones antes de ingerir o consultar datos:** ubicación definitiva de los PDFs (bucket privado o AWS), rol de servicio y permisos, contrato de identificadores con Stanley y revisión humana de los estados de validación. La migración aplicada exige `ai` y `extensions.vector` preexistentes, deja RLS activo sin políticas y no concede acceso a roles públicos. El SQL publicado debe fusionarse a `main` antes de que otro miembro ejecute `db push` desde esa rama.
+
+La función local de persistencia ya evita duplicar fragmentos y vectores y rechaza cambios de extracción sobre el mismo PDF. La estructura inicial no permite mantener dos extracciones del mismo SHA-256 ni seleccionar una versión activa de la Knowledge Base; un rollback completo exige una migración versionada posterior. Hasta entonces, el sistema no debe declarar una versión nueva como activa ni reemplazar fragmentos revisados.
