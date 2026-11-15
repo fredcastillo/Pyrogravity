@@ -20,7 +20,7 @@ export function CommandCenter() {
         eyebrow="PYROGRAPH / COMBUSTION DIGITAL TWIN"
         title="Flame Intelligence Center"
         description="Observa, compara y comprende el fuego en microgravedad mediante un gemelo visual 4D conectado a evidencia científica."
-        actions={<><span className="live-badge"><span /> DATA LINK</span><span className="utc-clock">UTC · 05:42:18</span></>}
+        actions={<><span className="header-volume-readout"><span>LIVE VOLUME</span><b>4D FLOW / 120 FPS</b></span><span className="live-badge"><span /> DATA LINK</span><span className="utc-clock">UTC · 05:42:18</span></>}
       />
 
       <section className="kpi-grid" aria-label="Indicadores generales">

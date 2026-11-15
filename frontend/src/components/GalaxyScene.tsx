@@ -128,7 +128,7 @@ function ExperimentMeteorite({ experiment, index, active, onSelect }: { experime
     const radius = 1.62 + seed * 0.22
     group.current.position.set(
       Math.cos(time) * radius + pointer.x * 0.12,
-      Math.sin(time * 1.18) * (0.85 + seed * 0.05) + pointer.y * 0.08,
+      Math.sin(time * 1.18) * (0.85 + seed * 0.05) - 0.55 + pointer.y * 0.06,
       Math.sin(time) * 0.72 + (seed % 2 ? 0.18 : -0.28),
     )
     group.current.rotation.x = clock.elapsedTime * (0.11 + seed * 0.025)
@@ -202,7 +202,6 @@ export function GalaxyScene(props: GalaxySceneProps) {
       <Canvas frameloop={isVisible ? 'always' : 'never'} camera={{ position: [0, 0.2, 7], fov: 47 }} dpr={[0.75, 1.1]} gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }} performance={{ min: 0.55 }}>
         <CombustionChamber {...props} />
       </Canvas>
-      <div className="combustion-readout"><span>LIVE VOLUME</span><b>4D FLOW / 120 FPS</b></div>
       <div className="galaxy-canvas__hint">Arrastra para inspeccionar · selecciona una sonda</div>
     </div>
   )
