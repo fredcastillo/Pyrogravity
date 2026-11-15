@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Compara ensayos de combustión en microgravedad con datos de NASA.">
+  <title>Pyrogravity | Explorador de ensayos</title>
+  <link rel="stylesheet" href="/assets/demo.css">
+  <script src="/assets/demo.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="project">PYROGRAVITY <span>NASA SPACE APPS</span></p>
+      <h1>Combustión en microgravedad</h1>
+      <p class="subtitle">Compara mediciones de NASA y consulta la fila que respalda cada valor.</p>
+    </header>
+
+    <section class="panel" aria-labelledby="comparison-title">
+      <h2 id="comparison-title">Comparar ensayos</h2>
+      <form id="comparison">
+        <label>Estudio <select id="dataset" required></select></label>
+        <label>Ensayos, separados por comas <input id="trials" required maxlength="160"></label>
+        <button type="submit" id="submit" disabled>Comparar</button>
+      </form>
+      <p id="message" role="status">Cargando los estudios…</p>
+    </section>
+
+    <section id="results" class="panel" aria-labelledby="metric" hidden>
+      <h2 id="metric"></h2>
+      <ul id="bars" aria-label="Gráfico de mediciones exactas"></ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Ensayo</th><th scope="col">Valor</th><th scope="col">Material o combustible</th><th scope="col">Fila de origen</th></tr></thead>
+          <tbody id="measurements"></tbody>
+        </table>
+      </div>
+      <p class="source"><a id="source" target="_blank" rel="noopener noreferrer"></a> <span id="source-file"></span></p>
+    </section>
+  </main>
+</body>
+</html>
