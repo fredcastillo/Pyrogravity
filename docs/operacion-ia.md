@@ -2,7 +2,7 @@
 
 ## Estado de la integración
 
-`main` todavía precede al módulo `ai/`. La suite obligatoria entra en el gate en cuanto el checkout contiene el módulo o una migración de IA. Se verifica en una rama de prueba que combina los PR del equipo. La demo pública actual sigue su flujo de publicación independiente. [PR de AI #33](https://github.com/fredcastillo/Pyrogravity/pull/33) · [Contrato backend #35](https://github.com/fredcastillo/Pyrogravity/pull/35)
+`main` todavía precede al módulo `ai/`. La suite obligatoria entra en el gate en cuanto el checkout contiene el módulo, una migración de IA o el adaptador `ScientificResult`. Se verifica en una rama de prueba que combina los PR del equipo. La demo pública actual sigue su flujo de publicación independiente. [PR de AI #33](https://github.com/fredcastillo/Pyrogravity/pull/33) · [Contrato backend #35](https://github.com/fredcastillo/Pyrogravity/pull/35)
 
 La documentación de Johan registra `20261115120000` como aplicada en Supabase. La comprobación de esta sesión cubrió GitHub y el entorno desechable. No había conexión autorizada al PostgreSQL remoto ni sesión vinculada de Supabase CLI. En AWS, la consulta de nombres encontró los buckets de la demo y no encontró secretos con prefijo `pyrogravity` en Secrets Manager de `us-east-1`.
 
