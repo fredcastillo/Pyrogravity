@@ -1,4 +1,5 @@
 export const AI_QUERY_PATH = '/api/v1/ai/query' as const
+export const AI_PUBLIC_CONTRACT_VERSION = 'public-1.1' as const
 
 export type AiSupportStatus = 'supported' | 'partially_supported' | 'insufficient_evidence'
 export type AiProvenance = 'live' | 'cache' | 'demo' | 'degraded'
@@ -52,7 +53,7 @@ export type HydratedChart = {
 }
 
 export type AiResponse = {
-  schema_version: string
+  schema_version: typeof AI_PUBLIC_CONTRACT_VERSION
   id: string
   status: AiSupportStatus
   answer: string
@@ -61,4 +62,13 @@ export type AiResponse = {
   limitations: string[]
   charts: HydratedChart[]
   provenance: AiProvenance
+}
+
+export type ApiErrorEnvelope = {
+  error: {
+    code: string
+    message: string
+    request_id: string
+    details: Record<string, unknown>
+  }
 }

@@ -4,24 +4,24 @@ import { AiHttpError, buildAiQuery, isAiResponse, queryAi } from './ai'
 
 function responseFor(id: string, overrides: Partial<AiResponse> = {}): AiResponse {
   return {
-    schema_version: '1.0', id, status: 'supported', answer: 'Respuesta respaldada.', provenance: 'live', limitations: [],
-    claims: [{ id: 'claim-1', text: 'La temperatura aumentó.', citation_ids: ['citation-1'] }],
-    citations: [{ id: 'citation-1', kind: 'scientific', title: 'Dataset FLEX', url: 'https://example.org/flex', page: null, snippet: 'Registro validado.', source: 'NASA PSI', measurement: { variable: 'temperature', value: 812, unit: 'K', provenance: 'live' } }],
-    charts: [{ id: 'chart-1', type: 'line', title: 'Temperatura', x_label: 'Tiempo', y_label: 'K', provenance: 'live', data_ref: '/api/v1/charts/chart-1', limitations: [], series: [{ id: 'temperature', label: 'Temperatura', unit: 'K', validated: true, points: [{ x: 0, y: 300 }, { x: 1, y: 812 }] }] }],
+    schema_version: 'public-1.1', id, status: 'supported', answer: 'Ejemplo sintético de contrato: el ensayo 1 registró burn_time de 4.30 s.', provenance: 'demo', limitations: ['Ejemplo sintético de contrato; no usar como resultado científico.'],
+    claims: [{ id: 'claim-1', text: 'Ejemplo sintético: burn_time = 4.30 s en el ensayo 1.', citation_ids: ['citation-1'] }],
+    citations: [{ id: 'citation-1', kind: 'scientific', title: 'PSI-69 FLEX source record 1 (sintético de ejemplo)', url: '', page: null, snippet: 'Ejemplo sintético de estructura; no es evidencia verificada.', source: 'sintético de ejemplo', measurement: { variable: 'burn_time', value: 4.3, unit: 's', provenance: 'demo' } }],
+    charts: [{ id: 'chart-1', type: 'line', title: 'Burn time', x_label: 'Ensayo', y_label: 'Tiempo', provenance: 'demo', data_ref: '/api/v1/ai/request-1/charts/chart-1', limitations: [], series: [{ id: 'burn-time', label: 'Burn time', unit: 's', validated: true, points: [{ x: '1', y: 4.3 }] }] }],
     ...overrides,
   }
 }
 
-function fetchJson(payload: unknown, status = 200) {
-  return vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify(payload), { status, headers: { 'Content-Type': 'application/json' } }))
+function fetchJson(payload: unknown, status = 200, headers: Record<string, string> = {}) {
+  return vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify(payload), { status, headers: { 'Content-Type': 'application/json', ...headers } }))
 }
 
 describe('contrato público de consultas IA', () => {
   it('envía ensayos, variables y preferencia de gráfico solo a /api/v1', async () => {
-    const request = buildAiQuery('¿Qué ocurre?', { experimentIds: ['flex'], variables: ['temperature'], chartPreference: 'line' })
+    const request = buildAiQuery('¿Cuál fue el burn_time del ensayo 1?', { experimentIds: ['PSI-69:psi-69_flex:1'], variables: ['burn_time'], chartPreference: 'line' })
     const fetcher = fetchJson(responseFor(request.id))
     await queryAi(request, undefined, { fetcher })
-    expect(request).toMatchObject({ experiment_ids: ['flex'], variables: ['temperature'], chart_preference: 'line' })
+    expect(request).toMatchObject({ experiment_ids: ['PSI-69:psi-69_flex:1'], variables: ['burn_time'], chart_preference: 'line' })
     expect(fetcher).toHaveBeenCalledWith('/api/v1/ai/query', expect.objectContaining({ method: 'POST', credentials: 'same-origin' }))
   })
 
@@ -29,7 +29,8 @@ describe('contrato público de consultas IA', () => {
     const request = buildAiQuery('Resume', { experimentIds: ['flex'] })
     const response = await queryAi(request, undefined, { fetcher: fetchJson(responseFor(request.id)) })
     expect(response.status).toBe('supported')
-    expect(response.citations[0].measurement).toMatchObject({ value: 812, unit: 'K', provenance: 'live' })
+    expect(response.schema_version).toBe('public-1.1')
+    expect(response.citations[0].measurement).toMatchObject({ value: 4.3, unit: 's', provenance: 'demo' })
     expect(response.charts[0].series[0].validated).toBe(true)
   })
 
@@ -48,13 +49,15 @@ describe('contrato público de consultas IA', () => {
 
   it('separa los errores HTTP de los estados de soporte', async () => {
     const request = buildAiQuery('Consulta')
-    await expect(queryAi(request, undefined, { fetcher: fetchJson({ detail: 'upstream unavailable' }, 503) })).rejects.toMatchObject<Partial<AiHttpError>>({ name: 'AiHttpError', status: 503 })
+    const error = { error: { code: 'AI_UNAVAILABLE', message: 'El proveedor de IA está desactivado hasta completar autenticación y rol lector.', request_id: request.id, details: { schema_version: 'public-1.1' } } }
+    await expect(queryAi(request, undefined, { fetcher: fetchJson(error, 503, { 'X-Request-ID': request.id }) })).rejects.toMatchObject<Partial<AiHttpError>>({ name: 'AiHttpError', status: 503, code: 'AI_UNAVAILABLE', requestId: request.id })
   })
 
   it('marca la demostración inequívocamente y no fabrica mediciones', async () => {
     const request = buildAiQuery('Consulta demo')
     const response = await queryAi(request, undefined, { demo: true })
     expect(response).toMatchObject({ status: 'insufficient_evidence', provenance: 'demo', claims: [], citations: [], charts: [] })
+    expect(response.schema_version).toBe('public-1.1')
     expect(response.answer).toContain('Modo demostración')
   })
 
@@ -62,5 +65,9 @@ describe('contrato público de consultas IA', () => {
     const locked = responseFor('req-1', { charts: [{ id: 'chart-locked', type: 'line', title: 'Pendiente', x_label: 'x', y_label: 'y', provenance: 'cache', data_ref: '/api/v1/charts/locked', limitations: [], series: [] }] })
     expect(isAiResponse(locked)).toBe(true)
     expect(isAiResponse({ ...locked, charts: [{ ...locked.charts[0], data_ref: 'https://cohere.example/chart' }] })).toBe(false)
+  })
+
+  it('rechaza respuestas de una versión pública distinta', () => {
+    expect(isAiResponse({ ...responseFor('req-version'), schema_version: 'public-1.0' })).toBe(false)
   })
 })

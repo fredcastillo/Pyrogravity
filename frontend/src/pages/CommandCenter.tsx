@@ -77,7 +77,7 @@ export function CommandCenter() {
           <LineChart series={selected.series} color={selected.color} label={selected.shortName} />
           <p className="chart-caption">Visualización normalizada para exploración. Consulta la unidad y la variable original en el detalle de la fuente.</p>
         </section>
-        <AiCopilot key={selected.id} experimentId={selected.id} experimentName={selected.shortName} />
+        <AiCopilot key={selected.id} experimentId={selected.id} experimentName={selected.shortName} aiContext={selected.aiContext} />
       </div>
     </div>
   )

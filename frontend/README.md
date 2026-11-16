@@ -14,7 +14,7 @@ npm run build
 
 Los datos generales visibles son un snapshot de navegación y no una simulación física validada.
 
-## Contrato público de IA
+## Contrato público de IA `public-1.1`
 
 La frontera del navegador está fijada en `src/contracts/ai.ts` y `src/services/ai.ts`:
 
@@ -22,13 +22,19 @@ La frontera del navegador está fijada en `src/contracts/ai.ts` y `src/services/
 - el navegador no llama a Cohere, Supabase ni endpoints internos de IA;
 - solicitud con pregunta, ensayos seleccionados, variables y preferencia de gráfico;
 - soporte separado en `supported`, `partially_supported` e `insufficient_evidence`;
-- errores de servicio representados exclusivamente como errores HTTP;
+- errores de servicio representados exclusivamente como errores HTTP y el sobre oficial `error.code/message/request_id/details`;
 - respuesta con afirmaciones, citas resueltas, limitaciones, gráficos y `provenance` (`live`, `cache`, `demo`, `degraded`);
 - cifras presentadas siempre con unidad y procedencia;
 - gráficos renderizados solo cuando el backend entrega series con `validated: true` y puntos hidratados;
 - `data_ref` solo admite rutas relativas bajo `/api/v1/`; nunca se consulta una referencia externa.
 
-La estructura actual es una frontera provisional basada en los campos acordados. Antes de conectar producción se debe reemplazar o confirmar contra el ejemplo JSON público definitivo y la versión de contrato publicada por Gregori.
+Los tipos reflejan el contrato `public-1.1` publicado por Gregori en `docs/api/openapi.json`. FLEX usa el identificador canónico publicado `PSI-69:psi-69_flex:1`; las familias que todavía no tienen un ensayo canónico aprobado envían `experiment_ids: []` para obtener evidencia documental o `insufficient_evidence`, nunca un identificador inventado.
+
+En desarrollo, el navegador mantiene la ruta relativa y Vite puede redirigirla hacia FastAPI:
+
+```bash
+VITE_API_PROXY_TARGET=http://127.0.0.1:8000 npm run dev
+```
 
 ## Demostración explícita
 
