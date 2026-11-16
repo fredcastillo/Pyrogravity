@@ -1,0 +1,11 @@
+{
+  "schema_version": "public-1.1",
+  "id": "b3c0e1a5-b79a-40fb-b28d-69c40be37daf",
+  "status": "supported",
+  "answer": "Ejemplo sintético de contrato: el ensayo 1 registró burn_time de 4.30 s.",
+  "claims": [{"id": "claim-1", "text": "Ejemplo sintético: burn_time = 4.30 s en el ensayo 1.", "citation_ids": ["citation-1"]}],
+  "citations": [{"id": "citation-1", "kind": "scientific", "title": "PSI-69 FLEX source record 1 (sintético de ejemplo)", "url": "", "page": null, "snippet": "Ejemplo sintético de estructura; no es evidencia verificada.", "source": "sintético de ejemplo", "measurement": {"variable": "burn_time", "value": 4.3, "unit": "s", "provenance": "demo"}}],
+  "limitations": ["Ejemplo sintético de contrato; no usar como resultado científico."],
+  "charts": [],
+  "provenance": "demo"
+}

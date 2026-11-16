@@ -42,12 +42,20 @@ def test_exported_openapi_matches_committed_file():
 def test_ai_and_chart_provenance_headers():
     response = client.post(
         "/api/v1/ai/query",
-        json={"query_type": "summary", "question": "demo"},
+        json={
+            "id": "contract-test-id",
+            "question": "demo",
+            "language": "es",
+            "experiment_ids": ["PSI-69 FLEX"],
+            "variables": [],
+            "chart_preference": None,
+        },
         headers={"X-Request-ID": "contract-test-id"},
     )
-    assert response.status_code == 200
+    assert response.status_code == 503
     assert response.headers["X-Request-ID"] == "contract-test-id"
     assert response.headers["X-Served-From"] == "demo"
+    assert response.json()["error"]["request_id"] == "contract-test-id"
 
     chart = client.get("/api/v1/ai/demo-1/charts/psi69-flex-burn-time")
     assert chart.status_code == 200

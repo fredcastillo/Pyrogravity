@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from app.core.errors import ApiError
 from app.core.settings import Settings, get_settings
@@ -14,6 +14,7 @@ from app.infrastructure.demo_charts import (
     load_psi69_chart,
 )
 from app.infrastructure.demo_factory import DemoInfrastructureFactory
+from app.domain.public_ai_contract import PublicAiQueryRequest, PublicAiResponse
 
 
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -36,9 +37,34 @@ def _run(req, query_type, settings):
     return DemoInfrastructureFactory().ai_engine().answer(request, {})
 
 
-@router.post("/query", response_model=AiResponse, responses=ERROR_RESPONSES)
-def query(req: AiQueryRequest, settings: Settings = Depends(get_settings)):
-    return _run(req, req.query_type, settings)
+@router.post(
+    "/query",
+    response_model=PublicAiResponse,
+    responses={503: {"model": ApiErrorResponse, "description": "AI provider disabled"}},
+    operation_id="public_ai_query_v1_1",
+    include_in_schema=True,
+)
+def public_query(req: PublicAiQueryRequest, request: Request):
+    """Public v1.1 contract. Provider remains disabled pending reader auth."""
+    # Bryant's request id is the single trace identifier echoed in the error envelope/header.
+    request.state.request_id = req.id
+    if not req.experiment_ids:
+        return PublicAiResponse(
+            id=req.id,
+            status="insufficient_evidence",
+            answer="No hay ensayos seleccionados ni pasajes documentales verificados para responder.",
+            claims=[],
+            citations=[],
+            limitations=["Sin ensayos seleccionados, solo se responde con evidencia documental verificada o evidencia insuficiente."],
+            charts=[],
+            provenance="demo",
+        )
+    raise ApiError(
+        "AI_UNAVAILABLE",
+        "El proveedor de IA está desactivado hasta completar autenticación y rol lector.",
+        status_code=503,
+        details={"schema_version": "public-1.1"},
+    )
 
 
 @router.get(
