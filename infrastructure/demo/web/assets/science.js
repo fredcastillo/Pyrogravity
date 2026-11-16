@@ -8,7 +8,7 @@
     'cfi-g': ['source_record', 'duration', 'fila (no tiempo)', 'sec', 'termination'],
     spice: ['air_rate_cm_s', 'fuel_rate_mg_s', 'cm/s', 'mg/s', 'fuel'],
   };
-  let result, rows = [], dataset, page = 0, generation = 0;
+  let result, rows = [], page = 0, generation = 0;
   function option(select, value, label) { select.add(new Option(label, value)); }
   function cell(row, text, tag = 'td') {
     const node = document.createElement(tag); node.textContent = text ?? '—'; row.append(node);
@@ -21,7 +21,7 @@
   function selectCohort() {
     const r = result.result, cohort = $('cohort').value;
     const part = r.configurations ? r.configurations[cohort] : r;
-    dataset = part.dataset;
+    const dataset = part.dataset;
     rows = part.pairs || part.included || part.records || [];
     if (r.cohorts) {
       const included = new Set(r.cohorts[cohort].source_records);
@@ -31,9 +31,10 @@
     $('group').replaceChildren(); option($('group'), '', 'Todos los grupos (descriptivo)');
     [...new Set(rows.map(row => row[groupKey] ?? 'Sin etiqueta'))].sort().forEach(label => option($('group'), label, label));
     const link = document.createElement('a'); link.href = dataset.nasa_psi_url;
-    link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = dataset.psi_code;
-    const source = document.createElement('span'); source.textContent = `${dataset.relative_path} · SHA-256 ${dataset.sha256}`;
-    $('source').replaceChildren(link, source);
+    link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = `NASA ${dataset.psi_code} · ${dataset.investigation_name}`;
+    const source = document.createElement('span'); source.textContent = `CSV: ${dataset.relative_path}`;
+    const version = document.createElement('span'); version.textContent = `SHA-256 ${dataset.sha256} · Método ${r.method_version}`;
+    $('source').replaceChildren(link, source, version);
     $('method').textContent = JSON.stringify({criteria: r.criteria, warnings: r.warnings, statistics: part.statistics, quality: part.quality || r.quality}, null, 2);
     page = 0; render();
   }
@@ -86,14 +87,18 @@
     try {
       const id = $('analysis').value, path = `/api/v1/analyses/${encodeURIComponent(id)}`;
       const next = await fetchJSON(path); if (token !== generation) return;
+      if (next.analysis_id !== id) throw new Error('El resultado recibido no corresponde al análisis seleccionado.');
       result = next; $('download').href = path;
-      $('description').textContent = `${result.analysis_name} · ${result.psi_code} · Método ${result.result.method_version}`;
+      $('description').textContent = `${result.analysis_name} · ${result.psi_code}`;
       $('cohort').replaceChildren();
       const cohorts = Object.keys(result.result.configurations || result.result.cohorts || {all: true});
       cohorts.forEach(key => option($('cohort'), key, key === 'all' ? 'Selección validada' : key));
       if (cohorts.includes('conservative')) $('cohort').value = 'conservative';
-      $('cohort').disabled = cohorts.length === 1; $('result').hidden = false; selectCohort();
-    } catch (error) { if (token === generation) $('status').textContent = error.message; }
+      selectCohort();
+      $('cohort').disabled = cohorts.length === 1; $('result').hidden = false;
+    } catch (error) {
+      if (token === generation) $('status').textContent = `No se pudo mostrar el resultado y su procedencia. ${error.message}`;
+    }
   }
   $('analysis').addEventListener('change', load); $('cohort').addEventListener('change', selectCohort);
   $('group').addEventListener('change', () => { page = 0; render(); });
@@ -103,7 +108,17 @@
     document.querySelector('#atlas-analysis-count').textContent = catalog.length;
     catalog.forEach(item => option($('analysis'), item.analysis_id, `${item.analysis_name} · ${item.psi_code}`));
     const requestedAnalysis = new URLSearchParams(window.location.search).get('analysis');
-    if (catalog.some(item => item.analysis_id === requestedAnalysis)) $('analysis').value = requestedAnalysis;
-    $('analysis').disabled = false; return load();
-  }).catch(error => { $('status').textContent = error.message; });
+    if (!catalog.length) {
+      $('status').textContent = 'No hay análisis disponibles.';
+      return;
+    }
+    $('analysis').disabled = false;
+    if (requestedAnalysis && !catalog.some(item => item.analysis_id === requestedAnalysis)) {
+      $('analysis').selectedIndex = -1;
+      $('status').textContent = 'El análisis solicitado no está disponible. Puedes elegir otro en la lista.';
+      return;
+    }
+    if (requestedAnalysis) $('analysis').value = requestedAnalysis;
+    return load();
+  }).catch(error => { $('status').textContent = `No se pudo cargar el catálogo de análisis. ${error.message}`; });
 })();

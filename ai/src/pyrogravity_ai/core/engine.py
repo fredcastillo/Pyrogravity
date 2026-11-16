@@ -8,6 +8,7 @@ import re
 from dataclasses import dataclass
 from typing import Literal, Protocol
 
+from pyrogravity_ai.core.document_queries import interpret_document_query
 from pyrogravity_ai.retrieval.postgres import PassageHit
 from pyrogravity_ai.schemas.contracts_v11 import (
     AiQueryRequest,
@@ -34,7 +35,7 @@ class EvidenceError(RuntimeError):
 
 
 class PassageRetriever(Protocol):
-    def retrieve(self, question: str, *, limit: int) -> tuple[PassageHit, ...]: ...
+    def retrieve(self, question: str, *, limit: int, source_ids: tuple[str, ...] = ()) -> tuple[PassageHit, ...]: ...
 
 
 class EvidenceSelector(Protocol):
@@ -136,10 +137,21 @@ class AiEngine:
         self._classifier = classifier
 
     def answer(self, request: AiQueryRequest) -> AiResponse:
-        intent = route(request, self._classifier)
+        lookup = interpret_document_query(request.question)
+        if lookup.needs_study and not request.experiment_ids:
+            return AiResponse(
+                request_id=request.request_id, status="insufficient_evidence", intent="unknown",
+                answer="¿A qué estudio te refieres? Indica su nombre o código, por ejemplo BASS-II o FLEX.",
+                limitations=["La pregunta no identifica la investigación."],
+            )
+        use_shorthand = lookup.question is not None and request.query_type not in {"exact_value", "comparison"}
+        intent = "document_question" if use_shorthand and request.query_type is None else route(request, self._classifier)
+        question = (lookup.question if use_shorthand else None) or request.question
         scientific = _scientific_candidates(request)[:10] if intent in {"scientific_analysis", "combined"} else ()
-        documents = _document_candidates(self._retriever.retrieve(request.question, limit=6))[:6] \
-            if intent in {"document_question", "combined"} else ()
+        documents = ()
+        if intent in {"document_question", "combined"}:
+            hits = self._retriever.retrieve(question, limit=6, source_ids=lookup.source_ids)
+            documents = _document_candidates(hits)[:6]
         candidates = scientific + documents
         if not candidates:
             return AiResponse(
@@ -150,7 +162,7 @@ class AiEngine:
         by_id = {item.evidence_id: item for item in candidates}
         if len(by_id) != len(candidates):
             raise EvidenceError("duplicate evidence identity")
-        selected_ids = self._selector.select(request.question, candidates)
+        selected_ids = self._selector.select(question, candidates)
         if (not isinstance(selected_ids, tuple) or len(selected_ids) > 4
                 or len(set(selected_ids)) != len(selected_ids)
                 or any(item_id not in by_id for item_id in selected_ids)):

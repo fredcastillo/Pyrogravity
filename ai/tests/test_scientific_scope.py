@@ -48,7 +48,7 @@ def test_public_flex_scope_retains_only_the_requested_cell() -> None:
     assert request.scientific_results[0] == scoped
 
     class NoDocuments:
-        def retrieve(self, question: str, *, limit: int):
+        def retrieve(self, question: str, *, limit: int, source_ids: tuple[str, ...] = ()):
             raise AssertionError("a numeric trial query must not retrieve documents")
 
     class SelectAvailable:

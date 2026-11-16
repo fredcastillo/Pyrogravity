@@ -36,7 +36,7 @@ class PostgresPassageRetriever:
         self._config_hash = config_hash
         self._reranker = reranker
 
-    def retrieve(self, question: str, *, limit: int) -> tuple[PassageHit, ...]:
+    def retrieve(self, question: str, *, limit: int, source_ids: tuple[str, ...] = ()) -> tuple[PassageHit, ...]:
         url = self._settings.url.get_secret_value()
         parameters = conninfo_to_dict(url)
         sslmode = parameters.get("sslmode")
@@ -54,13 +54,13 @@ class PostgresPassageRetriever:
                     if self._reranker is not None:
                         # Merge a wider pool before reranking. Six final passages
                         # missed the BASS-II overview when generic objective slides ranked first.
-                        text = search_text(connection, question, limit=32)
+                        text = search_text(connection, question, limit=32, source_ids=source_ids)
                         vector = search_vector(connection, self._embedder.embed_query(question),
-                                               self._config_hash, limit=32)
+                                               self._config_hash, limit=32, source_ids=source_ids)
                         pool = reciprocal_rank_fusion(text, vector, limit=50)
                         return self._reranker.rank(question, pool, limit=limit)
                     return search_hybrid(connection, question, self._embedder,
-                                         self._config_hash, limit=limit)
-                return search_text(connection, question, limit=limit)
+                                         self._config_hash, limit=limit, source_ids=source_ids)
+                return search_text(connection, question, limit=limit, source_ids=source_ids)
         except psycopg.Error:
             raise RetrievalError("AI passage retrieval failed") from None
