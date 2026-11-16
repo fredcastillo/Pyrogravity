@@ -68,15 +68,20 @@ def db():
             for role in API_ROLES:
                 connection.execute(sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier(role)))
 
-            initial = SHARED / "20261115120000_ai_initial.sql"
-            assert initial.read_bytes() == (AI / "migrations" / initial.name).read_bytes()
-            migrations = (
-                SHARED / "20261114230000_initial_schemas.sql",
-                initial,
-                AI / "migrations/20261115123000_ai_kb_generations.sql",
-                AI / "migrations/20261115124500_ai_citation_passages.sql",
-                ROOT / "infrastructure/supabase/proposals/ai_service_roles.sql",
-            )
+            migrations = [SHARED / "20261114230000_initial_schemas.sql"]
+            for name in (
+                "20261115120000_ai_initial.sql",
+                "20261115123000_ai_kb_generations.sql",
+                "20261115124500_ai_citation_passages.sql",
+            ):
+                source = AI / "migrations" / name
+                shared = SHARED / name
+                if shared.is_file() or name.endswith("_ai_initial.sql"):
+                    assert source.read_bytes() == shared.read_bytes(), name
+                    migrations.append(shared)
+                else:
+                    migrations.append(source)
+            migrations.append(ROOT / "infrastructure/supabase/proposals/ai_service_roles.sql")
             for migration in migrations:
                 connection.execute(migration.read_text(encoding="utf-8"), prepare=False)
             yield connection

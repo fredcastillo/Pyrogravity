@@ -8,7 +8,7 @@ GRANT USAGE ON SCHEMA ai TO pyrogravity_ai_ingest, pyrogravity_ai_runtime, pyrog
 GRANT USAGE ON SCHEMA extensions TO pyrogravity_ai_ingest, pyrogravity_ai_runtime;
 
 -- La ingesta sólo añade resultados y lee los campos usados al repetir un plan.
-GRANT SELECT (id, source_key, repository, external_id, title, publisher, authors,
+GRANT SELECT (id, source_key, repository, external_id, title, source_type, publisher, authors,
               published_at, canonical_url, doi, catalog_status),
       INSERT (source_key, repository, external_id, title, source_type, publisher,
               authors, published_at, canonical_url, doi, catalog_status, verified_at)
