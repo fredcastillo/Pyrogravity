@@ -16,6 +16,7 @@ def verify(url, executable=None, screenshots=None, command_center=False):
         if page.locator('meta[name="pyrogravity-science"]').count():
             expect(page.get_by_role("heading", name="Flame Intelligence Center")).to_be_visible()
             expect(page.get_by_role("link", name="Ver resultado y procedencia")).to_have_count(5)
+            assert page.locator('.page-header').bounding_box()['y'] + page.locator('.page-header').bounding_box()['height'] <= page.locator('.analysis-grid').bounding_box()['y'], 'El encabezado no debe cubrir los resultados.'
             page.get_by_role("link", name="Explorar gráficas y metodologías").click()
         expect(page.locator("#science-analysis")).to_be_enabled()
         catalog = page.locator("#science-analysis option").evaluate_all("nodes => nodes.map(n => ({id:n.value,label:n.textContent}))")
