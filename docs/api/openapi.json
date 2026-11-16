@@ -1078,9 +1078,6 @@
           "schema_version": {
             "const": "public-1.1",
             "default": "public-1.1",
-            "enum": [
-              "public-1.1"
-            ],
             "title": "Schema Version",
             "type": "string"
           },
@@ -1239,9 +1236,6 @@
           },
           "validated": {
             "const": true,
-            "enum": [
-              true
-            ],
             "title": "Validated",
             "type": "boolean"
           }

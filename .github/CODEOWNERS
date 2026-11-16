@@ -1,7 +1,6 @@
 # Datos e IA
 /data/ @StanleyCM
 /ai/ @Johanvasquezdev
-/rag/ @Johanvasquezdev
 
 # Aplicación
 /backend/ @GregoriEJimenezDev
@@ -25,4 +24,6 @@
 /scripts/load_to_supabase.py @StanleyCM @GregoriEJimenezDev
 /scripts/prepare_ci_postgres.py @iClexi @fredcastillo
 /supabase/ @StanleyCM @GregoriEJimenezDev
-/supabase/migrations/*_ai_*.sql @Johanvasquezdev @StanleyCM @GregoriEJimenezDev
+/supabase/migrations/*_ai_*.sql @Johanvasquezdev @StanleyCM @GregoriEJimenezDev @iClexi
+/infrastructure/supabase/ @Johanvasquezdev @GregoriEJimenezDev @iClexi
+/docs/operacion-ia.md @Johanvasquezdev @GregoriEJimenezDev @iClexi
