@@ -176,7 +176,12 @@ def test_service_roles_chain_and_approved_citations(db):
         denied(db, "SELECT id FROM ai.documents")
         denied(db, "SELECT content FROM ai.document_chunks")
         denied(db, "SELECT embedding FROM ai.chunk_embeddings")
-        denied(db, "DELETE FROM ai.citation_passages")
+        denied(db, "DELETE FROM ai.documents")
+        for privilege in ("INSERT", "UPDATE", "DELETE", "TRUNCATE"):
+            assert db.execute(
+                "SELECT has_table_privilege(current_user, 'ai.citation_passages', %s)",
+                (privilege,),
+            ).fetchone() == (False,)
 
     for role in API_ROLES:
         with as_role(db, role):
