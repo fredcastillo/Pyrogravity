@@ -25,6 +25,7 @@ from pyrogravity_ai.schemas.scientific_canonical import canonical_decimal
 
 Intent = Literal["scientific_analysis", "document_question", "combined", "unknown"]
 _NUMBER_WORDS = re.compile(r"\b(cu[aá]nto|valor|duraci[oó]n|di[aá]metro|presi[oó]n|co2|media|mediana|compar|how much|value|duration|diameter|pressure|average)\b", re.I)
+_WHICH_WORDS = re.compile(r"\b(cu[aá]l|which)\b", re.I)
 _DOCUMENT_WORDS = re.compile(r"\b(por qu[eé]|explica|describ|mecanismo|evidencia|fuente|why|explain|describe|source)\b", re.I)
 
 
@@ -61,7 +62,9 @@ def route(request: AiQueryRequest, classifier: IntentClassifier | None = None) -
         return "document_question"
     if request.query_type in {"mixed", "summary"}:
         return "combined" if scientific_available else "document_question"
-    numeric = bool(_NUMBER_WORDS.search(request.question))
+    numeric = bool(_NUMBER_WORDS.search(request.question)) or bool(
+        scientific_available and request.experiment_ids and _WHICH_WORDS.search(request.question)
+    )
     documentary = bool(_DOCUMENT_WORDS.search(request.question))
     if numeric and documentary:
         return "combined" if scientific_available else "scientific_analysis"

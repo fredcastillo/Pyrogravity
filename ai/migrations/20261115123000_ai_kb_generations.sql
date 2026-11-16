@@ -136,12 +136,21 @@ FOR EACH ROW EXECUTE FUNCTION ai.reject_sealed_chunk_change();
 CREATE FUNCTION ai.reject_sealed_embedding_change() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
-    IF EXISTS (
+    IF TG_OP <> 'INSERT' AND EXISTS (
         SELECT 1 FROM ai.document_chunks AS c
         JOIN ai.kb_generation_documents AS m ON m.document_id = c.document_id
         JOIN ai.kb_generations AS g ON g.id = m.generation_id
         WHERE c.id = OLD.chunk_id AND g.sealed_at IS NOT NULL
           AND g.config_hash = OLD.config_hash
+    ) THEN
+        RAISE EXCEPTION 'Embedding in sealed knowledge-base generation is immutable';
+    END IF;
+    IF TG_OP <> 'DELETE' AND EXISTS (
+        SELECT 1 FROM ai.document_chunks AS c
+        JOIN ai.kb_generation_documents AS m ON m.document_id = c.document_id
+        JOIN ai.kb_generations AS g ON g.id = m.generation_id
+        WHERE c.id = NEW.chunk_id AND g.sealed_at IS NOT NULL
+          AND g.config_hash = NEW.config_hash
     ) THEN
         RAISE EXCEPTION 'Embedding in sealed knowledge-base generation is immutable';
     END IF;
