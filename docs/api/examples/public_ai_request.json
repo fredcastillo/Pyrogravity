@@ -1,8 +1,13 @@
 {
   "id": "b3c0e1a5-b79a-40fb-b28d-69c40be37daf",
-  "question": "¿Cuál fue el burn_time del ensayo 1?",
+  "question": "Compara burn_time de los ensayos PSI-69 FLEX 1 y 2.",
   "language": "es",
-  "experiment_ids": ["PSI-69:psi-69_flex:1"],
-  "variables": ["burn_time"],
+  "experiment_ids": [
+    "PSI-69:psi-69_flex:1",
+    "PSI-69:psi-69_flex:2"
+  ],
+  "variables": [
+    "burn_time"
+  ],
   "chart_preference": null
 }
