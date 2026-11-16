@@ -32,7 +32,7 @@ def build(output: Path, etl_python: str, release_id: str | None = None) -> None:
                 "--only-binary=:all:",
                 "--no-compile",
                 "--target", str(dependencies),
-                "-r", str(DEMO_DIR / "requirements.txt"),
+                "-r", str(AWS_DIR / "lambda-requirements.txt"),
             ],
             check=True,
         )
@@ -43,9 +43,19 @@ def build(output: Path, etl_python: str, release_id: str | None = None) -> None:
                 if file.is_file() and "__pycache__" not in relative.parts and relative.parts[0] != "bin":
                     write_file(archive, relative.as_posix(), file)
             for name in ("app.py", "snapshot.json", "analyses.json"):
-                write_file(archive, name, DEMO_DIR / name)
+                write_file(archive, f"infrastructure/demo/{name}", DEMO_DIR / name)
+            write_file(archive, "infrastructure/aws/lambda_entry.py", AWS_DIR / "lambda_entry.py")
+            # The alias keeps the same handler across releases and rollback to older ZIPs.
+            archive.writestr(ZipInfo("app/__init__.py"), b"from infrastructure.aws.lambda_entry import handler\n")
+            for pattern in ("app/**/*.py", "ai/contracts/v1_1/*.json", "data/src/**/*.py", "data/raw/*.csv"):
+                for file in sorted(ROOT.glob(pattern)):
+                    write_file(archive, file.relative_to(ROOT).as_posix(), file)
+            write_file(archive, "data/source_manifest.csv", ROOT / "data" / "source_manifest.csv")
             if release_id:
-                archive.writestr(ZipInfo("release.txt"), release_id)
+                archive.writestr(ZipInfo("infrastructure/demo/release.txt"), release_id)
+            uncompressed = sum(item.file_size for item in archive.infolist())
+            if uncompressed > 250 * 1024 * 1024:
+                raise ValueError(f"El paquete excede el límite de Lambda ({uncompressed:,} B sin comprimir).")
     print(f"{output}: {output.stat().st_size:,} B")
 
 

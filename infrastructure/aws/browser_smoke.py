@@ -5,7 +5,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 
 
-def verify(url, executable=None, screenshots=None):
+def verify(url, executable=None, screenshots=None, command_center=False):
     errors = []
     results = []
     with sync_playwright() as p:
@@ -40,6 +40,14 @@ def verify(url, executable=None, screenshots=None):
             if screenshots:
                 Path(screenshots).mkdir(parents=True, exist_ok=True)
                 page.screenshot(path=str(Path(screenshots) / f"science-{width}.png"), full_page=True)
+        if command_center:
+            page.set_viewport_size({"width": 1280, "height": 1000})
+            page.get_by_role("link", name="Abrir Command Center").click()
+            expect(page.get_by_role("heading", name="Flame Intelligence Center")).to_be_visible()
+            expect(page.get_by_role("link", name="Ver resultado y procedencia")).to_have_count(5)
+            page.get_by_role("textbox", name="Pregunta para el copiloto").fill("¿Hay evidencia documental?")
+            page.get_by_role("button", name="Enviar pregunta").click()
+            expect(page.get_by_text("Evidencia insuficiente", exact=True)).to_be_visible()
         assert not errors, errors
         browser.close()
     print(json.dumps(results))
@@ -50,5 +58,6 @@ if __name__ == "__main__":
     parser.add_argument("url")
     parser.add_argument("--executable")
     parser.add_argument("--screenshots")
+    parser.add_argument("--command-center", action="store_true")
     args = parser.parse_args()
-    verify(args.url, args.executable, args.screenshots)
+    verify(args.url, args.executable, args.screenshots, args.command_center)
