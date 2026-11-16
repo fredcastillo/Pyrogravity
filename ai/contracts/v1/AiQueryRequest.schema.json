@@ -1,0 +1,71 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "analysis_id": {
+      "anyOf": [
+        {
+          "enum": [
+            "bass-ii",
+            "flex",
+            "flame-design",
+            "cfi-g",
+            "spice"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Analysis Id"
+    },
+    "filters": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "maxProperties": 10,
+      "title": "Filters",
+      "type": "object"
+    },
+    "language": {
+      "default": "es",
+      "enum": [
+        "es",
+        "en"
+      ],
+      "title": "Language",
+      "type": "string"
+    },
+    "question": {
+      "maxLength": 2000,
+      "minLength": 3,
+      "title": "Question",
+      "type": "string"
+    },
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "request_id",
+    "question"
+  ],
+  "title": "AiQueryRequest",
+  "type": "object"
+}

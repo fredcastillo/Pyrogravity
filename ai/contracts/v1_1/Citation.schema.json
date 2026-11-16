@@ -1,0 +1,53 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {
+      "format": "uuid",
+      "title": "Document Id",
+      "type": "string"
+    },
+    "document_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Document Sha256",
+      "type": "string"
+    },
+    "page_number": {
+      "minimum": 1,
+      "title": "Page Number",
+      "type": "integer"
+    },
+    "passage_id": {
+      "format": "uuid",
+      "title": "Passage Id",
+      "type": "string"
+    },
+    "passage_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Passage Sha256",
+      "type": "string"
+    },
+    "quote": {
+      "maxLength": 1500,
+      "minLength": 1,
+      "title": "Quote",
+      "type": "string"
+    },
+    "source_id": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Source Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "document_id",
+    "document_sha256",
+    "page_number",
+    "passage_id",
+    "passage_sha256",
+    "quote",
+    "source_id"
+  ],
+  "title": "Citation",
+  "type": "object"
+}

@@ -1,0 +1,9 @@
+{
+  "chart_id": "chart_1",
+  "type": "scatter",
+  "title": "Duración sintética",
+  "data_ref": "analysis:flex:synthetic_1",
+  "x_field": "trial_code",
+  "y_field": "burn_time",
+  "y_unit": "s"
+}

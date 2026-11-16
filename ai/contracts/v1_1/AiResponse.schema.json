@@ -1,0 +1,304 @@
+{
+  "$defs": {
+    "ChartSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "chart_id": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+          "title": "Chart Id",
+          "type": "string"
+        },
+        "data_ref": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9:_-]{0,299}$",
+          "title": "Data Ref",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "bar",
+            "line",
+            "scatter",
+            "histogram",
+            "box",
+            "heatmap"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "x_field": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+          "title": "X Field",
+          "type": "string"
+        },
+        "y_field": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+          "title": "Y Field",
+          "type": "string"
+        },
+        "y_unit": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Y Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "chart_id",
+        "type",
+        "title",
+        "data_ref",
+        "x_field",
+        "y_field",
+        "y_unit"
+      ],
+      "title": "ChartSpec",
+      "type": "object"
+    },
+    "Citation": {
+      "additionalProperties": false,
+      "properties": {
+        "document_id": {
+          "format": "uuid",
+          "title": "Document Id",
+          "type": "string"
+        },
+        "document_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Document Sha256",
+          "type": "string"
+        },
+        "page_number": {
+          "minimum": 1,
+          "title": "Page Number",
+          "type": "integer"
+        },
+        "passage_id": {
+          "format": "uuid",
+          "title": "Passage Id",
+          "type": "string"
+        },
+        "passage_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Passage Sha256",
+          "type": "string"
+        },
+        "quote": {
+          "maxLength": 1500,
+          "minLength": 1,
+          "title": "Quote",
+          "type": "string"
+        },
+        "source_id": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Source Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "document_id",
+        "document_sha256",
+        "page_number",
+        "passage_id",
+        "passage_sha256",
+        "quote",
+        "source_id"
+      ],
+      "title": "Citation",
+      "type": "object"
+    },
+    "Claim": {
+      "additionalProperties": false,
+      "properties": {
+        "claim_id": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+          "title": "Claim Id",
+          "type": "string"
+        },
+        "evidence_ids": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Ids",
+          "type": "array"
+        },
+        "kind": {
+          "enum": [
+            "numeric",
+            "conceptual"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "claim_id",
+        "kind",
+        "text",
+        "evidence_ids"
+      ],
+      "title": "Claim",
+      "type": "object"
+    },
+    "DocumentEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "citation": {
+          "$ref": "#/$defs/Citation"
+        },
+        "evidence_id": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "document",
+          "default": "document",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "citation"
+      ],
+      "title": "DocumentEvidence",
+      "type": "object"
+    },
+    "ScientificEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "datum_id": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+          "title": "Datum Id",
+          "type": "string"
+        },
+        "evidence_id": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+          "title": "Evidence Id",
+          "type": "string"
+        },
+        "kind": {
+          "const": "scientific",
+          "default": "scientific",
+          "title": "Kind",
+          "type": "string"
+        },
+        "result_id": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+          "title": "Result Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "evidence_id",
+        "result_id",
+        "datum_id"
+      ],
+      "title": "ScientificEvidence",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "answer": {
+      "maxLength": 10000,
+      "minLength": 1,
+      "title": "Answer",
+      "type": "string"
+    },
+    "claims": {
+      "items": {
+        "$ref": "#/$defs/Claim"
+      },
+      "title": "Claims",
+      "type": "array"
+    },
+    "evidence": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "document": "#/$defs/DocumentEvidence",
+            "scientific": "#/$defs/ScientificEvidence"
+          },
+          "propertyName": "kind"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/DocumentEvidence"
+          },
+          {
+            "$ref": "#/$defs/ScientificEvidence"
+          }
+        ]
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "intent": {
+      "enum": [
+        "scientific_analysis",
+        "document_question",
+        "combined",
+        "unknown"
+      ],
+      "title": "Intent",
+      "type": "string"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "request_id": {
+      "format": "uuid",
+      "title": "Request Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.1",
+      "default": "1.1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "supported",
+        "partially_supported",
+        "insufficient_evidence"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "visualizations": {
+      "items": {
+        "$ref": "#/$defs/ChartSpec"
+      },
+      "title": "Visualizations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "request_id",
+    "status",
+    "intent",
+    "answer"
+  ],
+  "title": "AiResponse",
+  "type": "object"
+}
