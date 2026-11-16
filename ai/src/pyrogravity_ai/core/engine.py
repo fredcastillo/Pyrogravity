@@ -88,11 +88,7 @@ def _scientific_candidates(request: AiQueryRequest) -> tuple[Candidate, ...]:
                 f"{result.result_id}:{result.data_version}:{datum.datum_id}".encode("utf-8")
             ).hexdigest()[:32]
             value = canonical_decimal(datum.value)
-            if isinstance(datum, MeasurementDatum):
-                text = f"{datum.variable_code}: {value} {datum.unit} (ensayo {datum.trial_code})."
-            else:
-                text = (f"{datum.variable_code}: {value} {datum.unit} "
-                        f"(método {datum.method} v{datum.method_version}; n={datum.sample_count}).")
+            text = f"{datum.variable_code}: {value} {datum.unit}."
             candidates.append(Candidate(
                 evidence_id, "numeric", text,
                 ScientificEvidence(evidence_id=evidence_id, result_id=result.result_id,
@@ -217,7 +213,8 @@ class CohereEvidenceSelector:
                   "If none is relevant, select none. Return only JSON in the form "
                   "{\"selected_ids\":[\"id\"]}.\nDATA:\n"
                   + json.dumps(payload, ensure_ascii=False))
-        raw = _unwrap_model_output(self._text_client.generate(prompt))
+        generate = getattr(self._text_client, "generate_json", self._text_client.generate)
+        raw = _unwrap_model_output(generate(prompt))
         try:
             parsed = json.loads(raw)
         except (TypeError, ValueError):
