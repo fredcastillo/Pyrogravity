@@ -146,7 +146,7 @@
         "value": {
           "chart_preference": null,
           "experiment_ids": [
-            "PSI-69 FLEX"
+            "PSI-69:psi-69_flex:1"
           ],
           "id": "b3c0e1a5-b79a-40fb-b28d-69c40be37daf",
           "language": "es",
