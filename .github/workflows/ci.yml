@@ -194,7 +194,20 @@ jobs:
               sys.exit("La suite obligatoria de IA omitió casos: " + ", ".join(skipped))
           PY
       - name: Compilar la Lambda privada
-        run: python infrastructure/aws/build_private_ai.py
+        shell: bash
+        run: |
+          python infrastructure/aws/build_private_ai.py
+          private_app="$RUNNER_TEMP/private-ai-app"
+          unzip -q infrastructure/aws/.build/private-ai.zip -d "$private_app"
+          (cd "$private_app" && python -c 'from private_ai_handler import handler; assert handler({}, None) == {"status": 422}')
+      - name: Guardar el paquete privado probado
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pyrogravity-private-ai-${{ github.sha }}
+          path: infrastructure/aws/.build/private-ai.zip
+          if-no-files-found: error
+          retention-days: 7
 
   postgres:
     name: PostgreSQL y RLS reales
@@ -324,8 +337,7 @@ jobs:
           python infrastructure/aws/build.py --release-id "$GITHUB_SHA"
           demo_app="$RUNNER_TEMP/demo-app"
           unzip -q infrastructure/aws/.build/lambda.zip -d "$demo_app"
-          cp -R infrastructure/demo/web "$demo_app/infrastructure/demo/web"
-          cp -R frontend/dist "$demo_app/infrastructure/demo/web/assets/command-center"
+          python infrastructure/aws/prepare_site.py --output "$demo_app/infrastructure/demo/web"
           (
             cd "$demo_app"
             exec python -m uvicorn infrastructure.aws.lambda_entry:application --lifespan off --host 127.0.0.1 --port 8000
@@ -344,8 +356,7 @@ jobs:
           release="$RUNNER_TEMP/pyrogravity-release"
           mkdir -p "$release"
           cp infrastructure/aws/.build/lambda.zip "$release/"
-          cp -R infrastructure/demo/web "$release/site"
-          cp -R frontend/dist "$release/site/assets/command-center"
+          python infrastructure/aws/prepare_site.py --output "$release/site"
       - name: Guardar la compilación
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

@@ -2,6 +2,7 @@ import { Database, ExternalLink } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { AiCopilot } from '../components/AiCopilot'
 import { PageHeader } from '../components/PageHeader'
+import { scientificCatalogUrl } from '../scientificCatalog'
 
 interface Analysis {
   analysis_id: string
@@ -31,14 +32,14 @@ export function PublishedCenter() {
   }, [])
 
   return (
-    <div className="page page--command">
+    <div className="page page--published">
       <PageHeader eyebrow="PYROGRAVITY" title="Flame Intelligence Center" description="Consulta los análisis de combustión y sigue cada resultado hasta su fuente científica." />
       <div className="analysis-grid">
         <section className="panel chart-panel" aria-labelledby="published-analysis-title">
           <div className="panel__header"><h2 id="published-analysis-title">Análisis científicos</h2><Database aria-hidden="true" /></div>
           {error && <p role="alert">No se pudo cargar el catálogo. Puedes abrir la publicación científica directamente.</p>}
           {!error && !analyses.length && <p role="status">Cargando análisis…</p>}
-          <ul>
+          <ul className="published-analysis-list">
             {analyses.map((item) => (
               <li key={item.analysis_id}>
                 <strong>{item.analysis_name}</strong> · {item.psi_code}
@@ -48,7 +49,7 @@ export function PublishedCenter() {
               </li>
             ))}
           </ul>
-          <a className="button button--primary" href="/#science-title">Explorar gráficas y metodologías</a>
+          <a className="button button--primary" href={scientificCatalogUrl('science-title')}>Explorar gráficas y metodologías</a>
         </section>
         <AiCopilot experimentId="catalogo" experimentName="Fuentes NASA" />
       </div>

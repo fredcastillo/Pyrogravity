@@ -5,14 +5,15 @@ import json
 import re
 from urllib.parse import urljoin
 from urllib.request import Request, urlopen
+from uuid import uuid4
 
 
 def verify(base_url: str) -> None:
     with urlopen(base_url, timeout=20) as response:
         landing_page = response.read().decode()
     link = re.search(r'href="([^"]+/command-center/index\.html)"', landing_page)
-    assert link, "Falta el enlace al Command Center."
-    spa_url = urljoin(base_url, link[1])
+    assert link or 'id="root"' in landing_page, "Falta el frontend de React."
+    spa_url = urljoin(base_url, link[1]) if link else base_url
     with urlopen(spa_url, timeout=20) as response:
         html = response.read().decode()
     script = re.search(r'<script\b[^>]+src="([^"]+\.js)"', html)
@@ -21,8 +22,8 @@ def verify(base_url: str) -> None:
         assert b"/api/v1/ai/query" in response.read(), "El frontend debe consumir el contrato de la API."
 
     payload = {
-        "id": "smoke-command-center",
-        "question": "¿Qué evidencia tenemos?",
+        "id": str(uuid4()),
+        "question": "Explica el resultado de los ensayos de combustión de antimateria de BASS-II.",
         "language": "es",
         "experiment_ids": [],
     }

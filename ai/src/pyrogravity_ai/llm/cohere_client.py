@@ -50,6 +50,7 @@ class CohereTextClient:
                 model=self._settings.model,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=self._settings.max_output_tokens,
+                temperature=0,
                 **options,
             )
         except ApiError as exc:

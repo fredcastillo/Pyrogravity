@@ -6,7 +6,7 @@ import re
 import urllib.error
 from hashlib import sha256
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urljoin, urlsplit
 from urllib.request import urlopen
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
@@ -21,16 +21,25 @@ def verify(base_url: str, release_id: str | None = None, *, api_release_id: str 
         return json.loads(fetch("/api/v1/compare?" + urlencode({"dataset": dataset, "trials": trials})))
 
     page = fetch("/").decode("utf-8")
+    science_link = re.search(r'<meta name="pyrogravity-science" content="([^"]+)"', page)
+    science_url = base_url + "/"
+    if science_link:
+        assert 'id="root"' in page, "La entrada debe montar el frontend de React."
+        science_url = urljoin(base_url, science_link[1])
+        with urlopen(science_url, timeout=12) as response:
+            page = response.read().decode("utf-8")
     assert "Combusti" in page
-    script = re.search(r'src="(/assets/(?:releases/[0-9a-f]{40}/)?demo\.js)"', page)
-    stylesheet = re.search(r'href="(/assets/(?:releases/[0-9a-f]{40}/)?demo\.css)"', page)
+    script = re.search(r'src="([^"]*demo\.js)"', page)
+    stylesheet = re.search(r'href="([^"]*demo\.css)"', page)
     assert script and stylesheet, "El dashboard debe enlazar su JavaScript y CSS."
+    script_path = urlsplit(urljoin(science_url, script[1])).path
+    style_path = urlsplit(urljoin(science_url, stylesheet[1])).path
     if release_id:
         prefix = f"/assets/releases/{release_id}/"
-        assert script[1].startswith(prefix) and stylesheet[1].startswith(prefix), "CloudFront aún sirve otra versión."
-    assert b"async function compare" in fetch(script[1])
-    assert b"#bars" in fetch(stylesheet[1])
-    asset_directory = script[1].rsplit("/", 1)[0]
+        assert script_path.startswith(prefix) and style_path.startswith(prefix), "CloudFront aún sirve otra versión."
+    assert b"async function compare" in fetch(script_path)
+    assert b"#bars" in fetch(style_path)
+    asset_directory = script_path.rsplit("/", 1)[0]
     source_catalog = json.loads(fetch(f"{asset_directory}/catalog.json"))
     csv_hashes = {
         path.relative_to(DATA_DIR).as_posix(): sha256(path.read_bytes()).hexdigest()

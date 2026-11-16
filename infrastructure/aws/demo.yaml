@@ -138,7 +138,7 @@ Resources:
     DependsOn: ApiLogGroup
     Metadata:
       com.aws.cloudformation.Context:
-        why: A Python ZIP runs the public demo without provisioning a container registry or a VPC.
+        why: A Python ZIP serves the catalog and validates private AI responses; memory also provides CPU for scientific imports.
         must:
           - The package hash identifies the source data and code used by the alias.
     Properties:
@@ -147,7 +147,7 @@ Resources:
       Runtime: python3.12
       Handler: app.handler
       Architectures: [x86_64]
-      MemorySize: 256
+      MemorySize: 512
       Timeout: 27
       Environment: !If
         - PrivateAiConfigured

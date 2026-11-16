@@ -45,6 +45,7 @@ def test_generate_uses_configured_model_and_returns_text() -> None:
             "model": "chosen-model",
             "messages": [{"role": "user", "content": "Explain this observation"}],
             "max_tokens": 512,
+            "temperature": 0,
         }
     ]
 

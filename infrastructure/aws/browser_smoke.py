@@ -13,6 +13,11 @@ def verify(url, executable=None, screenshots=None, command_center=False):
         page = browser.new_page(viewport={"width": 1280, "height": 1000})
         page.on("pageerror", lambda error: errors.append(str(error)))
         page.goto(url, wait_until="networkidle")
+        if page.locator('meta[name="pyrogravity-science"]').count():
+            expect(page.get_by_role("heading", name="Flame Intelligence Center")).to_be_visible()
+            expect(page.get_by_role("link", name="Ver resultado y procedencia")).to_have_count(5)
+            assert page.locator('.page-header').bounding_box()['y'] + page.locator('.page-header').bounding_box()['height'] <= page.locator('.analysis-grid').bounding_box()['y'], 'El encabezado no debe cubrir los resultados.'
+            page.get_by_role("link", name="Explorar gráficas y metodologías").click()
         expect(page.locator("#science-analysis")).to_be_enabled()
         catalog = page.locator("#science-analysis option").evaluate_all("nodes => nodes.map(n => ({id:n.value,label:n.textContent}))")
         assert len(catalog) == 5
@@ -45,7 +50,7 @@ def verify(url, executable=None, screenshots=None, command_center=False):
             page.get_by_role("link", name="Abrir Command Center").click()
             expect(page.get_by_role("heading", name="Flame Intelligence Center")).to_be_visible()
             expect(page.get_by_role("link", name="Ver resultado y procedencia")).to_have_count(5)
-            page.get_by_role("textbox", name="Pregunta para el copiloto").fill("¿Hay evidencia documental?")
+            page.get_by_role("textbox", name="Pregunta para el copiloto").fill("Explica el resultado de los ensayos de combustión de antimateria de BASS-II.")
             page.get_by_role("button", name="Enviar pregunta").click()
             expect(page.get_by_text("Evidencia insuficiente", exact=True)).to_be_visible()
         assert not errors, errors

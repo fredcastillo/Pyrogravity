@@ -47,10 +47,19 @@ jobs:
             echo "::error::La variable PYROGRAVITY_AWS_DEMO debe contener roleArn y templateUrl aprobados."
             exit 1
           fi
+          if ! jq -e 'if ((.privateStackName // "") != "" or (.privateTemplateUrl // "") != "") then (.privateStackName | type == "string" and test("^[A-Za-z][A-Za-z0-9-]{0,127}$")) and (.privateTemplateUrl | type == "string" and startswith("https://")) else true end' <<<"$DEPLOYMENT" > /dev/null; then
+            echo "::error::La publicación privada requiere privateStackName y privateTemplateUrl aprobados."
+            exit 1
+          fi
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         if: steps.release.outputs.current == 'true'
         with:
           name: pyrogravity-demo-${{ github.sha }}
+          path: ${{ runner.temp }}/pyrogravity-release
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: steps.release.outputs.current == 'true' && fromJSON(inputs.deployment).privateStackName != ''
+        with:
+          name: pyrogravity-private-ai-${{ github.sha }}
           path: ${{ runner.temp }}/pyrogravity-release
       - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         if: steps.release.outputs.current == 'true'
@@ -66,8 +75,12 @@ jobs:
         shell: pwsh
         env:
           APPROVED_TEMPLATE_URL: ${{ fromJSON(inputs.deployment).templateUrl }}
+          PRIVATE_STACK_NAME: ${{ fromJSON(inputs.deployment).privateStackName }}
+          APPROVED_PRIVATE_TEMPLATE_URL: ${{ fromJSON(inputs.deployment).privateTemplateUrl }}
         run: |
           ./infrastructure/aws/publish.ps1 `
             -ReleaseDirectory (Join-Path $env:RUNNER_TEMP 'pyrogravity-release') `
             -ReleaseId $env:GITHUB_SHA `
-            -TemplateUrl $env:APPROVED_TEMPLATE_URL
+            -TemplateUrl $env:APPROVED_TEMPLATE_URL `
+            -PrivateStackName $env:PRIVATE_STACK_NAME `
+            -PrivateTemplateUrl $env:APPROVED_PRIVATE_TEMPLATE_URL
