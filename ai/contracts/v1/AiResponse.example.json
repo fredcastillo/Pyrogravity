@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "request_id": "750cb32c-48a6-4a6e-88c4-8eb147633ae7",
+  "status": "supported",
+  "intent": "scientific_analysis",
+  "answer": "En este ejemplo sintético, la duración registrada es 12,5 s.",
+  "claims": [
+    {"claim_id": "claim_1", "text": "La duración registrada es 12,5 s.", "evidence_ids": ["evidence_1"]}
+  ],
+  "evidence": [
+    {
+      "kind": "scientific",
+      "evidence_id": "evidence_1",
+      "dataset": {
+        "ref_id": "flex_dataset",
+        "psi_code": "PSI-69",
+        "relative_path": "flex/example.csv",
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "nasa_psi_url": "https://psi.nasa.gov/physci/repo/data/investigations/PSI-69",
+        "database_dataset_id": null
+      },
+      "datum": {
+        "datum_id": "measurement_1",
+        "dataset_ref_id": "flex_dataset",
+        "variable_code": "burn_time",
+        "value": "12.5",
+        "unit": "s",
+        "validation_status": "validated",
+        "kind": "measurement",
+        "source_record": "EXAMPLE-ROW-1",
+        "column_ordinal": 2,
+        "method": null,
+        "sample_count": null
+      }
+    }
+  ],
+  "visualizations": [
+    {
+      "schema_version": "1.0",
+      "chart_id": "chart_1",
+      "type": "scatter",
+      "title": "Duración de combustión por ensayo",
+      "data_ref": "analysis:flex:example-opaque-result",
+      "x": {"field": "experiment_id", "label": "Ensayo", "kind": "categorical", "unit": null},
+      "y": {"field": "burn_time", "label": "Duración", "kind": "numeric", "unit": "s"},
+      "filters": {},
+      "dataset_ref_ids": ["flex_dataset"],
+      "limitations": ["Ejemplo sintético; resolver data_ref en un endpoint autorizado."]
+    }
+  ],
+  "limitations": ["Ejemplo sintético de contrato; no representa una medición NASA."],
+  "metrics": {"latency_ms": 25}
+}

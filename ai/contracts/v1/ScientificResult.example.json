@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "status": "ok",
+  "analysis_id": "flex",
+  "source": "parquet",
+  "datasets": [
+    {
+      "ref_id": "flex_dataset",
+      "psi_code": "PSI-69",
+      "relative_path": "flex/example.csv",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "nasa_psi_url": "https://psi.nasa.gov/physci/repo/data/investigations/PSI-69",
+      "database_dataset_id": null
+    }
+  ],
+  "data": [
+    {
+      "datum_id": "measurement_1",
+      "dataset_ref_id": "flex_dataset",
+      "variable_code": "burn_time",
+      "value": "12.5",
+      "unit": "s",
+      "validation_status": "validated",
+      "kind": "measurement",
+      "source_record": "EXAMPLE-ROW-1",
+      "column_ordinal": 2,
+      "method": null,
+      "sample_count": null
+    }
+  ],
+  "warnings": [],
+  "limitations": ["Ejemplo sintético de contrato; no representa una medición NASA."]
+}
