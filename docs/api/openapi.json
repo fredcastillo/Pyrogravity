@@ -252,9 +252,6 @@
           "schema_version": {
             "const": "1.0",
             "default": "1.0",
-            "enum": [
-              "1.0"
-            ],
             "title": "Schema Version",
             "type": "string"
           },
@@ -287,6 +284,7 @@
             "type": "string"
           },
           "details": {
+            "additionalProperties": true,
             "title": "Details",
             "type": "object"
           },
@@ -329,9 +327,6 @@
           "schema_version": {
             "const": "1.0",
             "default": "1.0",
-            "enum": [
-              "1.0"
-            ],
             "title": "Schema Version",
             "type": "string"
           },
@@ -760,6 +755,13 @@
       },
       "ValidationError": {
         "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
           "loc": {
             "items": {
               "anyOf": [
