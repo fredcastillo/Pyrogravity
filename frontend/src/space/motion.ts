@@ -24,6 +24,8 @@ export function enableOrbitalField(canvas: HTMLCanvasElement) {
   let starting = false
   let dispose: (() => void) | undefined
   let context: WebGL2RenderingContext | null = null
+  let ready = false
+  let frame = 0
   const allowed = () => !stopped && !motion.matches && pointer.matches
   const synchronize = () => {
     if (!allowed()) {
@@ -31,7 +33,7 @@ export function enableOrbitalField(canvas: HTMLCanvasElement) {
       dispose = undefined
       return
     }
-    if (starting || dispose) return
+    if (!ready || starting || dispose) return
     context ??= canvas.getContext('webgl2', { alpha: true, antialias: false, powerPreference: 'low-power' })
     if (!context) return
     starting = true
@@ -43,9 +45,21 @@ export function enableOrbitalField(canvas: HTMLCanvasElement) {
   }
   motion.addEventListener('change', synchronize)
   pointer.addEventListener('change', synchronize)
-  synchronize()
+  // Let the browser paint the page and its photograph before initializing WebGL.
+  const afterLoad = () => {
+    frame = window.requestAnimationFrame(() => {
+      frame = window.requestAnimationFrame(() => {
+        ready = true
+        synchronize()
+      })
+    })
+  }
+  if (document.readyState === 'complete') afterLoad()
+  else window.addEventListener('load', afterLoad, { once: true })
   return () => {
     stopped = true
+    window.removeEventListener('load', afterLoad)
+    window.cancelAnimationFrame(frame)
     motion.removeEventListener('change', synchronize)
     pointer.removeEventListener('change', synchronize)
     dispose?.()

@@ -1,9 +1,10 @@
-import { ArrowRight, Database, ExternalLink, Telescope } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { ArrowRight, ArrowUpRight, Database, ExternalLink } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { AiCopilot } from '../components/AiCopilot'
+import { FeaturedExperiment } from '../components/FeaturedExperiment'
 import { scientificCatalogUrl } from '../scientificCatalog'
-import { reveal } from '../space/motion'
-import flameLab from '../assets/microgravity-flame-lab.jpg'
+import flame from '../assets/nasa-flame-design.webp'
+import smallFlame from '../assets/nasa-flame-design-small.webp'
 
 interface Analysis {
   analysis_id: string
@@ -13,14 +14,17 @@ interface Analysis {
   variables: { name: string; unit: string }[]
 }
 
+const editorial: Record<string, [string, string]> = {
+  'bass-ii': ['CO₂ en BASS-II', 'Compara la concentración de CO₂ al inicio y al final de los ensayos.'],
+  flex: ['Combustión de gotas en FLEX', 'Explora la duración, el diámetro inicial de la gota y la presión ambiente.'],
+  'flame-design': ['Presión en Flame Design', 'Compara los cambios de presión en configuraciones de llama normal e inversa.'],
+  'cfi-g': ['Duración en CFI-G', 'Consulta cuánto duró la combustión por configuración y tipo de terminación.'],
+  spice: ['Flujos en SPICE', 'Explora los ajustes del flujo de aire y combustible por boquilla y tipo de combustible.'],
+}
+
 export function PublishedCenter() {
   const [analyses, setAnalyses] = useState<Analysis[]>([])
   const [error, setError] = useState(false)
-  const page = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    return reveal(page.current?.querySelectorAll('[data-reveal]') ?? [])
-  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -38,21 +42,34 @@ export function PublishedCenter() {
   }, [])
 
   return (
-    <div className="page page--published" ref={page}>
-      <header className="page-header published-hero">
-        <img className="published-hero__image" src={flameLab} alt="" fetchPriority="high" data-orbital-art />
-        <div className="published-hero__copy" data-reveal>
-          <p className="eyebrow published-kicker"><Telescope aria-hidden="true" /> Observatorio de combustión</p>
-          <h1>Flame Intelligence <span>Center</span></h1>
-          <p>Explora cómo se comporta el fuego en microgravedad con datos de experimentos de NASA.</p>
+    <div className="observatory-content">
+      <section className="published-hero" aria-labelledby="home-title">
+        <div className="published-hero__copy">
+          <p className="editorial-label">Observatorio de combustión</p>
+          <h1 id="home-title">El fuego en <span>microgravedad.</span></h1>
+          <p>Mira cómo arde una llama en órbita, compara ensayos y sigue cada medición hasta el archivo de NASA.</p>
           <div className="published-hero__actions">
             <a className="published-primary" href={scientificCatalogUrl('catalog-title')}>Abrir el Atlas <ArrowRight aria-hidden="true" /></a>
-            <a className="published-secondary" href="#scientific-query">Consultar fuentes</a>
+            <a className="published-secondary" href="#primer-experimento">Ver un experimento</a>
           </div>
         </div>
-      </header>
-      <div className="analysis-grid published-grid">
-        <section className="panel published-catalog" aria-labelledby="published-analysis-title" data-reveal>
+        <figure className="published-hero__figure">
+          <div className="published-hero__image">
+            <picture data-orbital-art>
+              <source media="(max-width: 650px)" srcSet={smallFlame} />
+              <img src={flame} width="1041" height="952" fetchPriority="high"
+                alt="Una llama azul redondeada con puntos de hollín incandescente en su interior" />
+            </picture>
+          </div>
+          <figcaption>
+            <span>Flame Design · Estación Espacial Internacional, 2020</span>
+            <a href="https://www.nasa.gov/image-article/studying-flames-microgravity/">Foto de NASA <ArrowUpRight aria-hidden="true" /></a>
+          </figcaption>
+        </figure>
+      </section>
+      <FeaturedExperiment />
+      <div className="published-grid">
+        <section className="panel published-catalog" aria-labelledby="published-analysis-title">
           <div className="panel__header">
             <div><p className="eyebrow">Datos experimentales</p><h2 id="published-analysis-title">Análisis científicos</h2></div>
             <Database aria-hidden="true" />
@@ -60,20 +77,29 @@ export function PublishedCenter() {
           {error && <p className="published-status" role="alert">No se pudo cargar la lista. Abre el Atlas para consultar el catálogo.</p>}
           {!error && !analyses.length && <p role="status">Cargando análisis…</p>}
           <ul className="published-analysis-list">
-            {analyses.map((item) => (
-              <li key={item.analysis_id}>
-                <div className="published-analysis-title"><h3>{item.analysis_name}</h3><span>{item.psi_code}</span></div>
-                <p>{item.description}</p>
-                <ul className="published-variables" aria-label="Variables y unidades">
-                  {item.variables.map(({ name, unit }) => <li key={name}>{name} <span>{unit}</span></li>)}
-                </ul>
-                <a className="text-link" href={`/api/v1/analyses/${encodeURIComponent(item.analysis_id)}`}>Ver resultado y procedencia <ExternalLink aria-hidden="true" /></a>
+            {analyses.map((item) => {
+              const [title, description] = editorial[item.analysis_id] ?? [item.analysis_name, item.description]
+              return <li key={item.analysis_id}>
+                <div className="published-analysis-title"><h3>{title}</h3><span>{item.psi_code}</span></div>
+                <p>{description}</p>
+                <div className="published-analysis-actions">
+                  <a className="text-link" href={scientificCatalogUrl('science-title', { analysis: item.analysis_id })}>
+                    Abrir análisis <ArrowRight aria-hidden="true" />
+                  </a>
+                  <details>
+                    <summary>Variables y procedencia</summary>
+                    <ul className="published-variables" aria-label="Variables y unidades">
+                      {item.variables.map(({ name, unit }) => <li key={name}>{name} <span>{unit}</span></li>)}
+                    </ul>
+                    <a className="text-link" href={`/api/v1/analyses/${encodeURIComponent(item.analysis_id)}`}>Ver resultado y procedencia <ExternalLink aria-hidden="true" /></a>
+                  </details>
+                </div>
               </li>
-            ))}
+            })}
           </ul>
           <a className="published-analysis-link" href={scientificCatalogUrl('science-title')}>Explorar gráficas y metodologías <ArrowRight aria-hidden="true" /></a>
         </section>
-        <div id="scientific-query" data-reveal><AiCopilot experimentId="catalogo" experimentName="Fuentes NASA" /></div>
+        <div id="scientific-query" tabIndex={-1}><AiCopilot experimentId="catalogo" experimentName="Fuentes NASA" /></div>
       </div>
     </div>
   )

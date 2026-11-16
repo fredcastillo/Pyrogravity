@@ -20,6 +20,13 @@ def prepare(output: Path, frontend: Path) -> None:
     (science / "index.html").write_text(legacy, encoding="utf-8")
     shutil.copytree(frontend, assets / "command-center", dirs_exist_ok=True, ignore=shutil.ignore_patterns(".vite"))
     html = (frontend / "index.html").read_text(encoding="utf-8")
+    hero_preloads = []
+    for image, media in (("nasa-flame-design-small", "(max-width: 650px)"), ("nasa-flame-design", "(width > 650px)")):
+        entry = manifest[f"src/assets/{image}.webp"]
+        hero_preloads.append(
+            f'<link rel="preload" as="image" href="./{entry["file"]}" media="{media}" fetchpriority="high">'
+        )
+    html = html.replace("</head>", "\n".join(hero_preloads) + "\n</head>")
     root_html = html.replace('"./assets/', '"/assets/command-center/assets/')
     root_html = root_html.replace('</head>', '<meta name="pyrogravity-science" content="/assets/science/index.html">\n</head>')
     (output / "index.html").write_text(root_html, encoding="utf-8")
