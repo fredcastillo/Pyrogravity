@@ -3,7 +3,11 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import type { AiResponse, AiSupportStatus, HydratedChart, ResolvedCitation, ValidatedChartPoint } from '../contracts/ai'
 import { AiHttpError, buildAiQuery, queryAi } from '../services/ai'
 
-interface AiCopilotProps { experimentId: string; experimentName: string }
+interface AiCopilotProps {
+  experimentId: string
+  experimentName: string
+  aiContext?: { experimentIds: string[]; variables: string[] }
+}
 
 const statusCopy: Record<AiSupportStatus, { label: string; detail: string; icon: typeof CheckCircle2 }> = {
   supported: { label: 'Respaldada', detail: 'Las afirmaciones están vinculadas a evidencia resuelta.', icon: CheckCircle2 },
@@ -56,10 +60,10 @@ function CitationCard({ citation }: { citation: ResolvedCitation }) {
   return <article className="evidence-card"><div className="evidence-card__icon">{citation.kind === 'document' ? <BookOpen /> : <Database />}</div><div><span>{citation.kind === 'document' ? 'Fuente documental' : 'Fuente científica'}</span><strong>{citation.title}</strong><p className="citation-snippet">“{citation.snippet}”</p><dl><div><dt>Fuente</dt><dd>{citation.source}</dd></div><div><dt>Página</dt><dd>{citation.page ?? 'No aplica'}</dd></div>{citation.measurement && <><div><dt>Cifra</dt><dd>{citation.measurement.value} {citation.measurement.unit}</dd></div><div><dt>Procedencia</dt><dd>{provenanceCopy[citation.measurement.provenance]}</dd></div></>}</dl>{url ? <a href={url} target="_blank" rel="noreferrer">Abrir fuente <ExternalLink /></a> : <small>URL no válida</small>}</div></article>
 }
 
-export function AiCopilot({ experimentId, experimentName }: AiCopilotProps) {
+export function AiCopilot({ experimentId, experimentName, aiContext }: AiCopilotProps) {
   const [question, setQuestion] = useState('')
   const [response, setResponse] = useState<AiResponse | null>(null)
-  const [error, setError] = useState<{ status: number; message: string } | null>(null)
+  const [error, setError] = useState<{ status: number; code: string; message: string; requestId?: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const citationMap = useMemo(() => new Map(response?.citations.map((item) => [item.id, item]) ?? []), [response])
@@ -72,10 +76,12 @@ export function AiCopilot({ experimentId, experimentName }: AiCopilotProps) {
     const controller = new AbortController(); abortRef.current = controller
     setLoading(true); setError(null); setResponse(null)
     try {
-      const request = buildAiQuery(question, { experimentIds: [experimentId], variables: ['temperature', 'oxygen'], chartPreference: 'line' })
+      const request = buildAiQuery(question, { experimentIds: aiContext?.experimentIds ?? [], variables: aiContext?.variables ?? [], chartPreference: 'line' })
       setResponse(await queryAi(request, controller.signal)); setQuestion('')
     } catch (cause) {
-      if ((cause as Error).name !== 'AbortError') setError({ status: cause instanceof AiHttpError ? cause.status : 0, message: cause instanceof Error ? cause.message : 'No fue posible completar la consulta.' })
+      if ((cause as Error).name !== 'AbortError') setError(cause instanceof AiHttpError
+        ? { status: cause.status, code: cause.code, message: cause.message, requestId: cause.requestId }
+        : { status: 0, code: 'CONTRACT_ERROR', message: cause instanceof Error ? cause.message : 'No fue posible completar la consulta.' })
     } finally { if (!controller.signal.aborted) setLoading(false) }
   }
 
@@ -83,12 +89,12 @@ export function AiCopilot({ experimentId, experimentName }: AiCopilotProps) {
   const StatusIcon = currentStatus?.icon
   return <section className="panel copilot-panel copilot-panel--contract" aria-labelledby="ai-copilot-title">
     <div className="panel__header"><div><p className="eyebrow">BACKEND EVIDENCE GATEWAY · /API/V1</p><h2 id="ai-copilot-title">Consulta científica verificable</h2></div><Sparkles /></div>
-    <div className="ai-context"><span>Contexto enviado al backend</span><strong>{experimentName}</strong><small>Ensayo: {experimentId} · variables: temperature, oxygen · gráfico preferido: line</small></div>
+    <div className="ai-context"><span>Contexto enviado al backend</span><strong>{experimentName}</strong><small>{aiContext ? `Ensayo: ${aiContext.experimentIds.join(', ')} · variables: ${aiContext.variables.join(', ')}` : `Familia ${experimentId} sin ensayo canónico publicado · se solicitará evidencia documental`} · gráfico preferido: line</small></div>
     <div className="ai-suggestions" aria-label="Preguntas sugeridas">{['¿Qué evidencia respalda la extinción?', 'Resume las limitaciones', '¿Qué gráfico validado está disponible?'].map((suggestion) => <button type="button" key={suggestion} onClick={() => setQuestion(suggestion)}>{suggestion}</button>)}</div>
     <form className="ai-query-form" onSubmit={ask}><label htmlFor="copilot-question" className="sr-only">Pregunta para el copiloto</label><input id="copilot-question" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder={`Pregunta sobre ${experimentName}…`} aria-describedby="ai-query-note" /><button type="submit" disabled={!question.trim() || loading} aria-label="Enviar pregunta">{loading ? <span className="ai-spinner" /> : <Send />}</button></form>
     <small id="ai-query-note" className="ai-query-note">El navegador consulta exclusivamente <code>/api/v1/ai/query</code>. No accede a Cohere, Supabase ni servicios internos.</small>
     {loading && <div className="ai-loading" role="status"><span /><div><strong>Consultando backend</strong><small>Esperando evidencia pública resuelta…</small></div></div>}
-    {error && <div className="ai-error" role="alert"><ShieldAlert /><div><strong>Error de servicio{error.status ? ` · HTTP ${error.status}` : ''}</strong><p>{error.message}</p></div></div>}
+    {error && <div className="ai-error" role="alert"><ShieldAlert /><div><strong>{error.code}{error.status ? ` · HTTP ${error.status}` : ''}</strong><p>{error.message}</p>{error.requestId && <small>request_id · <code>{error.requestId}</code></small>}</div></div>}
     {response && currentStatus && StatusIcon && <div className="ai-response" data-status={response.status} data-provenance={response.provenance}>
       {response.provenance === 'demo' && <div className="ai-demo-banner"><AlertTriangle /><strong>DEMOSTRACIÓN · contenido no científico</strong></div>}
       <header className="ai-response__status"><StatusIcon /><div><strong>{currentStatus.label}</strong><span>{currentStatus.detail}</span></div><small>{provenanceCopy[response.provenance]}</small></header>

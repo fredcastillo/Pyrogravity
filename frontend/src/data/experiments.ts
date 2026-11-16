@@ -20,6 +20,10 @@ export const experiments: Experiment[] = [
     doi: '10.60555/mbq8-0451',
     updated: '14 nov 2026',
     summary: 'Combustión de gotas líquidas y transición hacia la extinción en microgravedad.',
+    aiContext: {
+      experimentIds: ['PSI-69:psi-69_flex:1'],
+      variables: ['burn_time'],
+    },
     series: [
       { time: 0, value: 1.1 }, { time: 3, value: 1.72 }, { time: 6, value: 2.02 },
       { time: 9, value: 1.84 }, { time: 12, value: 1.41 }, { time: 15, value: 0.78 },
