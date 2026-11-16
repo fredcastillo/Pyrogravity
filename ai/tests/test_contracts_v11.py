@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import pytest
+from jsonschema import Draft202012Validator
 from pydantic import ValidationError
 
 from pyrogravity_ai.schemas import contracts_v11 as wire
@@ -28,6 +29,20 @@ def test_examples_match_models_and_exported_schemas(model) -> None:
     model.model_validate(payload)
     schema = json.loads((EXAMPLES / f"{model.__name__}.schema.json").read_text(encoding="utf-8"))
     assert schema == model.model_json_schema()
+
+
+@pytest.mark.parametrize("name", ["ScientificResult", "AiQueryRequest"])
+def test_scientific_canonicalization_version_is_valid_on_the_wire(name: str) -> None:
+    """Consumers using JSON Schema must accept the same scientific payload as Pydantic."""
+    payload = example(name)
+    schema = json.loads((EXAMPLES / f"{name}.schema.json").read_text(encoding="utf-8"))
+    Draft202012Validator.check_schema(schema)
+    validator = Draft202012Validator(schema)
+    validator.validate(payload)
+
+    scientific = payload if name == "ScientificResult" else payload["scientific_results"][0]
+    scientific.pop("canonicalization_version")
+    assert not validator.is_valid(payload)
 
 
 def test_backend_context_and_response_match() -> None:
