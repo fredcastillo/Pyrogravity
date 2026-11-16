@@ -83,3 +83,12 @@ La migración se conserva en `ai/migrations/` y se copió a la cadena compartida
 ## D-020 · Evaluación documental de varias fuentes
 
 **Decisión:** cada PDF conserva sus casos y sus hashes de evidencia en un archivo separado; las herramientas aceptan varios archivos solo si pertenecen a la misma generación activa. Los totales se calculan a partir de los casos individuales, no promediando porcentajes de fuentes con distintos tamaños. Los casos `candidate` bloquean la medición. **Motivo:** medir distractores entre documentos y evitar que el primer artículo FLEX represente la calidad de todo el corpus. **Alternativa:** combinar preguntas de fuentes distintas sin verificar la generación activa; permitiría resultados no reproducibles.
+
+
+## D-021 · Conexión científica por el catálogo PostgreSQL y entrega operativa
+
+El backend usa el adaptador independiente de Stanley con `source="postgres"` para los cinco análisis y un lector dedicado; limita resultados a IDs y variables y recalcula el hash. Se conserva el contrato público. Se evita ejecutar ETL/Parquet por petición, alternativa que solo cubría FLEX. El servicio AI se despliega separado, autenticado y detrás de HTTPS privado; runtime no recibe permisos de ingesta ni administrador.
+
+La selección Cohere usa JSON mode, manteniendo rechazo de IDs o formas inválidas. Las afirmaciones numéricas contienen valor/unidad; la procedencia y los métodos viajan en las referencias. Esto evita que la comprobación de cifras confunda identificadores o versiones con mediciones.
+
+La evaluación de dos fuentes mostró pérdida de pasajes BASS-II en el top reducido. Se incorpora Rerank opcional sobre un pool más amplio, desactivado por defecto hasta la evaluación del equipo. Alternativa: declarar suficiente el resultado de un solo PDF; no representa el corpus ampliado. No se establece umbral de calidad a partir de diez casos.

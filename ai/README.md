@@ -73,7 +73,7 @@ The command prints the document hash, extraction version, fragment count, embedd
 
 `pyrogravity_ai.database.ingestion_repository.persist_ingestion()` can store a prepared plan transactionally. It requires a dedicated, non-owner ingestion login with the deployed `pyrogravity_ai_ingest` group role; it rejects a PostgreSQL administrator or table owner. A repeat run leaves chunks and embeddings unchanged and records another job. Another processing configuration of the same PDF gets a separate document row. No ingestion command has been run against Supabase yet; provision the dedicated login before writing.
 
-`scripts/ingest_source.py` is the guarded writer entry point. A plain run prepares and prints the exact plan without database access. A write requires both `--apply` and `--expect-plan-hash <hash-from-dry-run>`, plus a dedicated `AI_INGEST_DATABASE_URL` in the ignored `.env`. It enforces TLS and the repository rejects privileged roles. The migrations and RLS policies are deployed; a dedicated login and private PDF storage remain to be configured.
+`scripts/ingest_source.py` is the guarded writer entry point. A plain run prepares and prints the exact plan without database access. A write requires both `--apply` and `--expect-plan-hash <hash-from-dry-run>`, plus a dedicated `AI_INGEST_DATABASE_URL` in the ignored `.env`. It enforces TLS and the repository rejects privileged roles. The migrations, RLS and dedicated database logins are deployed. Private PDF archival and service deployment remain with the infrastructure operator.
 
 ## Retrieve reviewed evidence
 
@@ -115,8 +115,12 @@ The service endpoint is `POST /internal/v1/ai/query` with the versioned `AiQuery
 .venv\Scripts\uvicorn.exe pyrogravity_ai.service.app:create_app --factory --host 127.0.0.1 --port 8010
 ```
 
-The server needs `COHERE_API_KEY`, `COHERE_MODEL` and a dedicated read-only `AI_DATABASE_URL`. It defaults to reviewed text retrieval; `AI_RETRIEVAL_STRATEGY=hybrid` additionally requires `AI_EMBED_CONFIG_HASH` for the active generation. Do not point the current code at Supabase until the local Knowledge Base generation migration, RLS policies and reader role are deployed. Keep the service behind private TLS and authenticate the backend to it; the browser must only call the backend.
+The server needs `COHERE_API_KEY`, `COHERE_MODEL` and a dedicated read-only `AI_DATABASE_URL`. It defaults to reviewed text retrieval; `AI_RETRIEVAL_STRATEGY=hybrid` additionally requires `AI_EMBED_CONFIG_HASH` for the active generation. The generation migrations, RLS, reader roles and a two-document active generation are deployed in Supabase. Keep the service behind private TLS and authenticate the backend to it; the browser must only call the backend.
 
 The orchestrator routes clear questions by rules and asks Cohere for ambiguous intent. Cohere selects evidence IDs from bounded candidates; the final claim text is assembled from validated scientific values or literal reviewed passages. Unknown IDs, malformed model output, altered passage hashes and unauthorized chart references fail closed. Numeric context comes only from the backend's `ScientificResult` objects. The backend still has to verify every returned datum and citation against its authorized source and hydrate charts from scientific data. HTTP errors use `ErrorEnvelope`; `insufficient_evidence` is a successful HTTP 200 with no claims.
 
 For a request with selected trials, `schemas.scientific_scope.scope_scientific_result` limits a validated full analysis result to the requested `experiment_ids` and `variables`, then recomputes `data_version` from the exact subset. It retains direct measurements and point derivations whose input cells all belong to selected trials. Aggregates with only an input-set hash are excluded because that hash cannot establish trial-level scope. The backend must still authenticate the request and verify the original scientific result; this helper neither queries `scientific` nor makes the public-to-internal mapper operational.
+
+## Integrated deployment handoff
+
+See [deployment instructions](../docs/despliegue-ia-integrada.md) for service-specific secrets, Docker/TLS configuration, current evaluation limitations and acceptance commands. The public route now uses the five-analysis PostgreSQL resolver. Runtime does not need an administrator DSN or PDF access per request. Remaining tests and deployment are delegated to the team.

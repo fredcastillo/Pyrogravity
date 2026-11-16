@@ -40,6 +40,8 @@ class Settings(BaseSettings):
         if not self.demo_mode and not self.pyrogravity_database_url:
             raise ValueError("PYROGRAVITY_DATABASE_URL del lector es obligatorio si DEMO_MODE=false")
         if self.ai_provider_enabled:
+            if not self.pyrogravity_database_url:
+                raise ValueError("AI_PROVIDER_ENABLED requiere PYROGRAVITY_DATABASE_URL del lector científico")
             if not self.ai_internal_url or not self.ai_internal_token or not self.ai_citation_view_database_url:
                 raise ValueError("AI_PROVIDER_ENABLED requiere URL/token internos y DSN del lector de citation_passages")
             if self.ai_internal_url.scheme != "https":
