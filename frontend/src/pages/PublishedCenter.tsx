@@ -2,6 +2,7 @@ import { Database, ExternalLink } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { AiCopilot } from '../components/AiCopilot'
 import { PageHeader } from '../components/PageHeader'
+import { scientificCatalogUrl } from '../scientificCatalog'
 
 interface Analysis {
   analysis_id: string
@@ -48,7 +49,7 @@ export function PublishedCenter() {
               </li>
             ))}
           </ul>
-          <a className="button button--primary" href="/#science-title">Explorar gráficas y metodologías</a>
+          <a className="button button--primary" href={scientificCatalogUrl('science-title')}>Explorar gráficas y metodologías</a>
         </section>
         <AiCopilot experimentId="catalogo" experimentName="Fuentes NASA" />
       </div>

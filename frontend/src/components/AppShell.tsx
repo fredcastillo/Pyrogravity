@@ -13,6 +13,7 @@ import { useState, type PropsWithChildren } from 'react'
 import { NavLink } from 'react-router-dom'
 import pyrogravityLogo from '../assets/pyrogravity-logo.png'
 import pyrogravityMark from '../assets/pyrogravity-mark.png'
+import { scientificCatalogUrl } from '../scientificCatalog'
 
 const navigation = [
   { to: '/', label: 'Command Center', icon: LayoutDashboard, end: true },
@@ -23,9 +24,9 @@ const navigation = [
 ]
 
 const publishedNavigation = [
-  { href: '/#catalog-title', label: 'Tablas NASA', icon: Database },
-  { href: '/#science-title', label: 'Análisis y gráficas', icon: Search },
-  { href: '/#comparison-title', label: 'Comparador de ensayos', icon: GitCompareArrows },
+  { href: scientificCatalogUrl('catalog-title'), label: 'Tablas NASA', icon: Database },
+  { href: scientificCatalogUrl('science-title'), label: 'Análisis y gráficas', icon: Search },
+  { href: scientificCatalogUrl('comparison-title'), label: 'Comparador de ensayos', icon: GitCompareArrows },
 ]
 
 export function AppShell({ children }: PropsWithChildren) {

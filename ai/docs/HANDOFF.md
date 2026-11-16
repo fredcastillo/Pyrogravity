@@ -1,5 +1,11 @@
 # Handoff de Pyrogravity AI
 
+## Integración AWS · 2026-11-16
+
+Evaluación del parche y Rerank contra la generación activa: 10/10 casos correctos, incluidos 8 positivos con el pasaje esperado y 2 abstenciones. Reporte reproducible en `../evaluations/aws-20261116-engine.json`. Es una muestra acotada; no demuestra exactitud general. Las pruebas de API pública se repiten después del despliegue.
+
+El operador está integrando el PR #48. Runtime, lector de citas, lector científico e ingesta conectan por el Session pooler con identidades distintas; sus valores están separados en Secrets Manager, sin credencial de administración. La invocación backend → AI usa HTTPS autenticado por IAM. La prueba pública verificó cinco valores científicos y una comparación contra PostgreSQL, además de una respuesta documental con citas. Detectó un falso soporte ante una pregunta con una premisa ausente; se endurece la selección por pertinencia completa y se fija temperatura cero. Las pruebas posteriores al despliegue y la evaluación del Rerank deben registrarse antes de declarar aceptación completa. No se han alterado documentos, migraciones ni mediciones.
+
 Actualizado: 2026-11-15. Rama: `users/johan`, mismo clon `Pyrogravity-1`, sin worktrees. El PR #43 está fusionado en `main` (`b08dc65`), incorporado por fast-forward. El usuario autoriza cambios de integración y push, pide commits en español, sin coautoría AI ni reviewers. El despliegue y las pruebas restantes los realizará el equipo por instrucción posterior.
 
 ## Objetivo y estado real

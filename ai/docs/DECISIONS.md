@@ -92,3 +92,7 @@ El backend usa el adaptador independiente de Stanley con `source="postgres"` par
 La selección Cohere usa JSON mode, manteniendo rechazo de IDs o formas inválidas. Las afirmaciones numéricas contienen valor/unidad; la procedencia y los métodos viajan en las referencias. Esto evita que la comprobación de cifras confunda identificadores o versiones con mediciones.
 
 La evaluación de dos fuentes mostró pérdida de pasajes BASS-II en el top reducido. Se incorpora Rerank opcional sobre un pool más amplio, desactivado por defecto hasta la evaluación del equipo. Alternativa: declarar suficiente el resultado de un solo PDF; no representa el corpus ampliado. No se establece umbral de calidad a partir de diez casos.
+
+## D-022 · Pertinencia antes de seleccionar evidencia
+
+La prueba pública encontró una respuesta respaldada por un pasaje real, pero ajena a una premisa material de la pregunta. Se exige que la selección considere fenómeno, sustancia, condiciones y cantidad solicitados; compartir el nombre de la investigación no basta. La selección usa temperatura cero y conserva la validación de IDs y trazabilidad. Es una mejora de instrucción al modelo, no una garantía universal de pertinencia: se conserva la prueba negativa de aceptación y la evaluación por documento.

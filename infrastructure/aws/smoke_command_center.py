@@ -12,8 +12,8 @@ def verify(base_url: str) -> None:
     with urlopen(base_url, timeout=20) as response:
         landing_page = response.read().decode()
     link = re.search(r'href="([^"]+/command-center/index\.html)"', landing_page)
-    assert link, "Falta el enlace al Command Center."
-    spa_url = urljoin(base_url, link[1])
+    assert link or 'id="root"' in landing_page, "Falta el frontend de React."
+    spa_url = urljoin(base_url, link[1]) if link else base_url
     with urlopen(spa_url, timeout=20) as response:
         html = response.read().decode()
     script = re.search(r'<script\b[^>]+src="([^"]+\.js)"', html)

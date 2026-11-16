@@ -1,5 +1,12 @@
 # Demo de Pyrogravity en AWS
 
+La entrada pública `/` publica el frontend React de `frontend/`. `prepare_site.py`
+conserva el catálogo y los comparadores bajo los assets de la misma versión;
+los enlaces del frontend apuntan a ese catálogo. CI prueba la distribución que
+se publica y CloudFront usa rutas inmutables identificadas por el SHA de Git.
+El modo estático de React utiliza datos reales de la API; los prototipos visuales
+con datos locales continúan disponibles en el entorno de desarrollo.
+
 El catálogo de la demo se genera a partir de todas las tablas validadas por el ETL de `data/`. Muestra las filas con datos, los encabezados originales, las unidades declaradas y la fuente de NASA. El comparador interactivo admite FLEX, con el tiempo de combustión en segundos, y BASS-II, con el oxígeno inicial calibrado en porcentaje por volumen.
 
 ```mermaid
