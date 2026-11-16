@@ -93,7 +93,7 @@ def public_query(req: PublicAiQueryRequest, request: Request, settings: Settings
         code = error.code
         if code == "invalid_request":
             code = "VALIDATION_ERROR"
-        elif code == "upstream_unavailable":
+        elif code in {"upstream_unavailable", "timeout"}:
             code = "AI_UNAVAILABLE"
         raise ApiError(code, error.message, status_code=error.status_code, details={}) from None
 

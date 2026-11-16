@@ -60,6 +60,17 @@
           }
         }
       },
+      "504_ai_timeout": {
+        "summary": "504 ai timeout",
+        "value": {
+          "error": {
+            "code": "AI_UNAVAILABLE",
+            "details": {},
+            "message": "El servicio de IA agotó el tiempo de espera.",
+            "request_id": "00000000-0000-0000-0000-000000000504"
+          }
+        }
+      },
       "ai_insufficient_evidence": {
         "summary": "ai insufficient evidence",
         "value": {
@@ -1574,6 +1585,11 @@
           "504": {
             "content": {
               "application/json": {
+                "examples": {
+                  "504_ai_timeout": {
+                    "$ref": "#/components/examples/504_ai_timeout"
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/ApiErrorResponse"
                 }
@@ -1760,6 +1776,11 @@
           "504": {
             "content": {
               "application/json": {
+                "examples": {
+                  "504_ai_timeout": {
+                    "$ref": "#/components/examples/504_ai_timeout"
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/ApiErrorResponse"
                 }
@@ -1960,6 +1981,11 @@
           "504": {
             "content": {
               "application/json": {
+                "examples": {
+                  "504_ai_timeout": {
+                    "$ref": "#/components/examples/504_ai_timeout"
+                  }
+                },
                 "schema": {
                   "$ref": "#/components/schemas/ApiErrorResponse"
                 }

@@ -29,6 +29,7 @@ def build_openapi() -> dict:
         "422": ["422_validation_error"],
         "502": ["502_ai_ungrounded_response"],
         "503": ["503_ai_unavailable"],
+        "504": ["504_ai_timeout"],
     }
     for path, operations in schema.get("paths", {}).items():
         if not (path.startswith("/api/v1/ai") or path.startswith("/api/v1/charts")):

@@ -3,6 +3,7 @@ from pathlib import Path
 
 from pydantic import AnyHttpUrl, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from psycopg.conninfo import conninfo_to_dict
 
 
 @lru_cache
@@ -43,6 +44,15 @@ class Settings(BaseSettings):
                 raise ValueError("AI_PROVIDER_ENABLED requiere URL/token internos y DSN del lector de citation_passages")
             if self.ai_internal_url.scheme != "https":
                 raise ValueError("AI_INTERNAL_URL debe usar HTTPS")
-            if not self.ai_internal_token.get_secret_value() or not self.ai_citation_view_database_url.get_secret_value():
-                raise ValueError("Las credenciales de IA no pueden estar vacías")
+            if len(self.ai_internal_token.get_secret_value()) < 32:
+                raise ValueError("AI_INTERNAL_TOKEN debe tener al menos 32 caracteres")
+            citation_dsn = self.ai_citation_view_database_url.get_secret_value()
+            if not citation_dsn:
+                raise ValueError("AI_CITATION_VIEW_DATABASE_URL no puede estar vacío")
+            try:
+                reader_user = conninfo_to_dict(citation_dsn).get("user", "")
+            except Exception as error:
+                raise ValueError("AI_CITATION_VIEW_DATABASE_URL no es un DSN válido") from error
+            if reader_user.lower() in {"anon", "authenticated", "service_role", "postgres"}:
+                raise ValueError("AI_CITATION_VIEW_DATABASE_URL debe usar un rol lector dedicado")
         return self

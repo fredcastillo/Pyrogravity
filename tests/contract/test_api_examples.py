@@ -30,7 +30,7 @@ def test_chart_example_validates_and_unverified_points_have_evidence():
 
 def test_error_examples_validate():
     for path in sorted(EXAMPLES.glob("*_*.json")):
-        if path.name[:3] in {"404", "422", "502", "503"}:
+        if path.name[:3] in {"404", "422", "502", "503", "504"}:
             ApiErrorResponse.model_validate(json.loads(path.read_text(encoding="utf-8")))
 
 
