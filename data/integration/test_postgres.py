@@ -71,6 +71,29 @@ def test_postgres_matches_parquet(database, analysis_id):
     assert normalize(actual) == normalize(expected)
 
 
+@pytest.mark.parametrize(("analysis_id", "filters"), [
+    *((item["analysis_id"], None) for item in list_analyses()),
+    pytest.param("bass-ii", {"pi": "Olson", "material": '1/4" clear rod'}, id="bass-ii-both-filters"),
+])
+def test_scientific_result_data_version_matches_parquet(database, analysis_id, filters):
+    pytest.importorskip("pyrogravity_ai", reason="ScientificResult needs the published v1.1 contract on PYTHONPATH")
+    from data.src.analysis.scientific_result import run_scientific_result
+
+    _, _, reader, directory, _ = database
+    parquet = run_scientific_result(analysis_id, filters=filters, data_dir=directory).model_dump(mode="json")
+    with psycopg.connect(reader) as conn:
+        conn.read_only = True
+        postgres = run_scientific_result(analysis_id, "postgres", conn, filters, data_dir=directory).model_dump(mode="json")
+    assert postgres["data_version"] == parquet["data_version"]
+    assert postgres["data"] and parquet["data"]
+    assert postgres.pop("source") == "postgres" and parquet.pop("source") == "parquet"
+    for dataset in postgres["datasets"]:
+        assert dataset.pop("database_dataset_id") > 0
+    for dataset in parquet["datasets"]:
+        assert dataset.pop("database_dataset_id") is None
+    assert postgres == parquet
+
+
 def test_rls_blocks_untrusted_reader(database):
     admin, _, _, _, _ = database
     with psycopg.connect(admin) as conn:

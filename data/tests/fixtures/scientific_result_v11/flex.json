@@ -1,0 +1,19 @@
+{
+  "status": "partial",
+  "data_version": "361986123dabd6b2ca311d58019737ef19f68a02e75cda3e42255c4866bd2738",
+  "datasets": {"psi-69_flex": "37c88ce8ae9391b7544ff630a45ce87543d04d317cdbfbed104fe7d5c27e1b96"},
+  "counts": {"measurement": 768, "derived": 187},
+  "aggregate": {
+    "table_name": "psi-69_flex",
+    "catalog_path": [],
+    "inputs": ["droplet_initial_diameter", "burn_time"],
+    "variable_code": "droplet_initial_diameter:burn_time",
+    "value": "0.5366",
+    "unit": "1",
+    "method": "pearson_r",
+    "group": null,
+    "cohort": null,
+    "sample_count": 256,
+    "input_set_sha256": "cb6bf46fb62c7ca56ae4d8cbcb3becc0d7cb7d3fa8cdff65713330b6a1dada73"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "status": "partial",
+  "data_version": "6e4e8ae1a0a59ab3f2645ba4f77acfbe6f22f9857ca5db57cb2225957e958bb8",
+  "datasets": {
+    "psi-159_cfi_g_normal_flames": "d95a621c3fbd27d204dd32ed29fa17d68f2b779d6a523cde8479ed7ebaa5251a",
+    "psi-159_cfi_g_inverse_flames": "d4d44f8b9896936728748e34d1b6ad0812032a92fa5289599b708c138e3a9b39"
+  },
+  "counts": {"measurement": 263, "derived": 132},
+  "aggregate": {
+    "table_name": "psi-159_cfi_g_normal_flames",
+    "catalog_path": ["configurations", "normal", "grouped_results", "termination", "FT"],
+    "inputs": ["duration"],
+    "variable_code": "duration_median",
+    "value": "61.5",
+    "unit": "sec",
+    "method": "median",
+    "group": "normal, termination=FT",
+    "cohort": null,
+    "sample_count": 30,
+    "input_set_sha256": "3c15301480a4033721faff3328f43b0d8246935cca50c52586eb6598385e658f"
+  }
+}
