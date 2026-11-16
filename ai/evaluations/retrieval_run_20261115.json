@@ -1,0 +1,520 @@
+{
+  "overall": {
+    "hybrid_rrf": {
+      "metrics": {
+        "cases": 10,
+        "hit_rate_at_k": 0.5,
+        "mean_reciprocal_rank_at_k": 0.2708333333333333,
+        "abstention_accuracy": 0.0
+      },
+      "cases": [
+        {
+          "case_id": "ntrs:20130014061/helium-burning-en",
+          "language": "en",
+          "first_expected_rank": 3,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20130014061/helium-burning-es",
+          "language": "es",
+          "first_expected_rank": 3,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20130014061/figure-five-en",
+          "language": "en",
+          "first_expected_rank": 2,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20130014061/conclusion-models-en",
+          "language": "en",
+          "first_expected_rank": 1,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20130014061/bass-co2-unsupported-es",
+          "language": "es",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20160000593/bass2-objectives-en",
+          "language": "en",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20160000593/bass2-objectives-es",
+          "language": "es",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20160000593/bass2-variables-en",
+          "language": "en",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20160000593/bass2-hardware-es",
+          "language": "es",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20160000593/bass2-row-co2-negative-es",
+          "language": "es",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        }
+      ]
+    },
+    "text": {
+      "metrics": {
+        "cases": 10,
+        "hit_rate_at_k": 0.5,
+        "mean_reciprocal_rank_at_k": 0.2125,
+        "abstention_accuracy": 0.0
+      },
+      "cases": [
+        {
+          "case_id": "ntrs:20130014061/helium-burning-en",
+          "language": "en",
+          "first_expected_rank": 5,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20130014061/helium-burning-es",
+          "language": "es",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20130014061/figure-five-en",
+          "language": "en",
+          "first_expected_rank": 4,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20130014061/conclusion-models-en",
+          "language": "en",
+          "first_expected_rank": 1,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20130014061/bass-co2-unsupported-es",
+          "language": "es",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20160000593/bass2-objectives-en",
+          "language": "en",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20160000593/bass2-objectives-es",
+          "language": "es",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20160000593/bass2-variables-en",
+          "language": "en",
+          "first_expected_rank": 4,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20160000593/bass2-hardware-es",
+          "language": "es",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20160000593/bass2-row-co2-negative-es",
+          "language": "es",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        }
+      ]
+    },
+    "vector": {
+      "metrics": {
+        "cases": 10,
+        "hit_rate_at_k": 0.5,
+        "mean_reciprocal_rank_at_k": 0.5,
+        "abstention_accuracy": 0.0
+      },
+      "cases": [
+        {
+          "case_id": "ntrs:20130014061/helium-burning-en",
+          "language": "en",
+          "first_expected_rank": 1,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20130014061/helium-burning-es",
+          "language": "es",
+          "first_expected_rank": 1,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20130014061/figure-five-en",
+          "language": "en",
+          "first_expected_rank": 1,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20130014061/conclusion-models-en",
+          "language": "en",
+          "first_expected_rank": 1,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20130014061/bass-co2-unsupported-es",
+          "language": "es",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20160000593/bass2-objectives-en",
+          "language": "en",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20160000593/bass2-objectives-es",
+          "language": "es",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20160000593/bass2-variables-en",
+          "language": "en",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20160000593/bass2-hardware-es",
+          "language": "es",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        },
+        {
+          "case_id": "ntrs:20160000593/bass2-row-co2-negative-es",
+          "language": "es",
+          "first_expected_rank": null,
+          "returned_count": 5,
+          "abstained": false
+        }
+      ]
+    }
+  },
+  "sources": {
+    "ntrs:20130014061": {
+      "text": {
+        "metrics": {
+          "cases": 5,
+          "hit_rate_at_k": 0.75,
+          "mean_reciprocal_rank_at_k": 0.3625,
+          "abstention_accuracy": 0.0
+        },
+        "cases": [
+          {
+            "case_id": "helium-burning-en",
+            "language": "en",
+            "first_expected_rank": 5,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "helium-burning-es",
+            "language": "es",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "figure-five-en",
+            "language": "en",
+            "first_expected_rank": 4,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "conclusion-models-en",
+            "language": "en",
+            "first_expected_rank": 1,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "bass-co2-unsupported-es",
+            "language": "es",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          }
+        ]
+      },
+      "vector": {
+        "metrics": {
+          "cases": 5,
+          "hit_rate_at_k": 1.0,
+          "mean_reciprocal_rank_at_k": 1.0,
+          "abstention_accuracy": 0.0
+        },
+        "cases": [
+          {
+            "case_id": "helium-burning-en",
+            "language": "en",
+            "first_expected_rank": 1,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "helium-burning-es",
+            "language": "es",
+            "first_expected_rank": 1,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "figure-five-en",
+            "language": "en",
+            "first_expected_rank": 1,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "conclusion-models-en",
+            "language": "en",
+            "first_expected_rank": 1,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "bass-co2-unsupported-es",
+            "language": "es",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          }
+        ]
+      },
+      "hybrid_rrf": {
+        "metrics": {
+          "cases": 5,
+          "hit_rate_at_k": 1.0,
+          "mean_reciprocal_rank_at_k": 0.5416666666666666,
+          "abstention_accuracy": 0.0
+        },
+        "cases": [
+          {
+            "case_id": "helium-burning-en",
+            "language": "en",
+            "first_expected_rank": 3,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "helium-burning-es",
+            "language": "es",
+            "first_expected_rank": 3,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "figure-five-en",
+            "language": "en",
+            "first_expected_rank": 2,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "conclusion-models-en",
+            "language": "en",
+            "first_expected_rank": 1,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "bass-co2-unsupported-es",
+            "language": "es",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          }
+        ]
+      }
+    },
+    "ntrs:20160000593": {
+      "text": {
+        "metrics": {
+          "cases": 5,
+          "hit_rate_at_k": 0.25,
+          "mean_reciprocal_rank_at_k": 0.0625,
+          "abstention_accuracy": 0.0
+        },
+        "cases": [
+          {
+            "case_id": "bass2-objectives-en",
+            "language": "en",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "bass2-objectives-es",
+            "language": "es",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "bass2-variables-en",
+            "language": "en",
+            "first_expected_rank": 4,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "bass2-hardware-es",
+            "language": "es",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "bass2-row-co2-negative-es",
+            "language": "es",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          }
+        ]
+      },
+      "vector": {
+        "metrics": {
+          "cases": 5,
+          "hit_rate_at_k": 0.0,
+          "mean_reciprocal_rank_at_k": 0.0,
+          "abstention_accuracy": 0.0
+        },
+        "cases": [
+          {
+            "case_id": "bass2-objectives-en",
+            "language": "en",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "bass2-objectives-es",
+            "language": "es",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "bass2-variables-en",
+            "language": "en",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "bass2-hardware-es",
+            "language": "es",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "bass2-row-co2-negative-es",
+            "language": "es",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          }
+        ]
+      },
+      "hybrid_rrf": {
+        "metrics": {
+          "cases": 5,
+          "hit_rate_at_k": 0.0,
+          "mean_reciprocal_rank_at_k": 0.0,
+          "abstention_accuracy": 0.0
+        },
+        "cases": [
+          {
+            "case_id": "bass2-objectives-en",
+            "language": "en",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "bass2-objectives-es",
+            "language": "es",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "bass2-variables-en",
+            "language": "en",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "bass2-hardware-es",
+            "language": "es",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          },
+          {
+            "case_id": "bass2-row-co2-negative-es",
+            "language": "es",
+            "first_expected_rank": null,
+            "returned_count": 5,
+            "abstained": false
+          }
+        ]
+      }
+    }
+  }
+}

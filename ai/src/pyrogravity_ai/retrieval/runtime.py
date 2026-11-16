@@ -14,6 +14,8 @@ from pyrogravity_ai.retrieval.postgres import (
     RetrievalError,
     search_hybrid,
     search_text,
+    search_vector,
+    reciprocal_rank_fusion,
 )
 
 
@@ -21,7 +23,8 @@ class PostgresPassageRetriever:
     """Open one short read-only session per request with a dedicated reader role."""
 
     def __init__(self, settings: DatabaseSettings, *, strategy: str = "text",
-                 embedder: QueryEmbedder | None = None, config_hash: str | None = None) -> None:
+                 embedder: QueryEmbedder | None = None, config_hash: str | None = None,
+                 reranker: object | None = None) -> None:
         if strategy not in {"text", "hybrid"}:
             raise ValueError("unsupported retrieval strategy")
         if strategy == "hybrid" and (embedder is None or config_hash is None
@@ -31,6 +34,7 @@ class PostgresPassageRetriever:
         self._strategy = strategy
         self._embedder = embedder
         self._config_hash = config_hash
+        self._reranker = reranker
 
     def retrieve(self, question: str, *, limit: int) -> tuple[PassageHit, ...]:
         url = self._settings.url.get_secret_value()
@@ -47,6 +51,14 @@ class PostgresPassageRetriever:
                 prepare_threshold=None,
             ) as connection:
                 if self._strategy == "hybrid":
+                    if self._reranker is not None:
+                        # Merge a wider pool before reranking. Six final passages
+                        # missed the BASS-II overview when generic objective slides ranked first.
+                        text = search_text(connection, question, limit=32)
+                        vector = search_vector(connection, self._embedder.embed_query(question),
+                                               self._config_hash, limit=32)
+                        pool = reciprocal_rank_fusion(text, vector, limit=50)
+                        return self._reranker.rank(question, pool, limit=limit)
                     return search_hybrid(connection, question, self._embedder,
                                          self._config_hash, limit=limit)
                 return search_text(connection, question, limit=limit)

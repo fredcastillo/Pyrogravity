@@ -7,40 +7,66 @@
       "case_id": "bass2-objectives-en",
       "question": "What were the main objectives of the BASS-II investigation?",
       "language": "en",
-      "expected_passage_sha256": ["6819a1e445cf5b93af994062d7a42456810c5c50f9a3fd40cb79dc6342f5d05a"],
+      "expected_passage_sha256": [
+        "6819a1e445cf5b93af994062d7a42456810c5c50f9a3fd40cb79dc6342f5d05a"
+      ],
       "expected_excerpt": "Study the ignition, flame growth, flame spread, and extinction limits",
-      "review_status": "candidate"
+      "review_status": "reviewed",
+      "reviewed_by": "Codex (revisión técnica automatizada autorizada por Johan)",
+      "reviewed_at": "2026-11-15",
+      "review_notes": "Cita literal cotejada con páginas 2/3; negativo contrastado con el contenido documental, que no identifica el cambio CO2 de la fila solicitada. Revisión técnica automatizada, pendiente de aceptación del equipo."
     },
     {
       "case_id": "bass2-objectives-es",
       "question": "¿Qué objetivos principales tenía la investigación BASS-II?",
       "language": "es",
-      "expected_passage_sha256": ["6819a1e445cf5b93af994062d7a42456810c5c50f9a3fd40cb79dc6342f5d05a"],
+      "expected_passage_sha256": [
+        "6819a1e445cf5b93af994062d7a42456810c5c50f9a3fd40cb79dc6342f5d05a"
+      ],
       "expected_excerpt": "Study the ignition, flame growth, flame spread, and extinction limits",
-      "review_status": "candidate"
+      "review_status": "reviewed",
+      "reviewed_by": "Codex (revisión técnica automatizada autorizada por Johan)",
+      "reviewed_at": "2026-11-15",
+      "review_notes": "Cita literal cotejada con páginas 2/3; negativo contrastado con el contenido documental, que no identifica el cambio CO2 de la fila solicitada. Revisión técnica automatizada, pendiente de aceptación del equipo."
     },
     {
       "case_id": "bass2-variables-en",
       "question": "Which main experimental variables were varied in BASS-II?",
       "language": "en",
-      "expected_passage_sha256": ["972bc6298dbc7f46f7aae7cf6fed52873624c4a58010a51d385bae4eddb4c958"],
+      "expected_passage_sha256": [
+        "972bc6298dbc7f46f7aae7cf6fed52873624c4a58010a51d385bae4eddb4c958"
+      ],
       "expected_excerpt": "Main variables are airflow speed and oxygen concentration",
-      "review_status": "candidate"
+      "review_status": "reviewed",
+      "reviewed_by": "Codex (revisión técnica automatizada autorizada por Johan)",
+      "reviewed_at": "2026-11-15",
+      "review_notes": "Cita literal cotejada con páginas 2/3; negativo contrastado con el contenido documental, que no identifica el cambio CO2 de la fila solicitada. Revisión técnica automatizada, pendiente de aceptación del equipo."
     },
     {
       "case_id": "bass2-hardware-es",
       "question": "¿Qué instalación se utilizó para realizar los ensayos BASS-II en microgravedad?",
       "language": "es",
-      "expected_passage_sha256": ["972bc6298dbc7f46f7aae7cf6fed52873624c4a58010a51d385bae4eddb4c958"],
+      "expected_passage_sha256": [
+        "972bc6298dbc7f46f7aae7cf6fed52873624c4a58010a51d385bae4eddb4c958"
+      ],
       "expected_excerpt": "Microgravity Science Glovebox",
-      "review_status": "candidate"
+      "review_status": "reviewed",
+      "reviewed_by": "Codex (revisión técnica automatizada autorizada por Johan)",
+      "reviewed_at": "2026-11-15",
+      "review_notes": "Cita literal cotejada con páginas 2/3; negativo contrastado con el contenido documental, que no identifica el cambio CO2 de la fila solicitada. Revisión técnica automatizada, pendiente de aceptación del equipo."
     },
     {
       "case_id": "bass2-row-co2-negative-es",
       "question": "¿Cuál fue el cambio exacto de CO₂ entre el inicio y el final del registro PSI-25, fila 1?",
       "language": "es",
       "expected_passage_sha256": [],
-      "review_status": "candidate"
+      "review_status": "reviewed",
+      "reviewed_by": "Codex (revisión técnica automatizada autorizada por Johan)",
+      "reviewed_at": "2026-11-15",
+      "review_notes": "Cita literal cotejada con páginas 2/3; negativo contrastado con el contenido documental, que no identifica el cambio CO2 de la fila solicitada. Revisión técnica automatizada, pendiente de aceptación del equipo."
     }
-  ]
+  ],
+  "document_reviewed_by": "Codex (revisión técnica automatizada autorizada por Johan)",
+  "document_reviewed_at": "2026-11-15",
+  "document_review_notes": "Hash cotejado con el PDF oficial NASA. Revisión visual de páginas 2 y 3 y revisión del texto de las 21 páginas para las cinco expectativas. No representa aprobación humana ni certificación de conclusiones físicas; tablas y gráficas no se convierten en mediciones."
 }

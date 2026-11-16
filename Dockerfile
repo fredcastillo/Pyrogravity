@@ -4,6 +4,9 @@ WORKDIR /app
 COPY requirements.txt .
 COPY data/requirements.txt data/requirements.txt
 COPY infrastructure/demo/requirements.txt infrastructure/demo/requirements.txt
+COPY ai/pyproject.toml ai/pyproject.toml
+COPY ai/src/ ai/src/
+COPY ai/contracts/ ai/contracts/
 RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ app/
 COPY data/ data/

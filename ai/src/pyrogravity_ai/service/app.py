@@ -25,6 +25,7 @@ from pyrogravity_ai.core.engine import (
 from pyrogravity_ai.database.connection import DatabaseSettings
 from pyrogravity_ai.llm.cohere_client import CohereResponseError, CohereServiceError, CohereTextClient
 from pyrogravity_ai.llm.cohere_embed import CohereEmbeddingClient, CohereEmbeddingResponseError
+from pyrogravity_ai.llm.cohere_rerank import CohereReranker
 from pyrogravity_ai.retrieval.postgres import RetrievalError
 from pyrogravity_ai.retrieval.runtime import PostgresPassageRetriever
 from pyrogravity_ai.schemas.contracts_v11 import AiQueryRequest, AiResponse, ErrorEnvelope
@@ -47,9 +48,13 @@ def build_engine(environ: Mapping[str, str] | None = None) -> AiEngine:
     database = DatabaseSettings.from_environment(environ=values)
     text = CohereTextClient(settings)
     embedder = CohereEmbeddingClient(settings) if strategy == "hybrid" else None
+    rerank_model = values.get("COHERE_RERANK_MODEL", "").strip()
+    if rerank_model and strategy != "hybrid":
+        raise ValueError("COHERE_RERANK_MODEL requires hybrid retrieval")
     retriever = PostgresPassageRetriever(
         database, strategy=strategy, embedder=embedder,
         config_hash=values.get("AI_EMBED_CONFIG_HASH"),
+        reranker=CohereReranker(settings, rerank_model) if rerank_model else None,
     )
     return AiEngine(retriever, CohereEvidenceSelector(text),
                     classifier=CohereIntentClassifier(text))

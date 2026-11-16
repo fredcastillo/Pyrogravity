@@ -15,6 +15,7 @@ def test_enabled_ai_requires_https_token_and_dedicated_reader_role():
     with pytest.raises(ValidationError, match="al menos 32"):
         Settings(
             ai_provider_enabled=True,
+            pyrogravity_database_url=SecretStr("postgresql://science_reader:secret@localhost/postgres"),
             ai_internal_url="https://ai.internal",
             ai_internal_token=SecretStr("short"),
             ai_citation_view_database_url=SecretStr("postgresql://ai_reader:secret@localhost/ai"),
@@ -22,6 +23,7 @@ def test_enabled_ai_requires_https_token_and_dedicated_reader_role():
     with pytest.raises(ValidationError, match="rol lector dedicado"):
         Settings(
             ai_provider_enabled=True,
+            pyrogravity_database_url=SecretStr("postgresql://science_reader:secret@localhost/postgres"),
             ai_internal_url="https://ai.internal",
             ai_internal_token=SecretStr("t" * 32),
             ai_citation_view_database_url=SecretStr("postgresql://service_role:secret@localhost/ai"),
@@ -29,6 +31,7 @@ def test_enabled_ai_requires_https_token_and_dedicated_reader_role():
 
     settings = Settings(
         ai_provider_enabled=True,
+        pyrogravity_database_url=SecretStr("postgresql://science_reader:secret@localhost/postgres"),
         ai_internal_url="https://ai.internal",
         ai_internal_token=SecretStr("t" * 32),
         ai_citation_view_database_url=SecretStr("postgresql://ai_reader:secret@localhost/ai"),

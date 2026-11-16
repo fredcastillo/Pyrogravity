@@ -35,6 +35,13 @@ class CohereTextClient:
         )
 
     def generate(self, prompt: str) -> str:
+        return self._generate(prompt)
+
+    def generate_json(self, prompt: str) -> str:
+        """Require provider JSON mode for machine-readable evidence selection."""
+        return self._generate(prompt, response_format={"type": "json_object"})
+
+    def _generate(self, prompt: str, **options: Any) -> str:
         if not prompt.strip():
             raise ValueError("prompt must not be blank")
 
@@ -43,6 +50,7 @@ class CohereTextClient:
                 model=self._settings.model,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=self._settings.max_output_tokens,
+                **options,
             )
         except ApiError as exc:
             status = exc.status_code

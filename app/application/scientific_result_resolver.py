@@ -26,6 +26,62 @@ class ScientificSelectionError(ValueError):
         super().__init__(message)
 
 
+class CatalogScientificResultResolver:
+    """Read all five catalog analyses from PostgreSQL using a dedicated reader."""
+
+    def __init__(self, data_dir: Path, dsn: str):
+        self.data_dir = data_dir
+        self.dsn = dsn
+
+    def resolve(self, trial_codes: list[str], variables: list[str]) -> list[dict]:
+        import psycopg
+        from psycopg.conninfo import conninfo_to_dict
+        from data.src.analysis.scientific_catalog import list_analyses
+        from data.src.analysis.scientific_result import run_scientific_result
+        from pyrogravity_ai.schemas.scientific_scope import scope_scientific_result
+
+        if not trial_codes:
+            return []
+        if len(set(trial_codes)) != len(trial_codes):
+            raise ScientificSelectionError("VALIDATION_ERROR", "La selección contiene ensayos duplicados.")
+        parsed = [re.fullmatch(r"(PSI-[0-9]+):([a-zA-Z0-9_-]+):([1-9][0-9]*)", code) for code in trial_codes]
+        analyses = {item["psi_code"]: item for item in list_analyses()}
+        if any(match is None or match[1] not in analyses for match in parsed):
+            raise ScientificSelectionError("EXPERIMENT_NOT_FOUND", "Identificador científico desconocido.")
+        selected = {match[1] for match in parsed}
+        allowed_variables = {v["name"] for psi in selected for v in analyses[psi]["variables"]}
+        if set(variables) - allowed_variables:
+            raise ScientificSelectionError("VALIDATION_ERROR", "Variable no disponible para los análisis seleccionados.")
+        parameters = conninfo_to_dict(self.dsn)
+        if parameters.get("user", "").lower() in {"postgres", "anon", "authenticated", "service_role", ""}:
+            raise ScientificSelectionError("AI_UNAVAILABLE", "Se requiere un lector científico dedicado.")
+        results = []
+        try:
+            sslmode = parameters.get("sslmode")
+            if sslmode not in {"verify-ca", "verify-full"}:
+                sslmode = "require"
+            with psycopg.connect(self.dsn, sslmode=sslmode, connect_timeout=5,
+                    options="-c default_transaction_read_only=on -c statement_timeout=30000",
+                    prepare_threshold=None) as connection:
+                for psi in sorted(selected):
+                    result = run_scientific_result(analyses[psi]["analysis_id"], source="postgres",
+                                                  connection=connection, data_dir=self.data_dir)
+                    by_table = {dataset.table_name: dataset for dataset in result.datasets}
+                    for match in parsed:
+                        if match[1] != psi:
+                            continue
+                        dataset = by_table.get(match[2])
+                        if dataset is None or not connection.execute(
+                            "SELECT 1 FROM scientific.records WHERE dataset_id=%s AND source_record=%s",
+                            (dataset.database_dataset_id, int(match[3])),
+                        ).fetchone():
+                            raise ScientificSelectionError("EXPERIMENT_NOT_FOUND", "Ensayo no encontrado en la versión científica.")
+                    results.append(scope_scientific_result(result, trial_codes, variables).model_dump(mode="json"))
+        except (psycopg.Error, CatalogError):
+            raise ScientificSelectionError("AI_UNAVAILABLE", "No se pudo verificar el catálogo científico en PostgreSQL.") from None
+        return results
+
+
 class FlexScientificResultResolver:
     """Build a canonical v1.1 ScientificResult from manifest-verified Parquet rows."""
 

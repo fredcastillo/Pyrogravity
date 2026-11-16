@@ -15,7 +15,7 @@ Usa un login PostgreSQL separado para cada capacidad y DSN con TLS verificado.
 | Secreto | Claves |
 | --- | --- |
 | `pyrogravity-ai-private/runtime` | `COHERE_API_KEY`, `COHERE_MODEL`, `AI_DATABASE_URL` del login miembro de `pyrogravity_ai_runtime`. Opcionales: `COHERE_TIMEOUT_SECONDS` (8), `COHERE_MAX_RETRIES` (0), `AI_DB_CONNECT_TIMEOUT_SECONDS` (4). |
-| `pyrogravity-ai-private/backend` | `AI_CITATION_VIEW_DATABASE_URL` del login miembro de `pyrogravity_ai_citation_reader`. `PYROGRAVITY_DATABASE_URL` se reserva para el lector científico. |
+| `pyrogravity-ai-private/backend` | `AI_CITATION_VIEW_DATABASE_URL` del login miembro de `pyrogravity_ai_citation_reader` y `PYROGRAVITY_DATABASE_URL` del lector científico. |
 | `pyrogravity-ai-private/ingest` | `AI_INGEST_DATABASE_URL` del login miembro de `pyrogravity_ai_ingest` y la clave de embeddings `COHERE_API_KEY`. |
 
 El operador de ingesta asume el rol indicado por `IngestRoleArn` y utiliza
