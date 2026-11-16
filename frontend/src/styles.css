@@ -1,9 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
 
-.published-analysis-list { list-style: none; padding: 0; margin: 0 0 24px; }
-.published-analysis-list > li { padding: 20px 0; border-bottom: 1px solid var(--line); }
-.published-analysis-list > li:first-child { padding-top: 0; }
-.published-analysis-list p { color: var(--muted); line-height: 1.6; font-size: 13px; }
 
 :root {
   color-scheme: dark;

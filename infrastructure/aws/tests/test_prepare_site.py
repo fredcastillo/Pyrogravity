@@ -20,7 +20,11 @@ class PrepareSiteTests(unittest.TestCase):
             (dist / 'assets/compiled.js').write_text('// compiled React application')
             (dist / 'assets/orbit.js').write_text('// compiled Atlas effects')
             (dist / '.vite').mkdir()
-            (dist / '.vite/manifest.json').write_text('{"src/space/atlasEffects.ts":{"file":"assets/orbit.js"}}')
+            (dist / '.vite/manifest.json').write_text(
+                '{"src/space/atlasEffects.ts":{"file":"assets/orbit.js"},'
+                '"src/assets/nasa-flame-design.webp":{"file":"assets/photo.webp"},'
+                '"src/assets/nasa-flame-design-small.webp":{"file":"assets/mobile.webp"}}'
+            )
             (dist / 'index.html').write_text('<head><script type="module" src="./assets/compiled.js"></script></head><div id="root"></div>')
             output = root / 'site'
             with patch('infrastructure.aws.prepare_site.ROOT', root):
@@ -29,6 +33,8 @@ class PrepareSiteTests(unittest.TestCase):
             self.assertIn('id="root"', html)
             self.assertIn('"/assets/command-center/assets/compiled.js"', html)
             self.assertIn('content="/assets/science/index.html"', html)
+            self.assertIn('href="/assets/command-center/assets/mobile.webp" media="(max-width: 650px)"', html)
+            self.assertIn('href="/assets/command-center/assets/photo.webp" media="(width > 650px)"', html)
             self.assertEqual((output / 'assets/catalog.json').read_bytes(), (demo / 'assets/catalog.json').read_bytes())
             atlas = (output / 'assets/science/index.html').read_text()
             self.assertIn('src="../demo.js"', atlas)

@@ -102,6 +102,8 @@
   fetchJSON('/api/v1/analyses').then(catalog => {
     document.querySelector('#atlas-analysis-count').textContent = catalog.length;
     catalog.forEach(item => option($('analysis'), item.analysis_id, `${item.analysis_name} · ${item.psi_code}`));
+    const requestedAnalysis = new URLSearchParams(window.location.search).get('analysis');
+    if (catalog.some(item => item.analysis_id === requestedAnalysis)) $('analysis').value = requestedAnalysis;
     $('analysis').disabled = false; return load();
   }).catch(error => { $('status').textContent = error.message; });
 })();

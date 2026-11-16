@@ -116,6 +116,8 @@ async function start() {
       datasets.set(dataset.id, dataset);
       datasetSelect.add(new Option(`${dataset.label} · ${dataset.study}`, dataset.id));
     }
+    const requestedDataset = new URLSearchParams(window.location.search).get("dataset");
+    if (datasets.has(requestedDataset)) datasetSelect.value = requestedDataset;
     labels(datasetSelect.value);
     await compare();
   } catch (error) {
