@@ -23,10 +23,10 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
         request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
         request.state.request_id = request_id
         response = await call_next(request)
-        response.headers["X-Request-ID"] = request_id
+        response.headers["X-Request-ID"] = request.state.request_id
 
         if request.url.path.startswith(("/api/v1/ai/", "/api/v1/charts/")):
-            response.headers["X-Served-From"] = "demo"
+            response.headers["X-Served-From"] = getattr(request.state, "served_from", "demo")
         return response
 
 
