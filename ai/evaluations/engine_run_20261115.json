@@ -1,0 +1,216 @@
+{
+  "cases": 10,
+  "correct_rate": 0.6,
+  "answerable_cases": 8,
+  "answerable_evidence_rate": 0.5,
+  "unsupported_cases": 2,
+  "negative_abstention_accuracy": 1.0,
+  "false_support_rate": 0.0,
+  "outcomes": [
+    {
+      "case_id": "ntrs:20130014061/helium-burning-en",
+      "language": "en",
+      "status": "supported",
+      "answerable": true,
+      "expected_evidence_selected": true,
+      "abstained": false,
+      "correct": true
+    },
+    {
+      "case_id": "ntrs:20130014061/helium-burning-es",
+      "language": "es",
+      "status": "supported",
+      "answerable": true,
+      "expected_evidence_selected": true,
+      "abstained": false,
+      "correct": true
+    },
+    {
+      "case_id": "ntrs:20130014061/figure-five-en",
+      "language": "en",
+      "status": "supported",
+      "answerable": true,
+      "expected_evidence_selected": true,
+      "abstained": false,
+      "correct": true
+    },
+    {
+      "case_id": "ntrs:20130014061/conclusion-models-en",
+      "language": "en",
+      "status": "supported",
+      "answerable": true,
+      "expected_evidence_selected": true,
+      "abstained": false,
+      "correct": true
+    },
+    {
+      "case_id": "ntrs:20130014061/bass-co2-unsupported-es",
+      "language": "es",
+      "status": "insufficient_evidence",
+      "answerable": false,
+      "expected_evidence_selected": false,
+      "abstained": true,
+      "correct": true
+    },
+    {
+      "case_id": "ntrs:20160000593/bass2-objectives-en",
+      "language": "en",
+      "status": "supported",
+      "answerable": true,
+      "expected_evidence_selected": false,
+      "abstained": false,
+      "correct": false
+    },
+    {
+      "case_id": "ntrs:20160000593/bass2-objectives-es",
+      "language": "es",
+      "status": "supported",
+      "answerable": true,
+      "expected_evidence_selected": false,
+      "abstained": false,
+      "correct": false
+    },
+    {
+      "case_id": "ntrs:20160000593/bass2-variables-en",
+      "language": "en",
+      "status": "supported",
+      "answerable": true,
+      "expected_evidence_selected": false,
+      "abstained": false,
+      "correct": false
+    },
+    {
+      "case_id": "ntrs:20160000593/bass2-hardware-es",
+      "language": "es",
+      "status": "supported",
+      "answerable": true,
+      "expected_evidence_selected": false,
+      "abstained": false,
+      "correct": false
+    },
+    {
+      "case_id": "ntrs:20160000593/bass2-row-co2-negative-es",
+      "language": "es",
+      "status": "insufficient_evidence",
+      "answerable": false,
+      "expected_evidence_selected": false,
+      "abstained": true,
+      "correct": true
+    }
+  ],
+  "generation_id": "40d8e346-5399-458d-854d-5772e4a6ee45",
+  "sources": {
+    "ntrs:20130014061": {
+      "cases": 5,
+      "correct_rate": 1.0,
+      "answerable_cases": 4,
+      "answerable_evidence_rate": 1.0,
+      "unsupported_cases": 1,
+      "negative_abstention_accuracy": 1.0,
+      "false_support_rate": 0.0,
+      "outcomes": [
+        {
+          "case_id": "helium-burning-en",
+          "language": "en",
+          "status": "supported",
+          "answerable": true,
+          "expected_evidence_selected": true,
+          "abstained": false,
+          "correct": true
+        },
+        {
+          "case_id": "helium-burning-es",
+          "language": "es",
+          "status": "supported",
+          "answerable": true,
+          "expected_evidence_selected": true,
+          "abstained": false,
+          "correct": true
+        },
+        {
+          "case_id": "figure-five-en",
+          "language": "en",
+          "status": "supported",
+          "answerable": true,
+          "expected_evidence_selected": true,
+          "abstained": false,
+          "correct": true
+        },
+        {
+          "case_id": "conclusion-models-en",
+          "language": "en",
+          "status": "supported",
+          "answerable": true,
+          "expected_evidence_selected": true,
+          "abstained": false,
+          "correct": true
+        },
+        {
+          "case_id": "bass-co2-unsupported-es",
+          "language": "es",
+          "status": "insufficient_evidence",
+          "answerable": false,
+          "expected_evidence_selected": false,
+          "abstained": true,
+          "correct": true
+        }
+      ]
+    },
+    "ntrs:20160000593": {
+      "cases": 5,
+      "correct_rate": 0.2,
+      "answerable_cases": 4,
+      "answerable_evidence_rate": 0.0,
+      "unsupported_cases": 1,
+      "negative_abstention_accuracy": 1.0,
+      "false_support_rate": 0.0,
+      "outcomes": [
+        {
+          "case_id": "bass2-objectives-en",
+          "language": "en",
+          "status": "supported",
+          "answerable": true,
+          "expected_evidence_selected": false,
+          "abstained": false,
+          "correct": false
+        },
+        {
+          "case_id": "bass2-objectives-es",
+          "language": "es",
+          "status": "supported",
+          "answerable": true,
+          "expected_evidence_selected": false,
+          "abstained": false,
+          "correct": false
+        },
+        {
+          "case_id": "bass2-variables-en",
+          "language": "en",
+          "status": "supported",
+          "answerable": true,
+          "expected_evidence_selected": false,
+          "abstained": false,
+          "correct": false
+        },
+        {
+          "case_id": "bass2-hardware-es",
+          "language": "es",
+          "status": "supported",
+          "answerable": true,
+          "expected_evidence_selected": false,
+          "abstained": false,
+          "correct": false
+        },
+        {
+          "case_id": "bass2-row-co2-negative-es",
+          "language": "es",
+          "status": "insufficient_evidence",
+          "answerable": false,
+          "expected_evidence_selected": false,
+          "abstained": true,
+          "correct": true
+        }
+      ]
+    }
+  }
+}
