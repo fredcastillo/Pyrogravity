@@ -1,4 +1,4 @@
-"""Download and inspect the first curated NASA document without indexing it."""
+"""Download and inspect a curated NASA document without indexing it."""
 
 from __future__ import annotations
 
@@ -14,12 +14,19 @@ from pyrogravity_ai.schemas.source import load_source
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
-    parser = argparse.ArgumentParser(description="Inspect page-bounded chunks from the first NASA source")
+    parser = argparse.ArgumentParser(description="Inspect page-bounded chunks from a NASA source")
+    parser.add_argument("--source", type=Path, default=Path("ntrs_20130014061.json"),
+                        help="source manifest filename inside ai/sources")
     parser.add_argument("--page", type=int, default=1, help="1-based PDF page to preview")
     args = parser.parse_args()
 
     ai_dir = Path(__file__).resolve().parents[1]
-    source = load_source(ai_dir / "sources" / "ntrs_20130014061.json")
+    source_path = args.source if args.source.is_absolute() else ai_dir / "sources" / args.source
+    try:
+        source_path.resolve().relative_to((ai_dir / "sources").resolve())
+    except ValueError:
+        parser.error("--source must point to a manifest inside ai/sources")
+    source = load_source(source_path)
     try:
         path = download_pdf(source, ai_dir / ".cache")
         document = load_pdf(path)

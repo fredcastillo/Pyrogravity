@@ -7,40 +7,66 @@
       "case_id": "helium-burning-en",
       "question": "How did replacing carbon dioxide with helium affect the methanol droplet burning rate?",
       "language": "en",
-      "expected_passage_sha256": ["6743c7ee31a522dfaa5c2e85395d09acf70d717d02b2aca1be3885a731dd87af"],
+      "expected_passage_sha256": [
+        "6743c7ee31a522dfaa5c2e85395d09acf70d717d02b2aca1be3885a731dd87af"
+      ],
       "expected_excerpt": "substituting carbon dioxide with helium",
-      "review_status": "candidate"
+      "review_status": "reviewed",
+      "reviewed_by": "Johan",
+      "reviewed_at": "2026-11-15",
+      "review_notes": "Aprobado: el pasaje de la página 5 explica que sustituir CO2 por He aumenta la tasa de combustión por su mayor conductividad térmica."
     },
     {
       "case_id": "helium-burning-es",
       "question": "¿Cómo cambió la tasa de combustión de la gota de metanol al sustituir dióxido de carbono por helio?",
       "language": "es",
-      "expected_passage_sha256": ["6743c7ee31a522dfaa5c2e85395d09acf70d717d02b2aca1be3885a731dd87af"],
+      "expected_passage_sha256": [
+        "6743c7ee31a522dfaa5c2e85395d09acf70d717d02b2aca1be3885a731dd87af"
+      ],
       "expected_excerpt": "substituting carbon dioxide with helium",
-      "review_status": "candidate"
+      "review_status": "reviewed",
+      "reviewed_by": "Johan",
+      "reviewed_at": "2026-11-15",
+      "review_notes": "Aprobado: pregunta en español; el pasaje inglés de la página 5 responde con la comparación entre CO2 y He."
     },
     {
       "case_id": "figure-five-en",
       "question": "What quantities are compared in Figure 5 of the methanol droplet paper?",
       "language": "en",
-      "expected_passage_sha256": ["2a85251c0515cad34014a291bc944c5451cb769b252d7fc6daf74b725b25b3a2"],
+      "expected_passage_sha256": [
+        "2a85251c0515cad34014a291bc944c5451cb769b252d7fc6daf74b725b25b3a2"
+      ],
       "expected_excerpt": "Methanol droplet extinction diameter versus initial droplet diameter",
-      "review_status": "candidate"
+      "review_status": "reviewed",
+      "reviewed_by": "Johan",
+      "reviewed_at": "2026-11-15",
+      "review_notes": "Aprobado: el pie de la Figura 5 y sus ejes en la página 9 identifican diámetro de extinción y diámetro inicial de la gota."
     },
     {
       "case_id": "conclusion-models-en",
-      "question": "Which theoretical predictions did the authors say need further improvement?",
+      "question": "Which theoretical prediction did the authors say needs further improvement?",
       "language": "en",
-      "expected_passage_sha256": ["9e18657cfc321fa4da7555f2000c300dcb461b872b69694b06d942036fb4e060"],
+      "expected_passage_sha256": [
+        "9e18657cfc321fa4da7555f2000c300dcb461b872b69694b06d942036fb4e060"
+      ],
       "expected_excerpt": "diameter prediction by activation-energy asymptotics",
-      "review_status": "candidate"
+      "review_status": "reviewed",
+      "reviewed_by": "Johan",
+      "reviewed_at": "2026-11-15",
+      "review_notes": "Aprobado: la página 11 dice que la predicción del diámetro de extinción por activation-energy asymptotics necesita más mejora."
     },
     {
       "case_id": "bass-co2-unsupported-es",
       "question": "¿Cuál fue el cambio de CO₂ entre el inicio y el final de cada ensayo BASS-II?",
       "language": "es",
       "expected_passage_sha256": [],
-      "review_status": "candidate"
+      "review_status": "reviewed",
+      "reviewed_by": "Johan",
+      "reviewed_at": "2026-11-15",
+      "review_notes": "Aprobado como caso negativo para este PDF: no menciona BASS/BASS-II y ningún pasaje responde la pregunta. No evalúa respuestas sobre la fuente BASS-II."
     }
-  ]
+  ],
+  "document_reviewed_by": "Johan",
+  "document_reviewed_at": "2026-11-15",
+  "document_review_notes": "PDF de 11 páginas cotejado visualmente; SHA-256 coincide con el manifiesto NASA. Se revisaron las páginas 5, 9 y 11. El texto extraído no menciona BASS/BASS-II."
 }

@@ -1,4 +1,4 @@
-"""Build a human review packet from the pinned NASA PDF and candidate keys."""
+"""Build a human review packet from a pinned NASA PDF and candidate keys."""
 
 from __future__ import annotations
 
@@ -21,13 +21,33 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Preparar revisión humana de casos de recuperación")
     parser.add_argument("--check", action="store_true", help="comprobar que la ficha está actualizada")
     parser.add_argument("--force", action="store_true", help="regenerar la ficha si cambian los casos")
+    parser.add_argument("--source", type=Path, help="manifiesto de fuente dentro de ai/sources")
+    parser.add_argument("--cases", type=Path, help="JSON de evaluación dentro de ai/evaluations")
+    parser.add_argument("--output", type=Path, help="ruta de salida dentro de ai/evaluations")
     args = parser.parse_args()
     if args.check and args.force:
         parser.error("--check y --force no se pueden combinar")
 
     ai_dir = Path(__file__).resolve().parents[1]
-    source = load_source(ai_dir / "sources" / "ntrs_20130014061.json")
-    candidates = load_evaluation_set(ai_dir / "evaluations" / "ntrs_20130014061_candidates.json")
+    source_path = args.source or Path("sources/ntrs_20130014061.json")
+    cases_path = args.cases or Path("evaluations/ntrs_20130014061_candidates.json")
+    output_path = args.output or (
+        Path("evaluations") / f"{cases_path.stem.removesuffix('_candidates')}_review.md"
+    )
+
+    def local_path(path: Path) -> Path:
+        resolved = (path if path.is_absolute() else ai_dir / path).resolve()
+        try:
+            resolved.relative_to(ai_dir.resolve())
+        except ValueError:
+            parser.error("las rutas de fuente, casos y salida deben permanecer dentro de ai/")
+        return resolved
+
+    source_path = local_path(source_path)
+    cases_path = local_path(cases_path)
+    output_path = local_path(output_path)
+    source = load_source(source_path)
+    candidates = load_evaluation_set(cases_path)
     if candidates.source_id != source.source_id:
         print("La fuente de los casos no coincide con el manifiesto.", file=sys.stderr)
         return 1
@@ -45,17 +65,17 @@ def main() -> int:
         print(f"No se pudo preparar la revisión: {exc}", file=sys.stderr)
         return 1
 
-    output = ai_dir / "evaluations" / "ntrs_20130014061_review.md"
-    if output.exists() and output.read_text(encoding="utf-8") != packet and not args.force:
+    if output_path.exists() and output_path.read_text(encoding="utf-8") != packet and not args.force:
         print("La ficha existente difiere; revísala antes de reemplazarla.", file=sys.stderr)
         return 1
-    if not output.exists() and args.check:
+    if not output_path.exists() and args.check:
         print("La ficha de revisión no existe.", file=sys.stderr)
         return 1
     if not args.check:
-        output.write_text(packet, encoding="utf-8")
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(packet, encoding="utf-8")
     print(f"Ficha {'comprobada' if args.check else 'preparada'}: "
-          f"{output.relative_to(ai_dir)} ({len(candidates.cases)} casos candidatos)")
+          f"{output_path.relative_to(ai_dir)} ({len(candidates.cases)} casos)")
     return 0
 
 
