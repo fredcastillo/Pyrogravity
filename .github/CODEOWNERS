@@ -1,5 +1,6 @@
 # Datos e IA
 /data/ @StanleyCM
+/ai/ @Johanvasquezdev
 /rag/ @Johanvasquezdev
 
 # Aplicación
@@ -10,6 +11,9 @@
 # QA e infraestructura
 /tests/ @fredcastillo
 /infrastructure/ @iClexi
+/Dockerfile @iClexi
+/.dockerignore @iClexi
+/.env.example @iClexi
 /compose.* @iClexi
 /docker-compose.* @iClexi
 /.github/ @iClexi @fredcastillo
@@ -19,4 +23,6 @@
 
 /app/ @GregoriEJimenezDev
 /scripts/load_to_supabase.py @StanleyCM @GregoriEJimenezDev
+/scripts/prepare_ci_postgres.py @iClexi @fredcastillo
 /supabase/ @StanleyCM @GregoriEJimenezDev
+/supabase/migrations/*_ai_*.sql @Johanvasquezdev @StanleyCM @GregoriEJimenezDev

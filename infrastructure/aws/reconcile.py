@@ -20,11 +20,17 @@ def main():
     try:
         with urlopen(Request(SITE + "/", headers={"Cache-Control": "no-cache"}), timeout=20) as response:
             published = set(re.findall(r'/assets/releases/([a-f0-9]{40})/', response.read().decode()))
-    except (URLError, TimeoutError):
-        published = set()
-    if published == {head}:
-        print(f"La página ya publica {head}. No hay que recompilar.")
-        return
+        if published == {head}:
+            with urlopen(Request(SITE + "/api/v1/health", headers={"Cache-Control": "no-cache"}), timeout=20) as response:
+                api_current = (
+                    response.headers.get("X-Pyrogravity-Release") == head
+                    and json.load(response) == {"status": "ok", "mode": "demo"}
+                )
+            if api_current:
+                print(f"La página y la API ya publican {head}. No hay que recompilar.")
+                return
+    except (URLError, TimeoutError, ValueError) as error:
+        print(f"No se pudo verificar la publicación ({type(error).__name__}).")
     runs = json.loads(gh("api", f"repos/{repo}/actions/workflows/ci.yml/runs?branch=main&per_page=30"))["workflow_runs"]
     eligible = [r for r in runs if r["head_sha"] == head and r["event"] in ("push", "workflow_dispatch")]
     if any(r["status"] != "completed" for r in eligible):

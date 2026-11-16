@@ -69,11 +69,23 @@ $previousPage = Invoke-Aws s3api get-object --bucket $site.SiteBucketName --key 
 $html = Get-Content -LiteralPath $index -Raw -Encoding utf8
 [IO.File]::WriteAllText($nextHtml, $html.Replace('"/assets/', '"/' + $assetPrefix + '/'))
 
+$sameBackend = $stack.Parameters.ArtifactKey -eq $package.ArtifactKey -and
+    $stack.Parameters.ArtifactBucket -eq $package.ArtifactBucket -and
+    $stack.Parameters.ArtifactSha256 -eq $package.ArtifactSha256
+if ($sameBackend -and (Get-FileHash -LiteralPath $previousHtml).Hash -eq (Get-FileHash -LiteralPath $nextHtml).Hash) {
+    & $PythonExecutable (Join-Path $PSScriptRoot 'smoke.py') $site.SiteUrl --release-id $ReleaseId
+    if ($LASTEXITCODE -eq 0) {
+        Write-Output "La versión $ReleaseId ya está publicada y verificada. No se modificó AWS."
+        return
+    }
+    Write-Warning 'El índice y el backend coinciden, pero falló la comprobación pública. Se intentará recuperar la publicación.'
+}
+
 $backendUpdated = $false
 $newPage = $null
 try {
     $null = Invoke-Aws s3 cp $assets "s3://$($site.SiteBucketName)/$assetPrefix/" --recursive --cache-control 'public,max-age=31536000,immutable' --only-show-errors
-    if ($stack.Parameters.ArtifactKey -ne $package.ArtifactKey -or $stack.Parameters.ArtifactBucket -ne $package.ArtifactBucket -or $stack.Parameters.ArtifactSha256 -ne $package.ArtifactSha256) {
+    if (!$sameBackend) {
         $null = Invoke-Aws s3api put-object --bucket $artifactBucket --key $package.ArtifactKey --body $zip --checksum-sha256 $package.ArtifactSha256
         Update-Backend $package
         $backendUpdated = $true
