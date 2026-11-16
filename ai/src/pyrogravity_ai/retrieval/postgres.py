@@ -46,7 +46,10 @@ _SELECT = """SELECT c.id, c.document_id, d.sha256, c.page_number,
                     s.source_key, s.title, s.canonical_url"""
 _JOINS = """FROM ai.document_chunks c
             JOIN ai.documents d ON d.id = c.document_id
-            JOIN ai.sources s ON s.id = d.source_id"""
+            JOIN ai.sources s ON s.id = d.source_id
+            JOIN ai.kb_generation_documents m ON m.document_id = d.id
+            JOIN ai.kb_active a ON a.generation_id = m.generation_id
+            JOIN ai.kb_generations g ON g.id = a.generation_id"""
 _REVIEWED = "d.review_status = 'reviewed' AND s.catalog_status = 'catalog_verified'"
 
 
@@ -129,7 +132,7 @@ def search_vector(
         e.embedding OPERATOR(extensions.<=>) %s::extensions.vector AS distance
         {_JOINS}
         JOIN ai.chunk_embeddings e ON e.chunk_id = c.id
-        WHERE {_REVIEWED} AND e.config_hash = %s
+        WHERE {_REVIEWED} AND e.config_hash = %s AND g.config_hash = e.config_hash
         ORDER BY distance ASC, c.id ASC LIMIT %s"""
     try:
         rows = connection.execute(statement, (literal, config_hash, count)).fetchall()
