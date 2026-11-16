@@ -1,24 +1,16 @@
-# Migración inicial del esquema AI
+# Migraciones del esquema AI
 
-`20261115120000_ai_initial.sql` define las cinco tablas de `ai`. Se copió sin cambios a `supabase/migrations/`, se aplicó en Supabase el 2026-11-15 mediante Supabase CLI y se publicó en `users/johan` como `8687f8e`. El PR #27 que contenía esa copia fue cerrado, sin merge verificado; hace falta un nuevo PR para incorporarla a `main`. La base registró la versión `20261115120000`; la verificación posterior confirmó cinco tablas vacías con RLS, cero políticas y ningún permiso para `anon`, `authenticated` ni `service_role`. **Supabase CLI no aplica migraciones desde este directorio**.
+La cadena que ejecuta Supabase CLI está en `supabase/migrations/`. Las copias bajo `ai/migrations/` se usan para desarrollo y pruebas; `20261115120000_ai_initial.sql` conserva los bytes ya aplicados.
 
-`20261115123000_ai_kb_generations.sql` es un borrador local posterior: conserva variantes de procesamiento del mismo PDF y crea generaciones selladas con un único puntero activo. Activar otra generación revierte la versión visible sin borrar filas. Exige revisión de cada documento y vector de la configuración para cada pasaje. El escritor y el recuperador locales ya usan este esquema; **no está desplegado**.
+| Versión | Contenido | Estado remoto al 2026-11-15 |
+| --- | --- | --- |
+| `20261115120000` | Cinco tablas de fuentes, PDFs, fragmentos, vectores y jobs | Aplicada |
+| `20261115123000` | Configuraciones y generaciones selladas con puntero activo | Aplicada |
+| `20261115124500` | Vista privada `ai.citation_passages` para citas de la generación activa | Aplicada |
+| `20261115170000` | Tres roles de grupo AI, grants y políticas RLS | Aplicada |
 
-`20261115124500_ai_citation_passages.sql` depende del versionado y es otro borrador local: expone al backend pasajes revisados **de la generación activa** mediante `passage_id`, `document_id`, `document_sha256`, `page_number`, `passage_sha256`, `passage_text`, `extraction_version`, `source_id`, `source_title` y `source_url`. El backend debe comprobar que `quote` sea una subcadena literal de `passage_text` y que los hashes, documento y página coincidan. La vista usa los permisos de su dueño; no recibe acceso ningún rol de aplicación por esta migración. Antes de conceder `USAGE` sobre `ai` y `SELECT` sobre la vista, el equipo debe acordar un rol servidor dedicado de solo lectura. No conceder acceso a `anon`, `authenticated` ni `service_role`.
+El último SQL reside en `supabase/migrations/` y deriva de la propuesta revisada de infraestructura. Los grupos `pyrogravity_ai_ingest`, `pyrogravity_ai_runtime` y `pyrogravity_ai_citation_reader` son `NOLOGIN`; no contienen contraseñas. El rol de ingesta solo añade y consulta lo necesario para planes idempotentes. El runtime lee evidencia revisada de la generación activa. El lector backend consulta exclusivamente la vista de citas. La revisión de documentos, el sellado y la activación siguen reservados a una identidad de publicación separada.
 
-Mantener separadas las capacidades de ejecución: ingesta (SELECT/INSERT en `sources`, `documents`, `document_chunks`, `chunk_embeddings` e `ingestion_jobs`; SELECT adicional en `kb_generations` y `kb_generation_documents` para que los triggers comprueben el sellado; sin UPDATE de `review_status` ni permiso para activar), runtime de AI (lectura de evidencia y embeddings de la generación activa), lector del backend (solo `USAGE` en `ai` y `SELECT` en `ai.citation_passages`) y publicación de una generación (sellar/activar mediante funciones explícitas). Esta migración no concede esos permisos. `ai/tests/test_ingestion_repository.py` comprueba que la ingesta puede operar con esos grants acotados y que el lector del backend consulta la vista sin poder leer `ai.document_chunks`; revisar también el dueño de la vista y restringir quién puede modificar `review_status` antes de otorgar grants en el proyecto compartido.
+Las migraciones aplicadas en Supabase aún deben incorporarse a `main` mediante PR. El proyecto remoto tiene el esquema, pero no filas de fuentes, documentos, fragmentos ni embeddings. Antes de ingerir, aprovisionar un login no propietario miembro del grupo de ingesta, un login lector para el servicio y un login lector de citas para backend. Guardar secretos fuera de Git. La propuesta de S3 privado para PDF también requiere despliegue.
 
-Antes de otra ejecución de `db push` desde `main`, incorporar por PR la copia ya aplicada que está en `users/johan`. La migración exige que el esquema `ai`, `extensions.vector` y los roles de Supabase (`anon`, `authenticated`, `service_role`) ya existan. No crea extensiones, objetos en `scientific` o `app`, ni políticas que concedan acceso a usuarios. En PostgreSQL desechable de CI, preparar estos prerequisitos antes de ejecutar toda la cadena de migraciones; instalar pgvector en la imagen por sí solo no crea la extensión SQL ni los roles. La migración inicial ya aplicada y publicada debe permanecer inmutable.
-
-El diseño conserva versiones de PDFs mediante SHA-256, fragmentos de una sola página y embeddings de 1024 dimensiones. La búsqueda textual usa `english` para el corpus NASA inicial. El vector se consulta de forma exacta al principio; HNSW se evaluará cuando haya corpus y medidas de latencia/recall. La columna `storage_path` admite el destino privado de PDFs cuando el equipo lo elija.
-
-## Verificación y siguientes pasos
-
-1. Fusionar el SQL exacto de la migración compartida ya publicada; no aplicarlo de nuevo manualmente.
-2. Probar sus restricciones en una base PostgreSQL 17 desechable con pgvector cuando se cambie el SQL. `ai/tests/test_schema_migration.py` requiere `AI_SCHEMA_TEST_DATABASE_URL` apuntando a una base local llamada `pyrogravity_ai_test`; sus cambios se revierten al terminar.
-3. Decidir la ubicación persistente de PDFs con el equipo.
-4. Definir permisos mínimos para un rol de ingesta y otro de consulta. RLS queda activo sin políticas y los roles Data API no tienen acceso. No usar la conexión `postgres` como credencial de ejecución de la aplicación.
-
-La revisión de chunks y el contrato con `scientific` continúan siendo pasos independientes antes de generar respuestas.
-
-**Validación local anterior del 15 de noviembre de 2026:** el SQL y las restricciones pasaron en una base desechable PostgreSQL 17 con pgvector 0.8.2 (`pgvector/pgvector:0.8.2-pg17`). La prueba revirtió todos sus cambios y el contenedor se detuvo. Después se aplicó la misma migración en Supabase y se verificó mediante consultas de solo lectura.
+`ai/tests/test_schema_migration.py` y `ai/tests/test_ingestion_repository.py` usan una base PostgreSQL 17 desechable llamada `pyrogravity_ai_test` con pgvector en `extensions`, mediante `AI_SCHEMA_TEST_DATABASE_URL`. No apuntar esa variable a Supabase.
