@@ -18,6 +18,22 @@ def verify(url, executable=None, screenshots=None, command_center=False):
             expect(page.get_by_role("link", name="Ver resultado y procedencia")).to_have_count(5)
             assert page.locator('.page-header').bounding_box()['y'] + page.locator('.page-header').bounding_box()['height'] <= page.locator('.analysis-grid').bounding_box()['y'], 'El encabezado no debe cubrir los resultados.'
             page.get_by_role("link", name="Explorar gráficas y metodologías").click()
+        search = page.get_by_role("searchbox", name="Buscar en el catálogo")
+        expect(search).to_be_enabled()
+        search.fill("psi-69")
+        expect(page.locator("#catalog-study")).to_have_text("PSI-69")
+        expect(page.locator("#catalog-source")).to_have_attribute("href", "https://psi.nasa.gov/physci/repo/data/investigations/PSI-69")
+        first_row = page.locator("#catalog-rows th").first
+        expect(first_row).to_have_text("1")
+        page.locator("#catalog-next").click()
+        expect(first_row).to_have_text("11")
+        page.locator("#catalog-previous").click()
+        expect(first_row).to_have_text("1")
+        search.fill("sin coincidencia de prueba")
+        expect(page.locator("#catalog-count")).to_have_text("0 tablas encontradas")
+        expect(page.locator("#catalog-results")).to_be_hidden()
+        search.fill("")
+        expect(page.locator("#catalog-dataset")).to_be_enabled()
         expect(page.locator("#science-analysis")).to_be_enabled()
         catalog = page.locator("#science-analysis option").evaluate_all("nodes => nodes.map(n => ({id:n.value,label:n.textContent}))")
         assert len(catalog) == 5

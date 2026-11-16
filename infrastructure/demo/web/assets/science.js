@@ -64,13 +64,13 @@
       const xs = points.map(row => Number(row[x])), ys = points.map(row => Number(row[y]));
       let xmin = Math.min(...xs), xmax = Math.max(...xs), ymin = Math.min(...ys), ymax = Math.max(...ys);
       if (xmin === xmax) { xmin -= 1; xmax += 1; } if (ymin === ymax) { ymin -= 1; ymax += 1; }
-      svg('path', {d: 'M70 20V290H670', fill: 'none', stroke: '#cec2b1'});
+      svg('path', {d: 'M70 20V290H670', fill: 'none', stroke: '#6685a5'});
       for (let i = 0; i <= 4; i++) {
         svg('text', {x: 70 + i * 150, y: 310, 'text-anchor': 'middle'}, (xmin + (xmax - xmin) * i / 4).toPrecision(4));
         svg('text', {x: 63, y: 294 - i * 67.5, 'text-anchor': 'end'}, (ymin + (ymax - ymin) * i / 4).toPrecision(4));
       }
       points.forEach(row => {
-        const dot = svg('circle', {cx: 70 + (Number(row[x]) - xmin) / (xmax - xmin) * 600, cy: 290 - (Number(row[y]) - ymin) / (ymax - ymin) * 270, r: 4, fill: '#ffb077', opacity: .7, tabindex: 0});
+        const dot = svg('circle', {cx: 70 + (Number(row[x]) - xmin) / (xmax - xmin) * 600, cy: 290 - (Number(row[y]) - ymin) / (ymax - ymin) * 270, r: 4, fill: '#73def6', opacity: .7, tabindex: 0});
         const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
         title.textContent = `Fila ${row.source_record} · ${row[group] ?? ''} · ${row[x]} ${xu}; ${row[y]} ${yu}`; dot.append(title);
       });
@@ -97,6 +97,7 @@
   $('prev').addEventListener('click', () => { page--; render(); });
   $('next').addEventListener('click', () => { page++; render(); });
   fetchJSON('/api/v1/analyses').then(catalog => {
+    document.querySelector('#atlas-analysis-count').textContent = catalog.length;
     catalog.forEach(item => option($('analysis'), item.analysis_id, `${item.analysis_name} · ${item.psi_code}`));
     $('analysis').disabled = false; return load();
   }).catch(error => { $('status').textContent = error.message; });

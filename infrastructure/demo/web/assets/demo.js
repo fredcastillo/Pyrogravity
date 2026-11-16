@@ -8,16 +8,20 @@ const measurements = document.querySelector("#measurements");
 const datasets = new Map();
 let activeRequest;
 const catalogUrl = new URL("catalog.json", document.currentScript.src);
+const catalogSearch = document.querySelector("#catalog-search");
 const catalogSelect = document.querySelector("#catalog-dataset");
 const catalogCount = document.querySelector("#catalog-count");
 const catalogResults = document.querySelector("#catalog-results");
 const catalogColumns = document.querySelector("#catalog-columns");
 const catalogRows = document.querySelector("#catalog-rows");
+const catalogSurface = document.querySelector(".catalog-table");
+const catalogScrollNote = document.querySelector("#catalog-scroll-note");
 const catalogPrevious = document.querySelector("#catalog-previous");
 const catalogNext = document.querySelector("#catalog-next");
 const catalogTables = new Map();
 const pageSize = 10;
 let firstRow = 0;
+let catalogSummary = "";
 const scopeLabels = {
   experimental_summary: "Resumen experimental",
   conditions_only: "Condiciones experimentales",
@@ -127,7 +131,13 @@ function textElement(tag, value) {
 
 function renderCatalog() {
   const table = catalogTables.get(catalogSelect.value);
+  if (!table) {
+    catalogResults.hidden = true;
+    return;
+  }
   const label = scopeLabels[table.scope] ?? "Tabla de NASA";
+  document.querySelector("#catalog-study").textContent = table.study;
+  document.querySelector("#catalog-name").textContent = table.label;
   document.querySelector("#catalog-details").textContent =
     `${table.title} · ${label} · ${table.rows.length} de ${table.row_count} filas con datos`;
 
@@ -142,7 +152,9 @@ function renderCatalog() {
   const lastRow = Math.min(firstRow + pageSize, table.rows.length);
   catalogRows.replaceChildren(...table.rows.slice(firstRow, lastRow).map((row) => {
     const line = document.createElement("tr");
-    line.append(...row.map((cell) => textElement("td", cell === "" || cell === null ? "—" : cell)));
+    const origin = textElement("th", row[0]);
+    origin.scope = "row";
+    line.append(origin, ...row.slice(1).map((cell) => textElement("td", cell === "" || cell === null ? "—" : cell)));
     return line;
   }));
 
@@ -154,9 +166,38 @@ function renderCatalog() {
 
   const source = document.querySelector("#catalog-source");
   source.href = table.source;
-  source.textContent = `NASA · ${table.study}`;
+  source.textContent = "Ver fuente NASA ↗";
   document.querySelector("#catalog-file").textContent = table.source_path.split("/").at(-1);
+  document.querySelector("#catalog-sha").textContent = table.source_sha256;
   catalogResults.hidden = false;
+  catalogSurface.scrollLeft = 0;
+  updateCatalogScrollNote();
+}
+
+function updateCatalogScrollNote() {
+  catalogScrollNote.hidden = catalogSurface.scrollWidth <= catalogSurface.clientWidth;
+}
+
+function searchText(value) {
+  return value.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+}
+
+function filterCatalog() {
+  const previous = catalogSelect.value;
+  const terms = searchText(catalogSearch.value).trim().split(/\s+/).filter(Boolean);
+  const matches = [...catalogTables.values()].filter((table) => {
+    const haystack = searchText(`${table.study} ${table.label} ${table.title} ${table.source_path}`);
+    return terms.every((term) => haystack.includes(term));
+  });
+  catalogSelect.replaceChildren(...matches.map((table) => new Option(`${table.study} · ${table.label}`, table.id)));
+  catalogSelect.disabled = matches.length === 0;
+  if (!matches.length) catalogSelect.add(new Option("Sin tablas que coincidan", ""));
+  if (matches.some((table) => table.id === previous)) catalogSelect.value = previous;
+  catalogCount.textContent = terms.length
+    ? (matches.length === 1 ? "1 tabla encontrada" : `${matches.length} tablas encontradas`)
+    : catalogSummary;
+  firstRow = 0;
+  renderCatalog();
 }
 
 async function loadCatalog() {
@@ -164,12 +205,13 @@ async function loadCatalog() {
     const tables = await getJson(catalogUrl);
     for (const table of tables) {
       catalogTables.set(table.id, table);
-      catalogSelect.add(new Option(`${table.study} · ${table.label}`, table.id));
     }
     const studies = new Set(tables.map((table) => table.study));
-    catalogCount.textContent = `${tables.length} tablas de ${studies.size} investigaciones`;
-    catalogSelect.disabled = false;
-    renderCatalog();
+    catalogSummary = `${tables.length} tablas · ${studies.size} investigaciones`;
+    document.querySelector("#atlas-table-count").textContent = tables.length;
+    document.querySelector("#atlas-study-count").textContent = studies.size;
+    catalogSearch.disabled = false;
+    filterCatalog();
   } catch (error) {
     catalogCount.textContent = error.message;
   }
@@ -187,6 +229,8 @@ catalogSelect.addEventListener("change", () => {
   firstRow = 0;
   renderCatalog();
 });
+catalogSearch.addEventListener("input", filterCatalog);
+new ResizeObserver(updateCatalogScrollNote).observe(catalogSurface);
 catalogPrevious.addEventListener("click", () => {
   firstRow -= pageSize;
   renderCatalog();
@@ -197,3 +241,13 @@ catalogNext.addEventListener("click", () => {
 });
 void start();
 void loadCatalog();
+
+function updateNavigation() {
+  const target = window.location.hash || "#catalog-title";
+  for (const link of document.querySelectorAll(".atlas-nav a")) {
+    if (link.hash === target) link.setAttribute("aria-current", "location");
+    else link.removeAttribute("aria-current");
+  }
+}
+window.addEventListener("hashchange", updateNavigation);
+updateNavigation();
