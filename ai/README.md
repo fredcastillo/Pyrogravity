@@ -96,6 +96,8 @@ The runner reads the active private generation, embeds each question once with C
 
 ## Internal AI service
 
+The [integration readiness guide](docs/integration-readiness.md) lists the manual CI, database-role, migration, service-authentication, and private-PDF steps required before enabling the real provider.
+
 The service endpoint is `POST /internal/v1/ai/query` with the versioned `AiQueryRequest` and `AiResponse` contracts. It requires an `Authorization: Bearer` token of at least 32 characters configured as `AI_INTERNAL_TOKEN`. Start it from `ai/` with:
 
 ```powershell
