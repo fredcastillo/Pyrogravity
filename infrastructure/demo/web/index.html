@@ -4,27 +4,73 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Explora las tablas de NASA y compara ensayos de combustión en microgravedad.">
-  <title>Pyrogravity | Explorador de ensayos</title>
+  <meta name="theme-color" content="#070c18">
+  <title>Pyrogravity · Atlas de microgravedad</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/demo.css">
   <script src="/assets/demo.js" defer></script>
   <script src="/assets/science.js" defer></script>
 </head>
 <body>
-  <main>
-    <header>
-      <p class="project">PYROGRAVITY <span>NASA SPACE APPS</span></p>
-      <h1>Combustión en microgravedad</h1>
-      <p class="subtitle">Explora las tablas de NASA y cinco análisis de combustión con resultados trazables.</p>
-      <p class="source"><a href="/assets/command-center/index.html">Abrir Command Center</a></p>
-    </header>
+  <a class="skip-link" href="#catalog-title">Saltar al catálogo</a>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <a class="brand" href="/" aria-label="Inicio de Pyrogravity">
+        <img src="/assets/pyrogravity-atlas-mark.webp" width="34" height="34" alt="">
+        <span>Pyrogravity</span>
+      </a>
+      <nav class="atlas-nav" aria-label="Navegación científica">
+        <a href="#catalog-title" aria-current="location">Tablas NASA</a>
+        <a href="#science-title">Análisis y gráficas</a>
+        <a href="#comparison-title">Comparar ensayos</a>
+      </nav>
+      <a class="return-link" href="/assets/command-center/index.html" aria-label="Abrir Command Center"><span aria-hidden="true">↗</span> Command Center</a>
+    </div>
+  </header>
 
-    <section class="panel" aria-labelledby="catalog-title">
-      <h2 id="catalog-title">Tablas de NASA</h2>
-      <p id="catalog-count" role="status">Cargando el catálogo…</p>
-      <label>Tabla <select id="catalog-dataset" disabled></select></label>
+  <main>
+    <section id="catalog-title" class="atlas-hero" aria-labelledby="atlas-heading">
+      <div class="hero-content">
+        <p class="eyebrow">Datos de NASA · Ciencias físicas</p>
+        <h1 id="atlas-heading">Atlas de <span>microgravedad</span></h1>
+        <p class="subtitle">Combustión en microgravedad a través de tablas, mediciones y ensayos con fuentes verificables.</p>
+        <dl class="hero-stats" aria-label="Contenido del catálogo">
+          <div><dt>Tablas NASA</dt><dd id="atlas-table-count">—</dd></div>
+          <div><dt>Investigaciones</dt><dd id="atlas-study-count">—</dd></div>
+          <div><dt>Análisis</dt><dd id="atlas-analysis-count">—</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="catalog-heading">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">Archivo científico</p>
+          <h2 id="catalog-heading">Tablas de NASA</h2>
+        </div>
+        <p id="catalog-count" class="catalog-count" role="status">Cargando el catálogo…</p>
+      </div>
+      <div class="catalog-controls">
+        <label for="catalog-search">Buscar en el catálogo
+          <input id="catalog-search" type="search" placeholder="BASS, PSI-69, Flame Design…" disabled>
+        </label>
+        <label for="catalog-dataset">Tabla
+          <select id="catalog-dataset" disabled></select>
+        </label>
+      </div>
       <div id="catalog-results" hidden>
-        <p id="catalog-details"></p>
-        <div class="table-wrap catalog-table" role="region" aria-label="Filas del CSV seleccionado" tabindex="0">
+        <div class="dataset-heading">
+          <div>
+            <p class="eyebrow" id="catalog-study"></p>
+            <h3 id="catalog-name"></h3>
+            <p id="catalog-details"></p>
+          </div>
+          <a id="catalog-source" class="secondary-link" target="_blank" rel="noopener noreferrer"></a>
+        </div>
+        <p class="surface-note" id="catalog-scroll-note">Desliza la tabla horizontalmente para ver más columnas.</p>
+        <div class="table-wrap catalog-table" role="region" aria-label="Filas del CSV seleccionado" aria-describedby="catalog-scroll-note" tabindex="0">
           <table>
             <thead><tr id="catalog-columns"></tr></thead>
             <tbody id="catalog-rows"></tbody>
@@ -35,21 +81,29 @@
           <span id="catalog-page" role="status"></span>
           <button type="button" id="catalog-next">Siguiente</button>
         </div>
-        <p class="source"><a id="catalog-source" target="_blank" rel="noopener noreferrer"></a> <span id="catalog-file"></span></p>
+        <details class="source">
+          <summary>Archivo y procedencia</summary>
+          <p id="catalog-file"></p>
+          <p>SHA-256 <code id="catalog-sha"></code></p>
+        </details>
       </div>
     </section>
 
     <section class="panel" aria-labelledby="science-title">
-      <h2 id="science-title">Análisis científicos</h2>
-      <p>Resultados calculados sobre la versión publicada de los CSV. Las configuraciones y cohortes se muestran por separado.</p>
-      <label>Análisis <select id="science-analysis" disabled></select></label>
-      <label>Configuración o cohorte <select id="science-cohort" disabled></select></label>
+      <div class="panel-heading">
+        <div><p class="eyebrow">Laboratorio</p><h2 id="science-title">Análisis y gráficas</h2></div>
+      </div>
+      <p class="intro">Explora los resultados de los CSV publicados por configuración, cohorte o grupo.</p>
+      <div class="catalog-controls">
+        <label>Análisis <select id="science-analysis" disabled></select></label>
+        <label>Configuración o cohorte <select id="science-cohort" disabled></select></label>
+      </div>
       <p id="science-status" role="status">Cargando análisis…</p>
       <div id="science-result" hidden>
         <p id="science-description"></p>
         <label>Grupo <select id="science-group"></select></label>
         <figure><svg id="science-chart" viewBox="0 0 700 350" role="img" aria-label="Dispersión de mediciones científicas"></svg><figcaption id="science-caption"></figcaption></figure>
-        <div class="table-wrap" tabindex="0" aria-label="Mediciones del análisis"><table><thead><tr id="science-columns"></tr></thead><tbody id="science-rows"></tbody></table></div>
+        <div class="table-wrap" role="region" tabindex="0" aria-label="Mediciones del análisis"><table><thead><tr id="science-columns"></tr></thead><tbody id="science-rows"></tbody></table></div>
         <div class="catalog-pagination"><button id="science-prev" type="button">Anterior</button><span id="science-page"></span><button id="science-next" type="button">Siguiente</button></div>
         <p id="science-source" class="source"></p>
         <details><summary>Criterios y advertencias del análisis</summary><pre id="science-method"></pre></details>
@@ -58,7 +112,9 @@
     </section>
 
     <section class="panel" aria-labelledby="comparison-title">
-      <h2 id="comparison-title">Comparar ensayos</h2>
+      <div class="panel-heading">
+        <div><p class="eyebrow">Ensayos verificados</p><h2 id="comparison-title">Comparar ensayos</h2></div>
+      </div>
       <form id="comparison">
         <label>Estudio <select id="dataset" required></select></label>
         <label>Ensayos, separados por comas <input id="trials" required maxlength="160"></label>
@@ -70,7 +126,7 @@
     <section id="results" class="panel" aria-labelledby="metric" hidden>
       <h2 id="metric"></h2>
       <ul id="bars" aria-label="Gráfico de mediciones exactas"></ul>
-      <div class="table-wrap">
+      <div class="table-wrap" role="region" tabindex="0" aria-label="Mediciones del comparador">
         <table>
           <thead><tr><th scope="col">Ensayo</th><th scope="col">Valor</th><th scope="col">Material o combustible</th><th scope="col">Fila de origen</th></tr></thead>
           <tbody id="measurements"></tbody>
@@ -79,5 +135,6 @@
       <p class="source"><a id="source" target="_blank" rel="noopener noreferrer"></a> <span id="source-file"></span></p>
     </section>
   </main>
+  <footer class="atlas-footer"><span>Pyrogravity · Combustión en microgravedad</span><a href="#catalog-title">Volver al atlas ↑</a></footer>
 </body>
 </html>
