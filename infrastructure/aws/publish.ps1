@@ -36,6 +36,11 @@ function Update-Backend([hashtable]$Parameters) {
         "ParameterKey=ArtifactKey,ParameterValue=$($Parameters.ArtifactKey)"
         "ParameterKey=ArtifactSha256,ParameterValue=$($Parameters.ArtifactSha256)"
     )
+    foreach ($name in @('PrivateAiFunctionArn', 'BackendAiSecretArn')) {
+        if ($stack.Parameters.ContainsKey($name)) {
+            $overrides += "ParameterKey=$name,UsePreviousValue=true"
+        }
+    }
     $null = Invoke-Aws cloudformation update-stack --stack-name $stack.Id --template-url $TemplateUrl --capabilities CAPABILITY_IAM --parameters @overrides
     $null = Invoke-Aws cloudformation wait stack-update-complete --stack-name $stack.Id
 }

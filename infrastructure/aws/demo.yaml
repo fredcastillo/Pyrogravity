@@ -19,6 +19,19 @@ Parameters:
   ArtifactSha256:
     Type: String
     AllowedPattern: '[A-Za-z0-9+/]{43}='
+  PrivateAiFunctionArn:
+    Type: String
+    Default: ''
+    AllowedPattern: '(|arn:[a-z0-9-]+:lambda:[a-z0-9-]+:[0-9]{12}:function:[A-Za-z0-9_-]+)'
+  BackendAiSecretArn:
+    Type: String
+    Default: ''
+    AllowedPattern: '(|arn:[a-z0-9-]+:secretsmanager:[a-z0-9-]+:[0-9]{12}:secret:.+)'
+
+Conditions:
+  PrivateAiConfigured: !And
+    - !Not [!Equals [!Ref PrivateAiFunctionArn, '']]
+    - !Not [!Equals [!Ref BackendAiSecretArn, '']]
 
 Resources:
   SiteBucket:
@@ -135,7 +148,14 @@ Resources:
       Handler: app.handler
       Architectures: [x86_64]
       MemorySize: 256
-      Timeout: 10
+      Timeout: 27
+      Environment: !If
+        - PrivateAiConfigured
+        - Variables:
+            AI_PROVIDER_ENABLED: 'true'
+            AI_INTERNAL_FUNCTION_ARN: !Ref PrivateAiFunctionArn
+            PYROGRAVITY_BACKEND_SECRET_ARN: !Ref BackendAiSecretArn
+        - !Ref AWS::NoValue
       Code:
         S3Bucket: !Ref ArtifactBucket
         S3Key: !Ref ArtifactKey
@@ -146,6 +166,7 @@ Resources:
     Properties:
       FunctionName: !Ref ApiFunction
       CodeSha256: !Ref ArtifactSha256
+      Description: !If [PrivateAiConfigured, 'Private AI enabled', 'Scientific demo']
 
   ApiAlias:
     Type: AWS::Lambda::Alias
@@ -198,7 +219,7 @@ Resources:
       IntegrationType: AWS_PROXY
       IntegrationUri: !Ref ApiAlias
       PayloadFormatVersion: '2.0'
-      TimeoutInMillis: 12000
+      TimeoutInMillis: !If [PrivateAiConfigured, 29000, 12000]
 
   HealthRoute:
     Type: AWS::ApiGatewayV2::Route

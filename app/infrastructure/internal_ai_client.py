@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from functools import lru_cache
 from typing import Any
 
 import httpx
@@ -43,3 +45,48 @@ class InternalAiClient:
         if not isinstance(result, dict):
             raise AiUpstreamError("invalid_response")
         return result
+
+
+@lru_cache
+def _lambda_client():
+    import boto3
+    from botocore.config import Config
+
+    return boto3.client("lambda", config=Config(
+        connect_timeout=3, read_timeout=24, retries={"total_max_attempts": 1},
+    ))
+
+
+class LambdaInternalAiClient:
+    """Invoke the private AI function over the AWS HTTPS API using the backend role."""
+
+    def __init__(self, function_arn: str):
+        self.function_arn = function_arn
+
+    def query(self, payload: dict[str, Any]) -> dict[str, Any]:
+        from botocore.exceptions import BotoCoreError, ClientError, ReadTimeoutError
+
+        try:
+            invocation = _lambda_client().invoke(
+                FunctionName=self.function_arn,
+                InvocationType="RequestResponse",
+                Payload=json.dumps({"operation": "query", "request": payload}).encode(),
+            )
+            with invocation["Payload"] as body:
+                result = json.load(body)
+        except ReadTimeoutError as error:
+            raise AiUpstreamError("timeout", retryable=True) from error
+        except (BotoCoreError, ClientError) as error:
+            raise AiUpstreamError("upstream_unavailable", retryable=True) from error
+        except (KeyError, ValueError) as error:
+            raise AiUpstreamError("invalid_response") from error
+        if invocation.get("FunctionError") or not isinstance(result, dict):
+            raise AiUpstreamError("upstream_unavailable", retryable=True)
+        if result.get("status") == 504:
+            raise AiUpstreamError("timeout", retryable=True)
+        if result.get("status") != 200:
+            raise AiUpstreamError("upstream_unavailable", retryable=True)
+        response = result.get("response")
+        if not isinstance(response, dict):
+            raise AiUpstreamError("invalid_response")
+        return response

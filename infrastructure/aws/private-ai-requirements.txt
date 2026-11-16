@@ -1,0 +1,5 @@
+cohere==7.3.1
+fastapi==0.163.0
+pydantic==2.14.3
+psycopg[binary]==3.3.9
+python-dotenv==1.2.4

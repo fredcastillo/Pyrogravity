@@ -50,6 +50,9 @@ def build(output: Path, etl_python: str, release_id: str | None = None) -> None:
             for pattern in ("app/**/*.py", "ai/contracts/v1_1/*.json", "data/src/**/*.py", "data/raw/*.csv"):
                 for file in sorted(ROOT.glob(pattern)):
                     write_file(archive, file.relative_to(ROOT).as_posix(), file)
+            ai_package = ROOT / "ai" / "src"
+            for file in sorted(ai_package.glob("pyrogravity_ai/schemas/*.py")):
+                write_file(archive, file.relative_to(ai_package).as_posix(), file)
             write_file(archive, "data/source_manifest.csv", ROOT / "data" / "source_manifest.csv")
             if release_id:
                 archive.writestr(ZipInfo("infrastructure/demo/release.txt"), release_id)
