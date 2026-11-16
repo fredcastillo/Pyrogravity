@@ -5,6 +5,7 @@ import json
 import re
 from urllib.parse import urljoin
 from urllib.request import Request, urlopen
+from uuid import uuid4
 
 
 def verify(base_url: str) -> None:
@@ -21,8 +22,8 @@ def verify(base_url: str) -> None:
         assert b"/api/v1/ai/query" in response.read(), "El frontend debe consumir el contrato de la API."
 
     payload = {
-        "id": "smoke-command-center",
-        "question": "¿Qué evidencia tenemos?",
+        "id": str(uuid4()),
+        "question": "Explica el resultado de los ensayos de combustión de antimateria de BASS-II.",
         "language": "es",
         "experiment_ids": [],
     }

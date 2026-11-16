@@ -49,6 +49,69 @@ GitHub Actions solicita una sesión temporal de AWS por OIDC. La variable de rep
 
 El enlace **Abrir Command Center** carga la compilación React del mismo commit. La interfaz consulta el catálogo científico y envía preguntas a `POST /api/v1/ai/query` en el mismo origen. Durante la publicación se prueba el contrato y su respuesta de evidencia insuficiente. La activación del proveedor real y del corpus se prepara según [el runbook de IA](../../docs/operacion-ia.md).
 
+### Publicación opcional del motor privado
+
+El job de IA prueba sus contratos, permisos PostgreSQL y adaptador privado; después
+construye `private-ai.zip` y comprueba que su handler importe desde el ZIP extraído.
+En `main` conserva ese paquete como `pyrogravity-private-ai-<commit>`. El despliegue
+descarga el artefacto de la misma ejecución después de la verificación general;
+no reconstruye código ni recibe las credenciales de Cohere o Supabase.
+
+Para incorporar el servicio privado al CD, el operador agrega **ambas** claves a
+`PYROGRAVITY_AWS_DEMO`, conservando `roleArn` y `templateUrl`:
+
+```json
+{
+  "privateStackName": "pyrogravity-ai-private",
+  "privateTemplateUrl": "https://BUCKET.s3.us-east-1.amazonaws.com/templates/ARCHIVO.yaml?versionId=VERSION"
+}
+```
+
+Es un fragmento para añadir al JSON existente, no una sustitución completa. La URL
+debe identificar la versión de la plantilla privada revisada y autorizada en IAM.
+Si faltan las dos claves, continúa la publicación pública existente. Si solo se
+configura una, el workflow falla antes de escribir en AWS. La pila privada debe
+existir y estar estable; este flujo no crea secretos, roles, corpus ni la pila.
+
+El operador debe ampliar el rol OIDC **antes** de habilitar esas claves:
+
+- `cloudformation:DescribeStacks` en el ARN exacto de la pila privada y
+  `cloudformation:UpdateStack` sobre ese ARN, condicionado a su URL aprobada y
+  sin permitir un `RoleARN` alternativo.
+- Lectura de la versión aprobada de la plantilla y lectura/escritura en
+  `private-ai/*` del bucket de artefactos. No conceder escritura en `templates/*`.
+- `lambda:GetFunctionConfiguration` en el ARN exacto de la función privada para
+  verificar su SHA-256, estado y finalización.
+- Las operaciones de lectura y `lambda:UpdateFunctionCode` que CloudFormation
+  necesita sobre esa función, restringidas mediante `aws:CalledVia` a
+  `cloudformation.amazonaws.com`. No conceder actualización directa de código,
+  acceso a secretos, escritura IAM ni modificación del corpus al workflow.
+
+`publish.ps1` conserva las identidades de backend e ingesta, actualiza primero el
+ZIP privado y verifica el `CodeSha256` real. A continuación publica backend y web
+bajo la misma exclusión mutua. Un paquete privado idéntico se verifica sin volver
+a publicarlo. Si falla la comprobación posterior, recupera índice, backend y
+paquete privado anteriores. La recuperación privada comprueba que la pila aún
+contiene el paquete de esta ejecución y está estable para evitar sobrescribir una
+actualización ajena; una recuperación que no pueda completarse queda registrada
+como advertencia y el job conserva el fallo.
+
+Este control verifica el paquete y el recorrido público existente. La aceptación
+de credenciales, permisos remotos, documentos y resultados científicos se ejecuta
+con `scripts/verify_live_ai.py` una vez que el operador configura los secretos.
+No confundir una importación correcta del ZIP con una consulta real a Cohere.
+
+Pruebas locales de publicación y reconciliación (requieren PowerShell 7):
+
+```sh
+python -m unittest discover -s infrastructure/aws/tests -v
+```
+
+Las pruebas ejecutan el script de publicación real con AWS simulado y verifican
+orden, rechazo de hash incorrecto, recuperación de ambos paquetes, ausencia de
+publicación pública tras un fallo privado y compatibilidad con la configuración
+que solo publica la demo.
+
 Los archivos de `infrastructure/demo/web`, las rutas de FastAPI en `infrastructure/demo/app.py` y los datos usados por el exportador se publican con este flujo. Para cambiar la infraestructura, un administrador aplica las plantillas con `deploy.ps1` y registra la nueva versión aprobada antes del siguiente despliegue, actualizando la política y la variable de GitHub.
 
 ## Operación y siguientes cambios

@@ -2,6 +2,8 @@ param(
     [Parameter(Mandatory)] [string]$ReleaseDirectory,
     [Parameter(Mandatory)] [ValidatePattern('^[0-9a-f]{40}$')] [string]$ReleaseId,
     [Parameter(Mandatory)] [string]$TemplateUrl,
+    [string]$PrivateStackName = '',
+    [string]$PrivateTemplateUrl = '',
     [string]$StackName = 'pyrogravity-demo',
     [string]$Region = 'us-east-1',
     [string]$PythonExecutable = 'python'
@@ -10,6 +12,12 @@ param(
 $ErrorActionPreference = 'Stop'
 $env:AWS_CLI_AUTO_PROMPT = 'off'
 $awsOptions = @('--region', $Region, '--no-cli-pager', '--output', 'json')
+if ([bool]$PrivateStackName -ne [bool]$PrivateTemplateUrl) {
+    throw 'La publicación privada requiere PrivateStackName y PrivateTemplateUrl juntos.'
+}
+if ($PrivateStackName -and ($PrivateStackName -notmatch '^[A-Za-z][A-Za-z0-9-]{0,127}$' -or !$PrivateTemplateUrl.StartsWith('https://'))) {
+    throw 'La pila privada o la URL de su plantilla aprobada no son válidas.'
+}
 
 function Invoke-Aws {
     param([Parameter(ValueFromRemainingArguments)] [string[]]$CommandArguments)
@@ -27,7 +35,26 @@ function Get-Stack([string]$Name) {
     $parameters = @{}
     foreach ($output in $result.Outputs) { $outputs[$output.OutputKey] = $output.OutputValue }
     foreach ($parameter in $result.Parameters) { $parameters[$parameter.ParameterKey] = $parameter.ParameterValue }
-    return @{ Id = $result.StackId; Outputs = $outputs; Parameters = $parameters }
+    return @{ Id = $result.StackId; Status = $result.StackStatus; Outputs = $outputs; Parameters = $parameters }
+}
+
+function Update-PrivateAi([hashtable]$Parameters) {
+    $overrides = @(
+        "ParameterKey=ArtifactBucket,ParameterValue=$($Parameters.ArtifactBucket)"
+        "ParameterKey=ArtifactKey,ParameterValue=$($Parameters.ArtifactKey)"
+        'ParameterKey=BackendRoleName,UsePreviousValue=true'
+        'ParameterKey=IngestOperatorArn,UsePreviousValue=true'
+    )
+    $null = Invoke-Aws cloudformation update-stack --stack-name $privateStack.Id --template-url $PrivateTemplateUrl --capabilities CAPABILITY_IAM --parameters @overrides
+    $null = Invoke-Aws cloudformation wait stack-update-complete --stack-name $privateStack.Id
+}
+
+function Assert-PrivateAiPackage {
+    if (!$PrivateStackName) { return }
+    $function = Invoke-Aws lambda get-function-configuration --function-name $privateStack.Outputs.FunctionArn | ConvertFrom-Json
+    if ($function.CodeSha256 -ne $privatePackage.ArtifactSha256 -or $function.LastUpdateStatus -ne 'Successful' -or $function.State -ne 'Active') {
+        throw 'La Lambda privada no publica el paquete probado o no está operativa.'
+    }
 }
 
 function Update-Backend([hashtable]$Parameters) {
@@ -67,6 +94,26 @@ $package = @{
     ArtifactKey = "lambda/$zipHash.zip"
     ArtifactSha256 = [Convert]::ToBase64String([Convert]::FromHexString($zipHash))
 }
+$samePrivate = $true
+if ($PrivateStackName) {
+    $privateZip = Join-Path $ReleaseDirectory 'private-ai.zip'
+    if (!(Test-Path -LiteralPath $privateZip -PathType Leaf)) { throw 'Falta el paquete probado de IA privada.' }
+    $privateStack = Get-Stack $PrivateStackName
+    if ($privateStack.Status -notin @('CREATE_COMPLETE', 'UPDATE_COMPLETE', 'UPDATE_ROLLBACK_COMPLETE')) {
+        throw 'La pila privada tiene una operación pendiente o un fallo que requiere revisión.'
+    }
+    if ($stack.Parameters.PrivateAiFunctionArn -and $stack.Parameters.PrivateAiFunctionArn -ne $privateStack.Outputs.FunctionArn) {
+        throw 'La pila privada configurada no corresponde al proveedor del backend.'
+    }
+    $privateHash = (Get-FileHash -LiteralPath $privateZip -Algorithm SHA256).Hash.ToLowerInvariant()
+    $privatePackage = @{
+        ArtifactBucket = $artifactBucket
+        ArtifactKey = "private-ai/$privateHash.zip"
+        ArtifactSha256 = [Convert]::ToBase64String([Convert]::FromHexString($privateHash))
+    }
+    $samePrivate = $privateStack.Parameters.ArtifactKey -eq $privatePackage.ArtifactKey -and
+        $privateStack.Parameters.ArtifactBucket -eq $privatePackage.ArtifactBucket
+}
 $assetPrefix = "assets/releases/$ReleaseId"
 $previousHtml = Join-Path $ReleaseDirectory 'previous.html'
 $nextHtml = Join-Path $ReleaseDirectory 'release.html'
@@ -77,7 +124,8 @@ $html = Get-Content -LiteralPath $index -Raw -Encoding utf8
 $sameBackend = $stack.Parameters.ArtifactKey -eq $package.ArtifactKey -and
     $stack.Parameters.ArtifactBucket -eq $package.ArtifactBucket -and
     $stack.Parameters.ArtifactSha256 -eq $package.ArtifactSha256
-if ($sameBackend -and (Get-FileHash -LiteralPath $previousHtml).Hash -eq (Get-FileHash -LiteralPath $nextHtml).Hash) {
+if ($sameBackend -and $samePrivate -and (Get-FileHash -LiteralPath $previousHtml).Hash -eq (Get-FileHash -LiteralPath $nextHtml).Hash) {
+    Assert-PrivateAiPackage
     & $PythonExecutable (Join-Path $PSScriptRoot 'smoke.py') $site.SiteUrl --release-id $ReleaseId
     if ($LASTEXITCODE -eq 0) {
         & $PythonExecutable (Join-Path $PSScriptRoot 'smoke_command_center.py') $site.SiteUrl
@@ -90,8 +138,15 @@ if ($sameBackend -and (Get-FileHash -LiteralPath $previousHtml).Hash -eq (Get-Fi
 }
 
 $backendUpdated = $false
+$privateUpdateAttempted = $false
 $newPage = $null
 try {
+    if (!$samePrivate) {
+        $null = Invoke-Aws s3api put-object --bucket $artifactBucket --key $privatePackage.ArtifactKey --body $privateZip --checksum-sha256 $privatePackage.ArtifactSha256
+        $privateUpdateAttempted = $true
+        Update-PrivateAi $privatePackage
+    }
+    Assert-PrivateAiPackage
     $null = Invoke-Aws s3 cp $assets "s3://$($site.SiteBucketName)/$assetPrefix/" --recursive --cache-control 'public,max-age=31536000,immutable' --only-show-errors
     if (!$sameBackend) {
         $null = Invoke-Aws s3api put-object --bucket $artifactBucket --key $package.ArtifactKey --body $zip --checksum-sha256 $package.ArtifactSha256
@@ -105,6 +160,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'La versión publicada no pasó la verificación de la página.' }
     & $PythonExecutable (Join-Path $PSScriptRoot 'smoke_command_center.py') $site.SiteUrl
     if ($LASTEXITCODE -ne 0) { throw 'La versión publicada no pasó la verificación del Command Center.' }
+    Assert-PrivateAiPackage
     Write-Output "Publicado $ReleaseId en $($site.SiteUrl)"
 } catch {
     if ($newPage) {
@@ -120,6 +176,17 @@ try {
                 Update-Backend $stack.Parameters
             }
         } catch { Write-Warning "No se pudo recuperar la versión anterior de FastAPI: $_" }
+    }
+    if ($privateUpdateAttempted) {
+        try {
+            $currentPrivate = Get-Stack $PrivateStackName
+            if ($currentPrivate.Parameters.ArtifactKey -eq $privatePackage.ArtifactKey) {
+                if ($currentPrivate.Status -ne 'UPDATE_COMPLETE') {
+                    throw 'La pila privada aún no está estable; no se inicia una actualización concurrente.'
+                }
+                Update-PrivateAi $privateStack.Parameters
+            }
+        } catch { Write-Warning "No se pudo recuperar la versión anterior de IA privada: $_" }
     }
     throw
 }
