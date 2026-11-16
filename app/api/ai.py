@@ -16,7 +16,7 @@ from app.infrastructure.demo_charts import (
 from app.infrastructure.demo_factory import DemoInfrastructureFactory
 from app.domain.public_ai_contract import PublicAiQueryRequest, PublicAiResponse
 from app.application.public_ai_orchestrator import PublicAiOrchestrator, PublicAiOrchestrationError
-from app.application.scientific_result_resolver import FlexScientificResultResolver, ScientificSelectionError
+from app.application.scientific_result_resolver import CatalogScientificResultResolver, ScientificSelectionError
 from app.infrastructure.citation_passage_reader import CitationPassageReader
 from app.infrastructure.internal_ai_client import InternalAiClient
 
@@ -78,7 +78,8 @@ def public_query(req: PublicAiQueryRequest, request: Request, settings: Settings
         )
     request.state.served_from = "live"
     orchestrator = PublicAiOrchestrator(
-        FlexScientificResultResolver(settings.scientific_data_dir),
+        CatalogScientificResultResolver(settings.scientific_data_dir,
+            settings.pyrogravity_database_url.get_secret_value() if settings.pyrogravity_database_url else ""),
         InternalAiClient(str(settings.ai_internal_url), settings.ai_internal_token.get_secret_value()),
         CitationPassageReader(settings.ai_citation_view_database_url.get_secret_value()).get,
     )

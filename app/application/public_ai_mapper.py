@@ -235,14 +235,19 @@ def map_internal_response(
             if key not in datums:
                 raise MapperValidationError("scientific evidence was not supplied by backend")
             result, datum = datums[key]
-            if datum.get("validation_status") != "validated" or datum.get("interpretation_status") != "exact":
+            if datum.get("validation_status") != "validated" or (datum["kind"] == "measurement" and datum.get("interpretation_status") != "exact"):
                 raise MapperValidationError("scientific evidence is not validated exact data")
-            dataset = next(ds for ds in result["datasets"] if ds["ref_id"] == datum.get("dataset_ref_id"))
+            ref_id = datum["dataset_ref_id"] if datum["kind"] == "measurement" else datum["dataset_ref_ids"][0]
+            dataset = next(ds for ds in result["datasets"] if ds["ref_id"] == ref_id)
             scientific_evidence[item["evidence_id"]] = (result, datum, dataset)
             citations[item["evidence_id"]] = {
                 "id": item["evidence_id"], "kind": "scientific", "title": dataset["source_title"],
                 "url": dataset["source_url"], "page": None,
-                "snippet": f"{datum['trial_code']}; {datum['source_header']}: {datum['raw_value']} {datum['unit']}",
+                "snippet": (f"{datum['trial_code']}; {datum['source_header']}: {datum['raw_value']} {datum['unit']}"
+                            if datum["kind"] == "measurement" else
+                            f"{datum['method']} v{datum['method_version']}; n={datum['sample_count']}; "
+                            + "; ".join(f"{cell['dataset_ref_id']}:{cell['source_record']}:{cell['column_ordinal']}"
+                                        for cell in datum["input_cells"])),
                 "source": dataset["source_id"],
                 "measurement": {"variable": datum["variable_code"], "value": _decimal_string(datum["value"]),
                                 "unit": datum["unit"], "provenance": provenance},
@@ -257,11 +262,15 @@ def map_internal_response(
             if not scientific:
                 raise MapperValidationError("numeric claim requires scientific evidence")
             _verify_numeric_text(claim["text"], scientific)
+        elif _numbers(claim["text"]) and not any(item["kind"] == "document" and claim["text"] in item["citation"]["quote"] for item in linked):
+            raise MapperValidationError("conceptual claim must be a literal verified quote")
         for item in linked:
             if item["kind"] == "scientific":
                 all_scientific_datums[(item["result_id"], item["datum_id"])] = scientific_evidence[item["evidence_id"]][1]
         claims.append({"id": claim["claim_id"], "text": claim["text"], "citation_ids": claim["evidence_ids"]})
-    _verify_numeric_text(response["answer"], list(all_scientific_datums.values()))
+    assembled = "\n".join(f"{index}. {claim['text']}" for index, claim in enumerate(response["claims"], 1))
+    if response["answer"] != assembled:
+        _verify_numeric_text(response["answer"], list(all_scientific_datums.values()))
     charts = []
     if request["chart_preference"] != "none":
         for spec in response["visualizations"]:

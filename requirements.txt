@@ -1,4 +1,5 @@
 -r data/requirements.txt
+-e ./ai
 -r infrastructure/demo/requirements.txt
 uvicorn==0.40.0
 pydantic-settings==2.14.2
