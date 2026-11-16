@@ -9,6 +9,7 @@
 
 # QA e infraestructura
 /tests/ @fredcastillo
+/tests/contract/ @fredcastillo @GregoriEJimenezDev
 /infrastructure/ @iClexi
 /compose.* @iClexi
 /docker-compose.* @iClexi
