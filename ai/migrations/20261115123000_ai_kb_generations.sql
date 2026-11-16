@@ -1,4 +1,4 @@
--- Borrador local posterior a la migración inicial; no desplegar sin revisión.
+-- Posterior a 20261115120000_ai_initial.sql; se aplica en la cadena compartida.
 -- Cada extracción del mismo PDF conserva sus propios pasajes y embeddings.
 ALTER TABLE ai.documents ADD COLUMN processing_config_hash text
     CHECK (processing_config_hash IS NULL OR processing_config_hash ~ '^[0-9a-f]{64}$');
