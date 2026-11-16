@@ -15,6 +15,10 @@ from app.infrastructure.demo_charts import (
 )
 from app.infrastructure.demo_factory import DemoInfrastructureFactory
 from app.domain.public_ai_contract import PublicAiQueryRequest, PublicAiResponse
+from app.application.public_ai_orchestrator import PublicAiOrchestrator, PublicAiOrchestrationError
+from app.application.scientific_result_resolver import FlexScientificResultResolver, ScientificSelectionError
+from app.infrastructure.citation_passage_reader import CitationPassageReader
+from app.infrastructure.internal_ai_client import InternalAiClient
 
 
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -23,6 +27,7 @@ ERROR_RESPONSES = {
     422: {"model": ApiErrorResponse, "description": "Validation error"},
     502: {"model": ApiErrorResponse, "description": "Ungrounded AI response"},
     503: {"model": ApiErrorResponse, "description": "AI unavailable"},
+    504: {"model": ApiErrorResponse, "description": "AI upstream timeout"},
 }
 
 
@@ -40,15 +45,20 @@ def _run(req, query_type, settings):
 @router.post(
     "/query",
     response_model=PublicAiResponse,
-    responses={503: {"model": ApiErrorResponse, "description": "AI provider disabled"}},
+    responses={
+        422: {"model": ApiErrorResponse, "description": "Invalid public request"},
+        502: {"model": ApiErrorResponse, "description": "Ungrounded AI response"},
+        503: {"model": ApiErrorResponse, "description": "AI provider disabled or unavailable"},
+        504: {"model": ApiErrorResponse, "description": "AI upstream timeout"},
+    },
     operation_id="public_ai_query_v1_1",
     include_in_schema=True,
 )
-def public_query(req: PublicAiQueryRequest, request: Request):
-    """Public v1.1 contract. Provider remains disabled pending reader auth."""
+def public_query(req: PublicAiQueryRequest, request: Request, settings: Settings = Depends(get_settings)):
+    """Public v1.1 entrypoint. The upstream path stays off until the reader role is provisioned."""
     # Bryant's request id is the single trace identifier echoed in the error envelope/header.
     request.state.request_id = req.id
-    if not req.experiment_ids:
+    if not settings.ai_provider_enabled and not req.experiment_ids:
         return PublicAiResponse(
             id=req.id,
             status="insufficient_evidence",
@@ -59,12 +69,33 @@ def public_query(req: PublicAiQueryRequest, request: Request):
             charts=[],
             provenance="demo",
         )
-    raise ApiError(
-        "AI_UNAVAILABLE",
-        "El proveedor de IA está desactivado hasta completar autenticación y rol lector.",
-        status_code=503,
-        details={"schema_version": "public-1.1"},
+    if not settings.ai_provider_enabled:
+        raise ApiError(
+            "AI_UNAVAILABLE",
+            "El proveedor de IA está desactivado hasta completar autenticación y rol lector.",
+            status_code=503,
+            details={"schema_version": "public-1.1"},
+        )
+    request.state.served_from = "live"
+    orchestrator = PublicAiOrchestrator(
+        FlexScientificResultResolver(settings.scientific_data_dir),
+        InternalAiClient(str(settings.ai_internal_url), settings.ai_internal_token.get_secret_value()),
+        CitationPassageReader(settings.ai_citation_view_database_url.get_secret_value()).get,
     )
+    try:
+        return orchestrator.query(req)
+    except ScientificSelectionError as error:
+        status = 404 if error.code == "EXPERIMENT_NOT_FOUND" else 422 if error.code == "VALIDATION_ERROR" else 503
+        request.state.served_from = "degraded" if status >= 500 else "live"
+        raise ApiError(error.code, str(error), status_code=status, details={}) from None
+    except PublicAiOrchestrationError as error:
+        request.state.served_from = "degraded" if error.status_code >= 500 else "live"
+        code = error.code
+        if code == "invalid_request":
+            code = "VALIDATION_ERROR"
+        elif code == "upstream_unavailable":
+            code = "AI_UNAVAILABLE"
+        raise ApiError(code, error.message, status_code=error.status_code, details={}) from None
 
 
 @router.get(
