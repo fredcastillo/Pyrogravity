@@ -9,11 +9,12 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react'
-import { useState, type PropsWithChildren } from 'react'
+import { useEffect, useRef, useState, type PropsWithChildren } from 'react'
 import { NavLink } from 'react-router-dom'
 import pyrogravityLogo from '../assets/pyrogravity-logo.png'
 import pyrogravityMark from '../assets/pyrogravity-mark.png'
 import { scientificCatalogUrl } from '../scientificCatalog'
+import { enableOrbitalField } from '../space/motion'
 
 const navigation = [
   { to: '/', label: 'Command Center', icon: LayoutDashboard, end: true },
@@ -31,17 +32,21 @@ const publishedNavigation = [
 
 export function AppShell({ children }: PropsWithChildren) {
   const [open, setOpen] = useState(false)
+  const orbit = useRef<HTMLCanvasElement>(null)
   const published = import.meta.env.VITE_STATIC_HOST === 'true'
+  useEffect(() => {
+    if (orbit.current) return enableOrbitalField(orbit.current)
+  }, [])
 
   return (
-    <div className="app-shell">
-      <div className="ambient-field" aria-hidden="true">
+    <div className={published ? 'app-shell app-shell--published' : 'app-shell'}>
+      {published ? <div className="orbital-backdrop" aria-hidden="true"><canvas className="orbital-canvas" ref={orbit} /></div> : <div className="ambient-field" aria-hidden="true">
         <span className="ambient-field__stars ambient-field__stars--far" />
         <span className="ambient-field__stars ambient-field__stars--near" />
         <i className="meteor-streak meteor-streak--one" />
         <i className="meteor-streak meteor-streak--two" />
         <i className="meteor-streak meteor-streak--three" />
-      </div>
+      </div>}
       <a className="skip-link" href="#main-content">Saltar al contenido</a>
       <header className="mobile-header">
         <div className="brand brand--compact"><img src={pyrogravityMark} alt="" /><span><b>Pyro</b>Gravity</span></div>
@@ -67,7 +72,7 @@ export function AppShell({ children }: PropsWithChildren) {
         </nav>
         <div className="sidebar__footer">
           {!published && <div className="system-pill"><span className="status-dot" /> Sistemas nominales</div>}
-          <div className="sidebar__meta"><ShieldCheck aria-hidden="true" /><span>Snapshot científico<br /><strong>NASA</strong></span></div>
+          <div className="sidebar__meta"><ShieldCheck aria-hidden="true" /><span>Datos científicos<br /><strong>NASA</strong></span></div>
         </div>
       </aside>
       <main id="main-content" className="main-content">{children}</main>

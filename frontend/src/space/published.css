@@ -1,0 +1,135 @@
+.app-shell--published { isolation: isolate; }
+.app-shell--published .background-orbit, .app-shell--published .background-atom { display: none; }
+.orbital-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 97% 33%, #17365c72, transparent 52%),
+    radial-gradient(ellipse at 42% 86%, #33245358, transparent 58%),
+    radial-gradient(circle at 2px 2px, #9ac7ed45 .8px, transparent 1.3px) 0 0 / 123px 139px,
+    #060b15;
+}
+.orbital-canvas { display: block; width: 100%; height: 100%; opacity: .85; }
+
+.page.page--published {
+  --accent: #86e4fa;
+  --muted: #a5b8ce;
+  --line: #a9c2e527;
+  width: min(100%, 1480px);
+  margin-inline: auto;
+}
+.page.page--published .published-hero {
+  isolation: isolate;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  min-height: clamp(310px, 32vw, 460px);
+  margin-bottom: clamp(18px, 2.2vw, 30px);
+  padding: clamp(22px, 4vw, 66px);
+  overflow: hidden;
+  border: 1px solid #49638170;
+  border-radius: 20px;
+  background: linear-gradient(108deg, #111d35ee 2%, #0a1427c9 57%, #0a132684);
+  box-shadow: 0 30px 70px #02060d80;
+}
+.page.page--published .published-hero::after { display: none; }
+.published-hero__image {
+  position: absolute;
+  inset: -20px -20px auto auto;
+  z-index: -1;
+  width: 75%;
+  height: calc(100% + 40px);
+  object-fit: cover;
+  object-position: 57% 51%;
+  opacity: .9;
+  mask-image: linear-gradient(90deg, transparent 6%, #000 67%);
+  transform: translate3d(var(--orbit-x, 0px), var(--orbit-y, 0px), 0);
+}
+.published-hero__copy { position: relative; max-width: 46rem; }
+.published-hero__copy::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -24px -36px;
+  background: radial-gradient(ellipse at 24% 50%, #0c1628a8 25%, transparent 72%);
+  pointer-events: none;
+}
+.published-hero .published-kicker { display: flex; align-items: center; gap: .5rem; color: #91e7f8; font-size: .75rem; }
+.published-kicker svg { width: 18px; height: 18px; }
+.page.page--published .published-hero h1 {
+  max-width: 14ch;
+  margin: .8rem 0;
+  background: none;
+  color: #edf6ff;
+  font-size: clamp(2.9rem, 5.4vw, 5.5rem);
+  line-height: .98;
+  letter-spacing: -.065em;
+  font-weight: 800;
+}
+.published-hero h1 span { color: #9edcff; }
+.published-hero__copy > p:not(.eyebrow) {
+  max-width: 37ch;
+  margin: .9rem 0 0;
+  color: #c6d7e7;
+  font-size: clamp(.9rem, 1.4vw, 1.05rem);
+  line-height: 1.6;
+}
+.published-hero__actions { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: 1.5rem; }
+.published-primary, .published-secondary, .published-analysis-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  min-height: 44px;
+  padding: .55rem .93rem;
+  border-radius: 8px;
+  font-size: .82rem;
+  font-weight: 800;
+}
+.published-primary { background: #a9e8f7; color: #071829; }
+.published-primary:hover { background: #d0f4ff; }
+.published-secondary { border: 1px solid #8fb8d866; background: #0b172cbd; color: #e7f4ff; }
+.published-secondary:hover { border-color: var(--accent); }
+.published-hero__actions svg, .published-analysis-link svg { width: 16px; height: 16px; }
+.analysis-grid.published-grid { grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: clamp(14px, 2vw, 24px); align-items: start; }
+.published-grid .panel { background: #0d192bf2; border: 1px solid #39536f80; border-radius: 16px; }
+.published-grid .panel__header { padding: clamp(16px, 2vw, 25px); }
+.published-grid .panel__header h2 { margin-top: 5px; font-size: clamp(1.14rem, 1.75vw, 1.5rem); color: #ecf6ff; }
+.published-grid .panel__header > svg { color: #85d7f2; }
+.published-catalog .published-analysis-list { margin: 0; padding-inline: clamp(16px, 2vw, 25px); }
+.published-analysis-list > li { padding-block: 19px; }
+.published-analysis-title { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .35rem .8rem; }
+.published-analysis-title h3 { margin: 0; font-size: clamp(.97rem, 1.35vw, 1.15rem); color: #edf6ff; }
+.published-analysis-title > span { font: .72rem "DM Mono", monospace; color: #8ad9f4; }
+.published-analysis-list p { margin: .4rem 0 .58rem; }
+.published-variables { display: flex; flex-wrap: wrap; gap: .36rem .45rem; margin: 0 0 .6rem; padding: 0; list-style: none; }
+.published-variables li { max-width: 100%; overflow-wrap: anywhere; padding: .21rem .38rem; border: 1px solid #4563824d; border-radius: .3rem; background: #14243a; font: .68rem "DM Mono", monospace; color: #bed6ee; }
+.published-variables li span { color: #80dbf0; }
+.published-analysis-list .text-link { min-height: 28px; font-size: .72rem; }
+.published-analysis-link { justify-content: space-between; margin: 16px clamp(16px, 2vw, 25px); border: 1px solid #4c77938c; color: #a3e3f7; }
+.published-analysis-link:hover { border-color: #9ee5fc; background: #153149; }
+.published-catalog [role="status"], .published-status { padding-inline: 25px; color: var(--muted); }
+#scientific-query { min-width: 0; scroll-margin-top: 75px; }
+.published-grid .published-query-intro { margin: 0 16px 12px; color: #becfe3; font-size: .86rem; line-height: 1.65; }
+.published-grid .ai-suggestions button { min-height: 34px; font-size: .72rem; color: #bedaed; }
+.published-grid .ai-query-form input { min-height: 45px; font-size: .88rem; }
+.published-grid .ai-query-note { font-size: .73rem; color: #a0b5cb; }
+
+@media (max-width: 1100px) {
+  .analysis-grid.published-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 620px) {
+  .page.page--published .published-hero { min-height: 320px; padding: 23px 16px; border-radius: 14px; }
+  .page.page--published .published-hero h1 { font-size: clamp(2.45rem, 10vw, 3.2rem); }
+  .published-hero__image { width: calc(100% + 40px); opacity: .55; object-position: 58% 50%; mask-image: linear-gradient(90deg, transparent -20%, #000 100%); }
+  .published-hero__actions a { min-width: 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .published-primary, .published-secondary, .published-analysis-link { transition: background-color .16s, border-color .16s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orbital-canvas { display: none; }
+}

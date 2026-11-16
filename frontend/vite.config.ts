@@ -7,6 +7,15 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_API_PROXY_TARGET
   return {
     plugins: [react()],
+    build: {
+      manifest: true,
+      rollupOptions: {
+        input: {
+          index: 'index.html',
+          atlasEffects: 'src/space/atlasEffects.ts',
+        },
+      },
+    },
     server: {
       host: '127.0.0.1',
       port: 4173,

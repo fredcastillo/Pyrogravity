@@ -18,6 +18,7 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 body {
+  isolation: isolate;
   margin: 0;
   min-height: 100dvh;
   background:
@@ -25,6 +26,8 @@ body {
     radial-gradient(ellipse at 2% 55%, #12234280, transparent 50rem),
     var(--background);
 }
+.orbital-backdrop { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+.orbital-canvas { display: block; width: 100%; height: 100%; opacity: .72; }
 a { color: var(--cyan); text-underline-offset: .2em; }
 a:hover { color: #d1f7ff; }
 :focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
@@ -69,6 +72,7 @@ a:hover { color: #d1f7ff; }
 main { display: grid; gap: 1.4rem; padding-block: 1.5rem 2.5rem; }
 #catalog-title, #science-title, #comparison-title { scroll-margin-top: 5.75rem; }
 .atlas-hero {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: center;
@@ -77,11 +81,17 @@ main { display: grid; gap: 1.4rem; padding-block: 1.5rem 2.5rem; }
   border: 1px solid #354767;
   border-radius: 1.15rem;
   overflow: hidden;
+  background: radial-gradient(ellipse at 78% 83%, #243f76, #090e20 68%);
+  box-shadow: 0 20px 70px #03081488;
+}
+.atlas-hero__art {
+  position: absolute;
+  inset: -22px;
+  z-index: -1;
   background:
     linear-gradient(90deg, #090e20 2%, #090e20ea 24%, #090e2060 61%, transparent 90%),
-    url("./orbital-atlas.webp") center 55% / cover no-repeat,
-    radial-gradient(ellipse at 78% 83%, #243f76, #090e20 68%);
-  box-shadow: 0 20px 70px #03081488;
+    url("./orbital-atlas.webp") center 55% / cover no-repeat;
+  transform: translate3d(var(--orbit-x, 0px), var(--orbit-y, 0px), 0);
 }
 .hero-content { padding: clamp(1.5rem, 5.5vw, 4.5rem); }
 .eyebrow { margin: 0; color: var(--cyan); font: 500 .72rem/1.35 var(--mono); letter-spacing: .095em; text-transform: uppercase; }
@@ -99,7 +109,7 @@ h1 span { color: #b2dcff; }
   padding: clamp(1rem, 2.8vw, 2rem);
   border: 1px solid var(--line);
   border-radius: 1.05rem;
-  background: linear-gradient(130deg, #111d34, var(--panel) 52%);
+  background: linear-gradient(130deg, #111d34f5, #0d1628ed 52%);
   box-shadow: 0 12px 45px #05081150;
 }
 .panel-heading { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: .65rem 1rem; margin-bottom: 1.2rem; }
@@ -159,7 +169,7 @@ code, pre { font-family: var(--mono); }
 #science-method { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; }
 #science-result figure { margin: 1rem 0; padding: .65rem; background: #0a1323; border: 1px solid var(--line); border-radius: .72rem; overflow-x: auto; }
 #science-chart { display: block; width: 100%; min-width: 300px; max-height: 420px; }
-#science-chart text { fill: #bdcfe5; font: 12px var(--mono); }
+#science-chart text { fill: #c7d9ef; font: 15px var(--mono); }
 #science-result figcaption { padding: .45rem; color: var(--muted); font-size: .82rem; }
 #bars { list-style: none; padding: 0; display: grid; gap: .5rem; }
 #bars li { display: grid; grid-template-columns: minmax(2.5rem, 5rem) minmax(3rem, 1fr) auto; align-items: center; gap: .7rem; font-family: var(--mono); }
@@ -175,15 +185,21 @@ meter::-moz-meter-bar { background: var(--cyan); }
   .atlas-nav a { display: grid; place-items: center; padding: .4rem .48rem; min-height: 2.75rem; font-size: .73rem; }
   #catalog-title, #science-title, #comparison-title { scroll-margin-top: 6.5rem; }
   main { padding-top: .8rem; gap: .85rem; }
-  .atlas-hero { min-height: 0; background-position: center, 64% 45%, center; }
+  .atlas-hero { min-height: 0; }
+  .atlas-hero__art { background-position: center, 64% 45%; }
   .hero-content { padding-block: 1.8rem 1.6rem; }
   h1 { font-size: clamp(1.95rem, 10.6vw, 2.65rem); }
   .hero-stats { margin-top: 1.2rem; }
   .catalog-controls, form { grid-template-columns: 1fr; }
   .catalog-pagination button { padding-inline: .55rem; }
   .catalog-pagination span { line-height: 1.25; }
+  #science-chart text { font-size: 20px; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
   button, .secondary-link, .atlas-nav a { transition: background-color .16s, border-color .16s, color .16s; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbital-canvas { display: none; }
 }
