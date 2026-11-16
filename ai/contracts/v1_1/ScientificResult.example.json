@@ -1,12 +1,13 @@
 {
   "schema_version": "1.1",
+  "canonicalization_version": "scientific-result-c14n-v1",
   "result_id": "result_1",
-  "data_version": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "data_version": "cd04cbe0683f18926847add12de00fed766464c6048b13639f7eba44cba9d860",
   "analysis_id": "flex",
   "status": "ok",
   "source": "parquet",
   "datasets": [{
-    "ref_id": "dataset_1",
+    "ref_id": "ds_665710cbc7d5045ddd62a857596f17366bff13f8add37e36",
     "psi_code": "PSI-69",
     "table_name": "psi-69_flex",
     "relative_path": "synthetic/example.csv",
@@ -19,7 +20,7 @@
   "data": [{
     "kind": "measurement",
     "datum_id": "datum_1",
-    "dataset_ref_id": "dataset_1",
+    "dataset_ref_id": "ds_665710cbc7d5045ddd62a857596f17366bff13f8add37e36",
     "trial_code": "PSI-69:psi-69_flex:1",
     "source_record": 1,
     "column_ordinal": 14,

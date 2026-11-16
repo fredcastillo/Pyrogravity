@@ -1,0 +1,34 @@
+{
+  "canonicalization_version": "scientific-input-set-c14n-v1",
+  "inputs": [
+    {
+      "psi_code": "PSI-69",
+      "relative_path": "synthetic/example.csv",
+      "dataset_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "dataset_ref_id": "ds_665710cbc7d5045ddd62a857596f17366bff13f8add37e36",
+      "source_record": 2,
+      "column_ordinal": 14,
+      "source_header": "Synthetic duration",
+      "variable_code": "burn_time",
+      "value": "-0.0",
+      "raw_value": "-0.0",
+      "unit": "s",
+      "interpretation_status": "exact"
+    },
+    {
+      "psi_code": "PSI-69",
+      "relative_path": "synthetic/example.csv",
+      "dataset_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "dataset_ref_id": "ds_665710cbc7d5045ddd62a857596f17366bff13f8add37e36",
+      "source_record": 1,
+      "column_ordinal": 14,
+      "source_header": "Synthetic duration",
+      "variable_code": "burn_time",
+      "value": "1.000",
+      "raw_value": "1.000",
+      "unit": "s",
+      "interpretation_status": "exact"
+    }
+  ],
+  "expected_sha256": "5b4b8162d779459b9d4560771cb61945bad5b272002f0110b2657b7f4902da16"
+}

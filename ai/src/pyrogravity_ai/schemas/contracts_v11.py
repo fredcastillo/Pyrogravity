@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
-from decimal import Decimal, InvalidOperation
 from typing import Annotated, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from pyrogravity_ai.schemas.scientific_canonical import (
+    canonical_decimal,
+    dataset_ref_id,
+    scientific_data_version,
+)
 
 SHA256 = r"^[0-9a-f]{64}$"
 IDENTIFIER = r"^[a-zA-Z][a-zA-Z0-9_-]{0,63}$"
@@ -15,7 +20,7 @@ TRIAL_CODE = r"^PSI-[0-9]+:[a-zA-Z0-9_-]+:[1-9][0-9]*$"
 
 
 class WireModel(BaseModel):
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    model_config = ConfigDict(extra="forbid")
 
 
 class DatasetRef(WireModel):
@@ -26,7 +31,7 @@ class DatasetRef(WireModel):
     sha256: str = Field(pattern=SHA256)
     source_id: str = Field(min_length=1, max_length=120)
     source_title: str = Field(min_length=1, max_length=300)
-    source_url: HttpUrl
+    source_url: str = Field(pattern=r"^https://[^\s]+$", max_length=500)
     database_dataset_id: int | None = Field(default=None, ge=1)
 
     @field_validator("relative_path")
@@ -35,6 +40,12 @@ class DatasetRef(WireModel):
         if value.startswith(("/", "\\")) or "\\" in value or ":" in value or ".." in value.split("/"):
             raise ValueError("relative_path must be a safe POSIX relative path")
         return value
+
+    @model_validator(mode="after")
+    def logical_identity(self) -> DatasetRef:
+        if self.ref_id != dataset_ref_id(self.psi_code, self.relative_path, self.sha256):
+            raise ValueError("dataset ref_id must derive from PSI, path and SHA-256")
+        return self
 
 
 class CellRef(WireModel):
@@ -62,11 +73,7 @@ class MeasurementDatum(WireModel):
     @field_validator("value")
     @classmethod
     def finite_decimal(cls, value: str) -> str:
-        try:
-            if not Decimal(value).is_finite():
-                raise ValueError("value must be finite")
-        except InvalidOperation as error:
-            raise ValueError("value must be a decimal string") from error
+        canonical_decimal(value)
         return value
 
 
@@ -86,6 +93,7 @@ class DerivedDatum(WireModel):
     applied_filters: dict[str, str] = Field(default_factory=dict)
     input_cells: list[CellRef] = Field(default_factory=list)
     input_set_sha256: str | None = Field(default=None, pattern=SHA256)
+    input_set_version: Literal["scientific-input-set-c14n-v1"] | None = None
 
     _finite_decimal = field_validator("value")(MeasurementDatum.finite_decimal.__func__)
 
@@ -97,6 +105,8 @@ class DerivedDatum(WireModel):
             raise ValueError("derived datum requires cell refs or an input set hash")
         if self.method == "delta" and (len(self.input_cells) != 2 or self.sample_count != 1):
             raise ValueError("delta requires two cells and one paired observation")
+        if (self.input_set_sha256 is None) != (self.input_set_version is None):
+            raise ValueError("input set hash and canonicalization version must appear together")
         return self
 
 
@@ -105,6 +115,7 @@ ScientificDatum = Annotated[MeasurementDatum | DerivedDatum, Field(discriminator
 
 class ScientificResult(WireModel):
     schema_version: Literal["1.1"] = "1.1"
+    canonicalization_version: Literal["scientific-result-c14n-v1"]
     result_id: str = Field(pattern=IDENTIFIER)
     data_version: str = Field(pattern=SHA256)
     analysis_id: Literal["bass-ii", "flex", "flame-design", "cfi-g", "spice"]
@@ -132,6 +143,8 @@ class ScientificResult(WireModel):
                 raise ValueError("input cell references a dataset outside the derived value")
         if (self.status == "insufficient_evidence") != (not self.data):
             raise ValueError("insufficient_evidence must have no data; other states require data")
+        if self.data_version != scientific_data_version(self.model_dump(mode="json")):
+            raise ValueError("data_version differs from canonical scientific content")
         return self
 
 
