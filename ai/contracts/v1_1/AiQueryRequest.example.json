@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.1",
+  "request_id": "750cb32c-48a6-4a6e-88c4-8eb147633ae7",
+  "question": "¿Cuál es la duración registrada en el ensayo seleccionado?",
+  "language": "es",
+  "analysis_id": "flex",
+  "filters": {},
+  "experiment_ids": ["PSI-69:psi-69_flex:1"],
+  "variables": ["burn_time"],
+  "chart_preference": "auto",
+  "query_type": "exact_value",
+  "scientific_results": [{
+    "schema_version": "1.1",
+    "canonicalization_version": "scientific-result-c14n-v1",
+    "result_id": "result_1",
+    "data_version": "cd04cbe0683f18926847add12de00fed766464c6048b13639f7eba44cba9d860",
+    "analysis_id": "flex",
+    "status": "ok",
+    "source": "parquet",
+    "datasets": [{
+      "ref_id": "ds_665710cbc7d5045ddd62a857596f17366bff13f8add37e36",
+      "psi_code": "PSI-69",
+      "table_name": "psi-69_flex",
+      "relative_path": "synthetic/example.csv",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "source_id": "synthetic:example",
+      "source_title": "Ejemplo sintético",
+      "source_url": "https://example.org/synthetic",
+      "database_dataset_id": null
+    }],
+    "data": [{
+      "kind": "measurement",
+      "datum_id": "datum_1",
+      "dataset_ref_id": "ds_665710cbc7d5045ddd62a857596f17366bff13f8add37e36",
+      "trial_code": "PSI-69:psi-69_flex:1",
+      "source_record": 1,
+      "column_ordinal": 14,
+      "source_header": "Synthetic duration",
+      "variable_code": "burn_time",
+      "value": "12.5",
+      "raw_value": "12.5",
+      "unit": "s",
+      "interpretation_status": "exact",
+      "validation_status": "validated",
+      "anomalies": []
+    }],
+    "warnings": [],
+    "limitations": ["Ejemplo sintético; no representa datos NASA."]
+  }],
+  "chart_refs": [{
+    "data_ref": "analysis:flex:synthetic_1",
+    "label": "Duración",
+    "variable": "burn_time",
+    "unit": "s",
+    "trial_codes": ["PSI-69:psi-69_flex:1"]
+  }]
+}

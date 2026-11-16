@@ -1,0 +1,46 @@
+{
+  "source_id": "ntrs:20130014061",
+  "document_sha256": "1488bbb461f2ea0f97c2c2fab6ac0a01603a6837509ab6ac6d1ef02bbf72050b",
+  "extraction_version": "pypdf-7.0.0-header-v1",
+  "cases": [
+    {
+      "case_id": "helium-burning-en",
+      "question": "How did replacing carbon dioxide with helium affect the methanol droplet burning rate?",
+      "language": "en",
+      "expected_passage_sha256": ["6743c7ee31a522dfaa5c2e85395d09acf70d717d02b2aca1be3885a731dd87af"],
+      "expected_excerpt": "substituting carbon dioxide with helium",
+      "review_status": "candidate"
+    },
+    {
+      "case_id": "helium-burning-es",
+      "question": "¿Cómo cambió la tasa de combustión de la gota de metanol al sustituir dióxido de carbono por helio?",
+      "language": "es",
+      "expected_passage_sha256": ["6743c7ee31a522dfaa5c2e85395d09acf70d717d02b2aca1be3885a731dd87af"],
+      "expected_excerpt": "substituting carbon dioxide with helium",
+      "review_status": "candidate"
+    },
+    {
+      "case_id": "figure-five-en",
+      "question": "What quantities are compared in Figure 5 of the methanol droplet paper?",
+      "language": "en",
+      "expected_passage_sha256": ["2a85251c0515cad34014a291bc944c5451cb769b252d7fc6daf74b725b25b3a2"],
+      "expected_excerpt": "Methanol droplet extinction diameter versus initial droplet diameter",
+      "review_status": "candidate"
+    },
+    {
+      "case_id": "conclusion-models-en",
+      "question": "Which theoretical predictions did the authors say need further improvement?",
+      "language": "en",
+      "expected_passage_sha256": ["9e18657cfc321fa4da7555f2000c300dcb461b872b69694b06d942036fb4e060"],
+      "expected_excerpt": "diameter prediction by activation-energy asymptotics",
+      "review_status": "candidate"
+    },
+    {
+      "case_id": "bass-co2-unsupported-es",
+      "question": "¿Cuál fue el cambio de CO₂ entre el inicio y el final de cada ensayo BASS-II?",
+      "language": "es",
+      "expected_passage_sha256": [],
+      "review_status": "candidate"
+    }
+  ]
+}

@@ -1,0 +1,235 @@
+{
+  "$defs": {
+    "DatasetRef": {
+      "additionalProperties": false,
+      "properties": {
+        "database_dataset_id": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Database Dataset Id"
+        },
+        "nasa_psi_url": {
+          "format": "uri",
+          "maxLength": 2083,
+          "minLength": 1,
+          "title": "Nasa Psi Url",
+          "type": "string"
+        },
+        "psi_code": {
+          "pattern": "^PSI-[0-9]+$",
+          "title": "Psi Code",
+          "type": "string"
+        },
+        "ref_id": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+          "title": "Ref Id",
+          "type": "string"
+        },
+        "relative_path": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Relative Path",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref_id",
+        "psi_code",
+        "relative_path",
+        "sha256",
+        "nasa_psi_url"
+      ],
+      "title": "DatasetRef",
+      "type": "object"
+    },
+    "ScientificDatum": {
+      "additionalProperties": false,
+      "properties": {
+        "column_ordinal": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Column Ordinal"
+        },
+        "dataset_ref_id": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+          "title": "Dataset Ref Id",
+          "type": "string"
+        },
+        "datum_id": {
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+          "title": "Datum Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "measurement",
+            "derived"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "method": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Method"
+        },
+        "sample_count": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sample Count"
+        },
+        "source_record": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Record"
+        },
+        "unit": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Unit",
+          "type": "string"
+        },
+        "validation_status": {
+          "const": "validated",
+          "title": "Validation Status",
+          "type": "string"
+        },
+        "value": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Value",
+          "type": "string"
+        },
+        "variable_code": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Variable Code",
+          "type": "string"
+        }
+      },
+      "required": [
+        "datum_id",
+        "dataset_ref_id",
+        "variable_code",
+        "value",
+        "unit",
+        "validation_status",
+        "kind"
+      ],
+      "title": "ScientificDatum",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "analysis_id": {
+      "pattern": "^[a-zA-Z][a-zA-Z0-9_-]{0,63}$",
+      "title": "Analysis Id",
+      "type": "string"
+    },
+    "data": {
+      "items": {
+        "$ref": "#/$defs/ScientificDatum"
+      },
+      "title": "Data",
+      "type": "array"
+    },
+    "datasets": {
+      "items": {
+        "$ref": "#/$defs/DatasetRef"
+      },
+      "title": "Datasets",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "source": {
+      "enum": [
+        "parquet",
+        "postgres"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "ok",
+        "partial",
+        "insufficient_evidence"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "status",
+    "analysis_id",
+    "source",
+    "datasets",
+    "data"
+  ],
+  "title": "ScientificResult",
+  "type": "object"
+}
