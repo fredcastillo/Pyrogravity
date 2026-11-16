@@ -9,12 +9,14 @@ description = "Scientific AI engine for Pyrogravity"
 requires-python = ">=3.12"
 dependencies = [
     "cohere==7.3.1",
+    "fastapi==0.163.0",
     "httpx==0.28.1",
     "pydantic==2.14.3",
     "psycopg[binary]==3.3.9",
     "pypdf==7.0.0",
     "fonttools==4.68.0",
     "python-dotenv==1.2.4",
+    "uvicorn==0.40.0",
 ]
 
 [tool.setuptools.packages.find]
