@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explora las tablas de NASA y compara ensayos de combustión en microgravedad.">
+  <title>Pyrogravity | Explorador de ensayos</title>
+  <link rel="stylesheet" href="/assets/demo.css">
+  <script src="/assets/demo.js" defer></script>
+  <script src="/assets/science.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="project">PYROGRAVITY <span>NASA SPACE APPS</span></p>
+      <h1>Combustión en microgravedad</h1>
+      <p class="subtitle">Explora las tablas de NASA y cinco análisis de combustión con resultados trazables.</p>
+    </header>
+
+    <section class="panel" aria-labelledby="catalog-title">
+      <h2 id="catalog-title">Tablas de NASA</h2>
+      <p id="catalog-count" role="status">Cargando el catálogo…</p>
+      <label>Tabla <select id="catalog-dataset" disabled></select></label>
+      <div id="catalog-results" hidden>
+        <p id="catalog-details"></p>
+        <div class="table-wrap catalog-table" role="region" aria-label="Filas del CSV seleccionado" tabindex="0">
+          <table>
+            <thead><tr id="catalog-columns"></tr></thead>
+            <tbody id="catalog-rows"></tbody>
+          </table>
+        </div>
+        <div class="catalog-pagination" aria-label="Paginación de filas">
+          <button type="button" id="catalog-previous">Anterior</button>
+          <span id="catalog-page" role="status"></span>
+          <button type="button" id="catalog-next">Siguiente</button>
+        </div>
+        <p class="source"><a id="catalog-source" target="_blank" rel="noopener noreferrer"></a> <span id="catalog-file"></span></p>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="science-title">
+      <h2 id="science-title">Análisis científicos</h2>
+      <p>Resultados calculados sobre la versión publicada de los CSV. Las configuraciones y cohortes se muestran por separado.</p>
+      <label>Análisis <select id="science-analysis" disabled></select></label>
+      <label>Configuración o cohorte <select id="science-cohort" disabled></select></label>
+      <p id="science-status" role="status">Cargando análisis…</p>
+      <div id="science-result" hidden>
+        <p id="science-description"></p>
+        <label>Grupo <select id="science-group"></select></label>
+        <figure><svg id="science-chart" viewBox="0 0 700 350" role="img" aria-label="Dispersión de mediciones científicas"></svg><figcaption id="science-caption"></figcaption></figure>
+        <div class="table-wrap" tabindex="0" aria-label="Mediciones del análisis"><table><thead><tr id="science-columns"></tr></thead><tbody id="science-rows"></tbody></table></div>
+        <div class="catalog-pagination"><button id="science-prev" type="button">Anterior</button><span id="science-page"></span><button id="science-next" type="button">Siguiente</button></div>
+        <p id="science-source" class="source"></p>
+        <details><summary>Criterios y advertencias del análisis</summary><pre id="science-method"></pre></details>
+        <a id="science-download" target="_blank" rel="noopener">Ver resultado completo (JSON)</a>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="comparison-title">
+      <h2 id="comparison-title">Comparar ensayos</h2>
+      <form id="comparison">
+        <label>Estudio <select id="dataset" required></select></label>
+        <label>Ensayos, separados por comas <input id="trials" required maxlength="160"></label>
+        <button type="submit" id="submit" disabled>Comparar</button>
+      </form>
+      <p id="message" role="status">Cargando los estudios…</p>
+    </section>
+
+    <section id="results" class="panel" aria-labelledby="metric" hidden>
+      <h2 id="metric"></h2>
+      <ul id="bars" aria-label="Gráfico de mediciones exactas"></ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Ensayo</th><th scope="col">Valor</th><th scope="col">Material o combustible</th><th scope="col">Fila de origen</th></tr></thead>
+          <tbody id="measurements"></tbody>
+        </table>
+      </div>
+      <p class="source"><a id="source" target="_blank" rel="noopener noreferrer"></a> <span id="source-file"></span></p>
+    </section>
+  </main>
+</body>
+</html>

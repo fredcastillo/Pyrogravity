@@ -1,0 +1,11 @@
+.git
+**/.env
+**/.env.*
+**/.npmrc
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/node_modules
+data/processed
+frontend/dist
+infrastructure/aws/.build

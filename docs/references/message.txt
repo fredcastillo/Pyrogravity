@@ -1,0 +1,47 @@
+Bro, encontré 21 archivos CSV de 19 investigaciones de combustión de NASA PSI, incluyendo los dos que ya tenemos en PyroGravity.
+
+Te dejo los enlaces para que puedas descargarlos. Los enlaces CSV directos son copias públicas de un repositorio de investigación en GitHub, no descargas alojadas por NASA. Por eso también incluyo el enlace oficial de NASA para comprobar el origen. El portal PSI genera enlaces temporales para sus descargas.
+Krypton-N/NASA-SPACE-APPS · GitHub+1
+
+1. CSV prioritarios para PyroGravity
+Estos son los que descargaría primero para ampliar el ETL.
+Experimento	CSV directo	Fuente oficial NASA
+FLEX	Ya lo tenemos	PSI-69
+BASS-II	Ya lo tenemos	PSI-25
+CFI	Descargar CSV	PSI-39
+ACME Flame Design	Normal Flame · Inverse Flame	PSI-10
+ACME CFI-G	Normal Flames · Inverse Flames	PSI-159
+SPICE	Descargar CSV	PSI-107
+SAME-R	Descargar CSV	PSI-101
+SAFFIRE-I	Descargar CSV	PSI-98
+SAFFIRE-II	Descargar CSV	PSI-99
+SAFFIRE-III	Descargar CSV	PSI-100
+
+2. CSV complementarios para ampliar la cobertura
+Estos completan las investigaciones de combustión y detección que identificamos para el proyecto.
+Experimento	CSV directo	Fuente oficial NASA
+FLEX-2	Descargar CSV	PSI-68
+BASS	Descargar CSV	PSI-26
+SLICE	Descargar CSV	PSI-106
+SAME	Descargar CSV	PSI-102
+ACME BRE	Descargar CSV	PSI-20
+ACME CLD Flame	Descargar CSV	PSI-21
+ACME E-FIELD	Descargar CSV	PSI-22
+ACME S-Flame	Descargar CSV	PSI-23
+DAFT / DAFT-2	Descargar CSV	PSI-47
+
+3. Qué debes tener en cuenta
+Total identificado: 21 CSV
+
+2 CSV que ya tenemos: FLEX y BASS-II
+
+19 CSV adicionales disponibles en los enlaces
+
+
+No todos son imprescindibles para el MVP: los prioritarios bastan para una buena primera integración. Además, algunas tablas pequeñas de SAFFIRE, SLICE o ACME describen sesiones o condiciones experimentales y no contienen todas las mediciones físicas. No debemos sumar filas de diferentes tablas y presentarlas automáticamente como experimentos comparables.
+
+Para conservar la integridad científica, recomiendo descargar los originales desde NASA PSI cuando sea posible y utilizar las copias enlazadas como referencia o alternativa, verificando que coincidan. La documentación oficial de NASA confirma la disponibilidad de estas familias de investigación.
+NASA+2
+
+
+Mi recomendación: descarga primero los diez CSV adicionales del primer bloque (CFI, ACME Flame Design, ACME CFI-G, SPICE, SAME-R y SAFFIRE I–III). Cuando los coloques en data/raw/, podemos revisar sus estructuras y extender el ETL existente con Codex sin perder lo que ya funciona.

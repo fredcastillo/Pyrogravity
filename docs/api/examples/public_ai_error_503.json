@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "AI_UNAVAILABLE",
+    "message": "El proveedor de IA está desactivado hasta completar autenticación y rol lector.",
+    "request_id": "b3c0e1a5-b79a-40fb-b28d-69c40be37daf",
+    "details": {"schema_version": "public-1.1"}
+  }
+}

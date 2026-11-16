@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "EXPERIMENT_NOT_FOUND",
+    "message": "No se encontró el experimento.",
+    "details": {},
+    "request_id": "00000000-0000-0000-0000-000000000404"
+  }
+}
