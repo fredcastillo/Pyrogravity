@@ -242,12 +242,14 @@ catalogNext.addEventListener("click", () => {
 void start();
 void loadCatalog();
 
-function updateNavigation() {
-  const target = window.location.hash || "#catalog-title";
-  for (const link of document.querySelectorAll(".atlas-nav a")) {
+const atlasLinks = document.querySelectorAll(".atlas-nav a");
+function updateNavigation(target) {
+  for (const link of atlasLinks) {
     if (link.hash === target) link.setAttribute("aria-current", "location");
     else link.removeAttribute("aria-current");
   }
 }
-window.addEventListener("hashchange", updateNavigation);
-updateNavigation();
+const readSection = () => updateNavigation(window.location.hash || "#catalog-title");
+for (const link of atlasLinks) link.addEventListener("click", () => updateNavigation(link.hash));
+window.addEventListener("hashchange", readSection);
+readSection();
