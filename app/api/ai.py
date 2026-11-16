@@ -18,7 +18,7 @@ from app.domain.public_ai_contract import PublicAiQueryRequest, PublicAiResponse
 from app.application.public_ai_orchestrator import PublicAiOrchestrator, PublicAiOrchestrationError
 from app.application.scientific_result_resolver import FlexScientificResultResolver, ScientificSelectionError
 from app.infrastructure.citation_passage_reader import CitationPassageReader
-from app.infrastructure.internal_ai_client import InternalAiClient
+from app.infrastructure.internal_ai_client import InternalAiClient, LambdaInternalAiClient
 
 
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -77,9 +77,13 @@ def public_query(req: PublicAiQueryRequest, request: Request, settings: Settings
             details={"schema_version": "public-1.1"},
         )
     request.state.served_from = "live"
+    if settings.ai_internal_function_arn:
+        client = LambdaInternalAiClient(settings.ai_internal_function_arn)
+    else:
+        client = InternalAiClient(str(settings.ai_internal_url), settings.ai_internal_token.get_secret_value())
     orchestrator = PublicAiOrchestrator(
         FlexScientificResultResolver(settings.scientific_data_dir),
-        InternalAiClient(str(settings.ai_internal_url), settings.ai_internal_token.get_secret_value()),
+        client,
         CitationPassageReader(settings.ai_citation_view_database_url.get_secret_value()).get,
     )
     try:

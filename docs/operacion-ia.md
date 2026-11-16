@@ -2,6 +2,35 @@
 
 ## Estado de la integración
 
+La pila `pyrogravity-ai-private` aprovisiona el motor en Lambda y su bucket
+privado. La API pública usa `lambda:InvokeFunction` sobre HTTPS firmado por AWS
+con el rol de ejecución del backend. La función privada carece de URL pública.
+El transporte HTTP con bearer token continúa disponible para otros entornos.
+
+### Activación del proveedor en AWS
+
+En Secrets Manager de `us-east-1`, los tres secretos se editan como objetos JSON.
+Usa un login PostgreSQL separado para cada capacidad y DSN con TLS verificado.
+
+| Secreto | Claves |
+| --- | --- |
+| `pyrogravity-ai-private/runtime` | `COHERE_API_KEY`, `COHERE_MODEL`, `AI_DATABASE_URL` del login miembro de `pyrogravity_ai_runtime`. Opcionales: `COHERE_TIMEOUT_SECONDS` (8), `COHERE_MAX_RETRIES` (0), `AI_DB_CONNECT_TIMEOUT_SECONDS` (4). |
+| `pyrogravity-ai-private/backend` | `AI_CITATION_VIEW_DATABASE_URL` del login miembro de `pyrogravity_ai_citation_reader`. `PYROGRAVITY_DATABASE_URL` se reserva para el lector científico. |
+| `pyrogravity-ai-private/ingest` | `AI_INGEST_DATABASE_URL` del login miembro de `pyrogravity_ai_ingest` y la clave de embeddings `COHERE_API_KEY`. |
+
+El operador de ingesta asume el rol indicado por `IngestRoleArn` y utiliza
+`pdf/<sha256>.pdf` en el bucket `CorpusBucket`. Las identidades de runtime e
+ingesta pueden leer los PDF. El backend tiene lectura de su propio secreto e
+invocación de Lambda. Antes de habilitar la IA pública, verifica permisos de los
+logins, carga y revisa los pasajes, y sella y activa la generación.
+
+Para habilitar el proveedor, aplica la plantilla de la demo con
+`PrivateAiFunctionArn` y `BackendAiSecretArn` de la pila privada. Espera la
+actualización del alias y prueba el contrato desde la URL pública. Ambos
+parámetros vacíos vuelven al modo de demostración. Las actualizaciones
+automáticas conservan los parámetros aprobados. Los valores de los secretos no
+se entregan a GitHub Actions.
+
 `main` todavía precede al módulo `ai/`. La suite obligatoria entra en el gate en cuanto el checkout contiene el módulo, una migración de IA o el adaptador `ScientificResult`. Se verifica en una rama de prueba que combina los PR del equipo. La demo pública actual sigue su flujo de publicación independiente. [PR de AI #33](https://github.com/fredcastillo/Pyrogravity/pull/33) · [Contrato backend #35](https://github.com/fredcastillo/Pyrogravity/pull/35)
 
 La documentación de Johan registra `20261115120000` como aplicada en Supabase. La comprobación de esta sesión cubrió GitHub y el entorno desechable. No había conexión autorizada al PostgreSQL remoto ni sesión vinculada de Supabase CLI. En AWS, la consulta de nombres encontró los buckets de la demo y no encontró secretos con prefijo `pyrogravity` en Secrets Manager de `us-east-1`.

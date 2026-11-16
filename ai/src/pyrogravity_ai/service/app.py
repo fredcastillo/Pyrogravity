@@ -6,7 +6,7 @@ import logging
 import os
 import secrets
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from uuid import UUID
 
@@ -39,12 +39,12 @@ def _service_values() -> dict[str, str]:
     return values
 
 
-def build_engine() -> AiEngine:
+def build_engine(environ: Mapping[str, str] | None = None) -> AiEngine:
     """Construct the production engine without using administrator database access."""
-    values = _service_values()
+    values = _service_values() if environ is None else environ
     strategy = values.get("AI_RETRIEVAL_STRATEGY", "text")
-    settings = Settings.from_environment()
-    database = DatabaseSettings.from_environment()
+    settings = Settings.from_environment(environ=values)
+    database = DatabaseSettings.from_environment(environ=values)
     text = CohereTextClient(settings)
     embedder = CohereEmbeddingClient(settings) if strategy == "hybrid" else None
     retriever = PostgresPassageRetriever(
