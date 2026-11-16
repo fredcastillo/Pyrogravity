@@ -10,7 +10,7 @@ The first curated record is [NASA NTRS 20130014061](https://ntrs.nasa.gov/citati
 
 ## Artifact and chunk records
 
-An artifact stores `source_id`, SHA-256 of raw bytes, retrieval time, MIME type, page count, extraction tool/version, and status (`downloaded`, `extracted`, `reviewed`, `rejected`). The SHA-256 is unique per source. Every chunk stores an artifact ID, 1-based page start/end, section label when detected, character offsets on its page, exact extracted text slice, text hash, embedding model and dimensions. Text and embeddings are reindexed if the artifact hash, extraction algorithm or embedding model changes. A rejected artifact cannot be searched.
+An artifact stores `source_id`, SHA-256 of raw bytes, retrieval time, MIME type, page count, extraction tool/version, and status (`downloaded`, `extracted`, `reviewed`, `rejected`). The deployed initial schema permits one row per source and PDF SHA-256. The local, undeployed generations draft also keys each processing configuration so the same PDF can retain multiple extractions. Every chunk stores an artifact ID, 1-based page start/end, section label when detected, character offsets on its page, exact extracted text slice and text hash; embeddings are separate records. Text and embeddings are reindexed if the artifact hash, extraction algorithm or embedding model changes. A rejected artifact cannot be searched.
 
 The database implementation belongs in the private `ai` schema. `scientific` owns measurements and trial provenance; the registry can reference PSI IDs but cannot duplicate Stanley's values. `app` owns operational user data. The server-side AI role should have only the needed access. No public Data API grants are required for the registry.
 

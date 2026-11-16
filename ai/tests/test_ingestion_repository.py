@@ -11,17 +11,23 @@ from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict
 
 from pyrogravity_ai.database.ingestion_repository import (
-    IngestionConflictError,
     IngestionPersistenceError,
     persist_ingestion,
 )
 from pyrogravity_ai.ingestion.loader import LoadedDocument, PageText
 from pyrogravity_ai.ingestion.plan import prepare_ingestion
+from pyrogravity_ai.retrieval.evaluation import (
+    EvaluationCase,
+    EvaluationSet,
+    evaluate_active_kb,
+)
 from pyrogravity_ai.retrieval.postgres import RetrievalError, search_hybrid, search_text, search_vector
 from pyrogravity_ai.schemas.source import SourceRecord
 
 
 MIGRATION = Path(__file__).resolve().parents[1] / "migrations" / "20261115120000_ai_initial.sql"
+KB_MIGRATION = Path(__file__).resolve().parents[1] / "migrations" / "20261115123000_ai_kb_generations.sql"
+CITATION_VIEW = Path(__file__).resolve().parents[1] / "migrations" / "20261115124500_ai_citation_passages.sql"
 
 
 class FakeEmbedder:
@@ -74,11 +80,14 @@ def test_private_repository_is_idempotent_and_rejects_reextraction() -> None:
             for role in ("anon", "authenticated", "service_role"):
                 db.execute(sql.SQL("CREATE ROLE {} NOLOGIN").format(sql.Identifier(role)))
             db.execute(MIGRATION.read_text(encoding="utf-8"), prepare=False)
+            db.execute(KB_MIGRATION.read_text(encoding="utf-8"), prepare=False)
+            db.execute(CITATION_VIEW.read_text(encoding="utf-8"), prepare=False)
             db.execute("CREATE ROLE ai_test_ingestor NOLOGIN NOSUPERUSER NOBYPASSRLS")
             db.execute("GRANT USAGE ON SCHEMA ai, extensions TO ai_test_ingestor")
             db.execute("GRANT SELECT, INSERT ON ALL TABLES IN SCHEMA ai TO ai_test_ingestor")
             for table in (
-                "sources", "documents", "document_chunks", "chunk_embeddings", "ingestion_jobs"
+                "sources", "documents", "document_chunks", "chunk_embeddings", "ingestion_jobs",
+                "kb_generations", "kb_generation_documents", "kb_active",
             ):
                 db.execute(sql.SQL(
                     "CREATE POLICY ingest_select ON ai.{} FOR SELECT TO ai_test_ingestor USING (true)"
@@ -105,23 +114,57 @@ def test_private_repository_is_idempotent_and_rejects_reextraction() -> None:
             assert db.execute("SELECT count(*) FROM ai.ingestion_jobs").fetchone()[0] == 2
             assert db.execute("SELECT review_status FROM ai.documents").fetchone()[0] == "extracted"
 
-            with pytest.raises(IngestionConflictError, match="reindexing"):
-                persist_ingestion(_plan("different-extractor-v2"), db)
-            assert db.execute("SELECT count(*) FROM ai.ingestion_jobs").fetchone()[0] == 2
+            newer_plan = _plan("different-extractor-v2")
+            newer = persist_ingestion(newer_plan, db)
+            assert newer.document_id != first.document_id
+            assert db.execute("SELECT count(*) FROM ai.ingestion_jobs").fetchone()[0] == 3
 
             assert search_text(db, "Methanol combustion") == ()
             assert search_vector(db, FakeEmbedder().embed_query("methanol"), plan.config_hash) == ()
 
             db.execute("RESET ROLE")
-            db.execute("UPDATE ai.documents SET review_status = 'reviewed', reviewed_at = now()")
+            old_generation = db.execute(
+                """INSERT INTO ai.kb_generations (version_label, config_hash)
+                   VALUES ('baseline', %s) RETURNING id""", (plan.config_hash,)
+            ).fetchone()[0]
+            db.execute(
+                """INSERT INTO ai.kb_generation_documents
+                   (generation_id, source_id, document_id) VALUES (%s, %s, %s)""",
+                (old_generation, first.source_id, first.document_id),
+            )
+            with pytest.raises(psycopg.errors.RaiseException, match="unreviewed"):
+                with db.transaction():
+                    db.execute("SELECT ai.seal_kb_generation(%s)", (old_generation,))
+            db.execute(
+                """UPDATE ai.documents SET review_status = 'reviewed', reviewed_at = now()
+                   WHERE id = %s""", (first.document_id,)
+            )
+            with pytest.raises(psycopg.errors.RaiseException, match="sealed"):
+                with db.transaction():
+                    db.execute("INSERT INTO ai.kb_active (generation_id) VALUES (%s)",
+                               (old_generation,))
+            db.execute("SELECT ai.seal_kb_generation(%s)", (old_generation,))
+            db.execute("SELECT ai.activate_kb_generation(%s)", (old_generation,))
+            assert db.execute("SELECT count(*) FROM ai.citation_passages").fetchone()[0] == 2
+            with pytest.raises(psycopg.errors.RaiseException, match="immutable"):
+                with db.transaction():
+                    db.execute("DELETE FROM ai.kb_generation_documents WHERE generation_id = %s",
+                               (old_generation,))
+            with pytest.raises(psycopg.errors.RaiseException, match="immutable"):
+                with db.transaction():
+                    db.execute("UPDATE ai.document_chunks SET content = 'altered' WHERE document_id = %s",
+                               (first.document_id,))
             with pytest.raises(RetrievalError, match="dedicated"):
                 search_text(db, "Methanol combustion")
             db.execute("CREATE ROLE ai_test_reader NOLOGIN NOSUPERUSER NOBYPASSRLS")
             db.execute("GRANT USAGE ON SCHEMA ai, extensions TO ai_test_reader")
             db.execute("""GRANT SELECT ON ai.sources, ai.documents,
-                          ai.document_chunks, ai.chunk_embeddings TO ai_test_reader""")
+                          ai.document_chunks, ai.chunk_embeddings,
+                          ai.kb_generations, ai.kb_generation_documents,
+                          ai.kb_active TO ai_test_reader""")
             for table in (
-                "sources", "documents", "document_chunks", "chunk_embeddings"
+                "sources", "documents", "document_chunks", "chunk_embeddings",
+                "kb_generations", "kb_generation_documents", "kb_active",
             ):
                 db.execute(sql.SQL(
                     "CREATE POLICY reader_select ON ai.{} FOR SELECT TO ai_test_reader USING (true)"
@@ -136,6 +179,49 @@ def test_private_repository_is_idempotent_and_rejects_reextraction() -> None:
             assert hybrid_hits[0].page_number == 1
             assert all(hit.document_sha256 == plan.document.sha256 for hit in hybrid_hits)
             assert search_vector(db, FakeEmbedder().embed_query("methanol"), "0" * 64) == ()
+            evaluation_set = EvaluationSet(
+                source_id=plan.source.source_id,
+                document_sha256=plan.document.sha256,
+                extraction_version=plan.document.extraction_version,
+                cases=[EvaluationCase(
+                    case_id="methanol", question="Methanol combustion", language="en",
+                    expected_passage_sha256=[plan.chunks[0].text_sha256],
+                    review_status="reviewed",
+                )],
+            )
+            comparison = evaluate_active_kb(evaluation_set, db, FakeEmbedder(), plan.config_hash)
+            assert set(comparison) == {"text", "vector", "hybrid_rrf"}
+            assert comparison["text"].metrics.hit_rate_at_k == 1.0
+            assert comparison["vector"].cases[0].first_expected_rank == 1
+            db.execute("RESET ROLE")
+            db.execute(
+                """UPDATE ai.documents SET review_status = 'reviewed', reviewed_at = now()
+                   WHERE id = %s""", (newer.document_id,)
+            )
+            new_generation = db.execute(
+                """INSERT INTO ai.kb_generations (version_label, config_hash)
+                   VALUES ('new-extraction', %s) RETURNING id""", (newer_plan.config_hash,)
+            ).fetchone()[0]
+            db.execute(
+                """INSERT INTO ai.kb_generation_documents
+                   (generation_id, source_id, document_id) VALUES (%s, %s, %s)""",
+                (new_generation, newer.source_id, newer.document_id),
+            )
+            db.execute("SELECT ai.seal_kb_generation(%s)", (new_generation,))
+            db.execute("SELECT ai.activate_kb_generation(%s)", (new_generation,))
+            assert db.execute("SELECT DISTINCT document_id FROM ai.citation_passages").fetchall() == [
+                (newer.document_id,)
+            ]
+            db.execute("SET LOCAL ROLE ai_test_reader")
+            assert search_text(db, "Methanol combustion")[0].document_id == newer.document_id
+            assert search_vector(db, FakeEmbedder().embed_query("methanol"), plan.config_hash) == ()
+            db.execute("RESET ROLE")
+            db.execute("SELECT ai.activate_kb_generation(%s)", (old_generation,))
+            assert db.execute("SELECT DISTINCT document_id FROM ai.citation_passages").fetchall() == [
+                (first.document_id,)
+            ]
+            db.execute("SET LOCAL ROLE ai_test_reader")
+            assert search_text(db, "Methanol combustion")[0].document_id == first.document_id
             with pytest.raises(psycopg.errors.InsufficientPrivilege):
                 with db.transaction():
                     db.execute("SELECT count(*) FROM ai.ingestion_jobs")

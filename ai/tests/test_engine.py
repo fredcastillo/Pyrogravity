@@ -134,6 +134,7 @@ def test_cohere_selection_requires_exact_json_shape() -> None:
 
     selector = CohereEvidenceSelector(TextClient('{"selected_ids":[]}'))
     assert selector.select("question", ()) == ()
+    assert CohereEvidenceSelector(TextClient('```json\n{"selected_ids":[]}\n```')).select("q", ()) == ()
     with pytest.raises(EvidenceError, match="shape"):
         CohereEvidenceSelector(TextClient('{"selected_ids":[],"answer":"fake"}')).select("q", ())
 

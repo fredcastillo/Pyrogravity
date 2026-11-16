@@ -120,9 +120,8 @@
           "type": "string"
         },
         "source_url": {
-          "format": "uri",
-          "maxLength": 2083,
-          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "^https://[^\\s]+$",
           "title": "Source Url",
           "type": "string"
         },
@@ -213,6 +212,19 @@
           ],
           "default": null,
           "title": "Input Set Sha256"
+        },
+        "input_set_version": {
+          "anyOf": [
+            {
+              "const": "scientific-input-set-c14n-v1",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Set Version"
         },
         "kind": {
           "const": "derived",
@@ -384,6 +396,11 @@
           "title": "Analysis Id",
           "type": "string"
         },
+        "canonicalization_version": {
+          "const": "scientific-result-c14n-v1",
+          "title": "Canonicalization Version",
+          "type": "string"
+        },
         "data": {
           "items": {
             "discriminator": {
@@ -461,6 +478,7 @@
         }
       },
       "required": [
+        "canonicalization_version",
         "result_id",
         "data_version",
         "analysis_id",

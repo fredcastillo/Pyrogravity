@@ -49,6 +49,7 @@ def test_valid_request_and_scientific_insufficiency_are_http_200() -> None:
     headers = {"Authorization": f"Bearer {TOKEN}"}
     response = service.post("/internal/v1/ai/query", json=payload(), headers=headers)
     assert response.status_code == 200
+    assert response.headers["X-Request-ID"] == payload()["request_id"]
     assert response.json()["status"] == "supported"
     assert response.json()["evidence"][0]["datum_id"] == "datum_1"
     invalid = payload()
@@ -57,6 +58,14 @@ def test_valid_request_and_scientific_insufficiency_are_http_200() -> None:
     assert error.status_code == 422
     assert error.json()["error"]["code"] == "invalid_request"
     assert "999" not in error.text
+    unsupported = payload()
+    unsupported["experiment_ids"] = []
+    unsupported["scientific_results"] = []
+    unsupported["chart_refs"] = []
+    no_evidence = service.post("/internal/v1/ai/query", json=unsupported, headers=headers)
+    assert no_evidence.status_code == 200
+    assert no_evidence.json()["status"] == "insufficient_evidence"
+    assert no_evidence.json()["claims"] == []
 
 
 def test_provider_timeout_maps_to_retryable_error_without_detail() -> None:
@@ -74,3 +83,18 @@ def test_provider_timeout_maps_to_retryable_error_without_detail() -> None:
         "retryable": True,
     }
     assert response.json()["request_id"] == payload()["request_id"]
+    assert response.headers["X-Request-ID"] == payload()["request_id"]
+
+
+def test_unexpected_failure_is_sanitized_and_traceable() -> None:
+    class FailingEngine:
+        def answer(self, _request):
+            raise RuntimeError("private connection string and question must stay hidden")
+
+    response = client(FailingEngine()).post(
+        "/internal/v1/ai/query", json=payload(), headers={"Authorization": f"Bearer {TOKEN}"}
+    )
+    assert response.status_code == 500
+    assert response.json()["error"]["code"] == "internal_error"
+    assert response.json()["request_id"] == payload()["request_id"]
+    assert "private connection" not in response.text

@@ -83,18 +83,20 @@ def persist_ingestion(plan: PreparedIngestion, connection: psycopg.Connection) -
             document_id_row = connection.execute(
                 """INSERT INTO ai.documents (
                     source_id, sha256, original_url, filename, version_label,
-                    page_count, extraction_version, review_status
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'extracted')
-                ON CONFLICT (source_id, sha256) DO NOTHING RETURNING id""",
+                    page_count, extraction_version, processing_config_hash, review_status
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'extracted')
+                ON CONFLICT DO NOTHING RETURNING id""",
                 (source_id, document.sha256, original_url, filename,
-                 source.document_version, len(document.pages), document.extraction_version),
+                 source.document_version, len(document.pages), document.extraction_version,
+                 plan.config_hash),
             ).fetchone()
             if document_id_row is None:
                 existing = connection.execute(
                     """SELECT id, original_url, filename, version_label, page_count,
                               extraction_version, review_status
-                       FROM ai.documents WHERE source_id = %s AND sha256 = %s""",
-                    (source_id, document.sha256),
+                       FROM ai.documents WHERE source_id = %s AND sha256 = %s
+                         AND processing_config_hash = %s""",
+                    (source_id, document.sha256, plan.config_hash),
                 ).fetchone()
                 expected = (
                     original_url, filename, source.document_version, len(document.pages),
