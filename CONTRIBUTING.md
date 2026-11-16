@@ -12,9 +12,11 @@
 | --- | --- |
 | Workflows | En cada PR hacia main y cada push a main. |
 | Docker Compose | Cuando se añade un archivo Compose en la raíz. |
-| Python 3.12 | Revisa la sintaxis por módulo cuando encuentra código en data/, rag/, backend/ o tests/. Ejecuta pytest cuando hay pruebas en el módulo. |
+| Python 3.12 | Ejecuta las pruebas de los módulos presentes. Cuando la revisión contiene `ai/` o una migración de IA, la suite de IA y sus pruebas de permisos con pgvector son obligatorias. |
 | Frontend | Cuando existe frontend/package.json. Usa Node.js 24, instala con npm ci, ejecuta lint y test si están definidos y compila con npm run build. Incluye el package-lock.json con el primer PR del frontend. |
 
 Los módulos Python pueden declarar dependencias con requirements.txt o pyproject.toml, y dependencias de prueba con requirements-dev.txt. Los comandos de pruebas se ejecutan desde su módulo. Mantén las pruebas de CI reproducibles con dobles de servicios o datos de demo.
 
 Para trabajar con datos, conserva el original fuera del árbol versionado y registra su URL y DOI. Sube las muestras pequeñas que necesite la demo con su procedencia. Documenta las variables necesarias en archivos .env.example y guarda los valores en el entorno de cada servicio.
+
+Consulta los roles y pasos de despliegue de la integración privada en la [guía de operación de IA](docs/operacion-ia.md).

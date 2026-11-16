@@ -1,0 +1,108 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Proposed private NASA PDF corpus for the approved Pyrogravity AI service roles.
+
+Metadata:
+  AWSToolsMetrics:
+    AWSAgentToolkit: aws-cloudformation@3
+  com.aws.cloudformation.Context:
+    ref:
+      - at: docs/operacion-ia.md
+        has: Storage decision, service roles, and activation checks
+
+Parameters:
+  IngestRoleArn:
+    Type: String
+    Description: ARN of the approved IAM role that uploads and reads corpus PDFs.
+    AllowedPattern: 'arn:[a-z0-9-]+:iam::[0-9]{12}:role/.+'
+  RuntimeRoleArn:
+    Type: String
+    Description: ARN of the approved IAM role that reads PDFs when runtime retrieval requires them.
+    AllowedPattern: 'arn:[a-z0-9-]+:iam::[0-9]{12}:role/.+'
+
+Resources:
+  CorpusBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Stores source PDFs separately from the public explorer artifacts.
+        must:
+          - Retain PDF versions and block public access.
+    Properties:
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+
+  CorpusBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Limits object access even if a same-account identity has a broad S3 grant.
+        must:
+          - Require HTTPS and preserve the AI-only object access boundary.
+    Properties:
+      Bucket: !Ref CorpusBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !GetAtt CorpusBucket.Arn
+              - !Sub '${CorpusBucket.Arn}/*'
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
+          - Sid: DenyObjectReadOutsideAiRoles
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:GetObject*'
+            Resource: !Sub '${CorpusBucket.Arn}/*'
+            Condition:
+              ArnNotEquals:
+                aws:PrincipalArn:
+                  - !Ref IngestRoleArn
+                  - !Ref RuntimeRoleArn
+          - Sid: DenyObjectWriteOutsideIngestion
+            Effect: Deny
+            Principal: '*'
+            Action: s3:PutObject
+            Resource: !Sub '${CorpusBucket.Arn}/*'
+            Condition:
+              ArnNotEquals:
+                aws:PrincipalArn: !Ref IngestRoleArn
+          - Sid: AllowAiPdfRead
+            Effect: Allow
+            Principal:
+              AWS:
+                - !Ref IngestRoleArn
+                - !Ref RuntimeRoleArn
+            Action:
+              - s3:GetObject
+              - s3:GetObjectVersion
+            Resource: !Sub '${CorpusBucket.Arn}/pdf/*.pdf'
+          - Sid: AllowIngestionPdfWrite
+            Effect: Allow
+            Principal:
+              AWS: !Ref IngestRoleArn
+            Action: s3:PutObject
+            Resource: !Sub '${CorpusBucket.Arn}/pdf/*.pdf'
+
+Outputs:
+  CorpusBucketName:
+    Description: Private bucket name used by the AI corpus operator.
+    Value: !Ref CorpusBucket
