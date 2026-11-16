@@ -5,12 +5,13 @@ from __future__ import annotations
 import logging
 import os
 import secrets
+import time
 from collections.abc import Callable
 from pathlib import Path
 from uuid import UUID
 
 from dotenv import dotenv_values
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -58,7 +59,8 @@ def _error(status: int, code: str, message: str, *, retryable: bool = False,
            request_id: UUID | None = None) -> JSONResponse:
     envelope = ErrorEnvelope(request_id=request_id,
                              error={"code": code, "message": message, "retryable": retryable})
-    return JSONResponse(status_code=status, content=envelope.model_dump(mode="json"))
+    headers = {"X-Request-ID": str(request_id)} if request_id else None
+    return JSONResponse(status_code=status, content=envelope.model_dump(mode="json"), headers=headers)
 
 
 def create_app(*, engine: AiEngine | None = None, token: str | None = None,
@@ -72,13 +74,18 @@ def create_app(*, engine: AiEngine | None = None, token: str | None = None,
 
     @service.middleware("http")
     async def require_internal_token(request: Request, call_next):
+        started = time.perf_counter()
         if request.url.path == "/internal/v1/ai/query":
             supplied = request.headers.get("authorization", "")
             if not supplied.startswith("Bearer ") or not secrets.compare_digest(
                 supplied[7:], internal_token
             ):
                 return _error(401, "unauthorized", "Acceso no autorizado.")
-        return await call_next(request)
+        response = await call_next(request)
+        if request.url.path == "/internal/v1/ai/query":
+            LOG.info("AI query status=%s elapsed_ms=%d", response.status_code,
+                     int((time.perf_counter() - started) * 1000))
+        return response
 
     @service.exception_handler(RequestValidationError)
     async def invalid_request(_request, _failure):
@@ -92,10 +99,12 @@ def create_app(*, engine: AiEngine | None = None, token: str | None = None,
                   responses={401: {"model": ErrorEnvelope}, 422: {"model": ErrorEnvelope},
                              502: {"model": ErrorEnvelope}, 503: {"model": ErrorEnvelope},
                              504: {"model": ErrorEnvelope}})
-    def query(request: AiQueryRequest):
+    def query(request: AiQueryRequest, response: Response):
         try:
             active_engine = engine if engine is not None else engine_factory()
-            return active_engine.answer(request)
+            result = active_engine.answer(request)
+            response.headers["X-Request-ID"] = str(request.request_id)
+            return result
         except CohereServiceError as failure:
             if failure.kind == "timeout":
                 return _error(504, "timeout", "El proveedor de IA agotó el tiempo de espera.",
