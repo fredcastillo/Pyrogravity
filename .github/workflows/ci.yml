@@ -55,7 +55,7 @@ jobs:
           echo "python=$python_modules" >> "$GITHUB_OUTPUT"
           echo "Módulos Python detectados: $python_modules"
 
-          if [[ -n "$(git ls-files -- ai/ 'supabase/migrations/*_ai_*.sql')" ]]; then
+          if [[ -n "$(git ls-files -- ai/ 'supabase/migrations/*_ai_*.sql' data/src/analysis/scientific_result.py)" ]]; then
             if [[ ! -f ai/pyproject.toml || ! -f ai/requirements.txt || ! -d ai/tests ]]; then
               echo "::error::La integración de IA requiere ai/pyproject.toml, ai/requirements.txt y ai/tests."
               exit 1
