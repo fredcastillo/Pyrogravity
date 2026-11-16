@@ -1,10 +1,16 @@
-import { AI_QUERY_PATH, type AiProvenance, type AiQueryRequest, type AiResponse, type ChartType } from '../contracts/ai'
+import { AI_PUBLIC_CONTRACT_VERSION, AI_QUERY_PATH, type AiProvenance, type AiQueryRequest, type AiResponse, type ApiErrorEnvelope, type ChartType } from '../contracts/ai'
 
 type QueryContext = { experimentIds?: string[]; variables?: string[]; chartPreference?: ChartType | null }
 type QueryOptions = { fetcher?: typeof fetch; demo?: boolean }
 
 export class AiHttpError extends Error {
-  constructor(public readonly status: number, message: string) {
+  constructor(
+    public readonly status: number,
+    message: string,
+    public readonly code = 'HTTP_ERROR',
+    public readonly requestId?: string,
+    public readonly details: Record<string, unknown> = {},
+  ) {
     super(message)
     this.name = 'AiHttpError'
   }
@@ -38,7 +44,7 @@ export function isAiResponse(value: unknown): value is AiResponse {
   const candidate = value as Partial<AiResponse>
   const statuses = ['supported', 'partially_supported', 'insufficient_evidence']
   const chartTypes = ['line', 'bar', 'scatter']
-  return typeof candidate.schema_version === 'string'
+  return candidate.schema_version === AI_PUBLIC_CONTRACT_VERSION
     && typeof candidate.id === 'string'
     && statuses.includes(candidate.status ?? '')
     && typeof candidate.answer === 'string'
@@ -49,15 +55,21 @@ export function isAiResponse(value: unknown): value is AiResponse {
     && Array.isArray(candidate.charts) && candidate.charts.every((chart) => typeof chart.id === 'string' && chartTypes.includes(chart.type) && isProvenance(chart.provenance) && isSafeBackendRef(chart.data_ref) && Array.isArray(chart.series) && chart.series.every((series) => series.validated === true && Array.isArray(series.points) && series.points.every((point) => ['string', 'number'].includes(typeof point.x) && typeof point.y === 'number' && Number.isFinite(point.y))))
 }
 
+export function isApiErrorEnvelope(value: unknown): value is ApiErrorEnvelope {
+  if (!value || typeof value !== 'object' || !('error' in value)) return false
+  const error = (value as Partial<ApiErrorEnvelope>).error
+  return !!error && typeof error.code === 'string' && typeof error.message === 'string' && typeof error.request_id === 'string' && !!error.details && typeof error.details === 'object'
+}
+
 function demoResponse(request: AiQueryRequest): AiResponse {
   return {
-    schema_version: 'public-demo-1',
+    schema_version: AI_PUBLIC_CONTRACT_VERSION,
     id: request.id,
     status: 'insufficient_evidence',
     answer: 'Modo demostración: no hay conexión con el backend y no se presentan mediciones ni conclusiones científicas.',
     claims: [],
     citations: [],
-    limitations: ['Contenido sintético de interfaz. No representa datos de NASA ni resultados de un ensayo.', 'Conecta el contrato público definitivo de Gregori para consultar evidencia real.'],
+    limitations: ['Contenido sintético de interfaz. No representa datos de NASA ni resultados de un ensayo.', 'El modo demo no consulta el endpoint público del backend.'],
     charts: [],
     provenance: 'demo',
   }
@@ -88,8 +100,14 @@ export async function queryAi(request: AiQueryRequest, signal?: AbortSignal, opt
     if ((cause as Error).name === 'AbortError') throw cause
     throw new AiHttpError(0, 'No fue posible conectar con /api/v1/ai/query.')
   }
-  if (!response.ok) throw new AiHttpError(response.status, messageFromHttp(response.status))
-  const payload: unknown = await response.json()
+  const payload: unknown = await response.json().catch(() => null)
+  if (!response.ok) {
+    const headerRequestId = response.headers.get('X-Request-ID') ?? undefined
+    if (isApiErrorEnvelope(payload)) {
+      throw new AiHttpError(response.status, payload.error.message, payload.error.code, payload.error.request_id || headerRequestId, payload.error.details)
+    }
+    throw new AiHttpError(response.status, messageFromHttp(response.status), 'HTTP_ERROR', headerRequestId)
+  }
   if (!isAiResponse(payload)) throw new Error('La respuesta no cumple el contrato público versionado del backend.')
   if (payload.id !== request.id) throw new Error('El id de la respuesta no coincide con la solicitud.')
   return payload
