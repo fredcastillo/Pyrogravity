@@ -235,6 +235,27 @@ Resources:
       RouteKey: 'GET /api/v1/analyses/{analysis_id}'
       Target: !Sub 'integrations/${HttpIntegration}'
 
+  AiQueryRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: The Command Center uses the public v1.1 AI contract on the same origin.
+        must:
+          - Public requests can reach the public API contract only.
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'POST /api/v1/ai/query'
+      Target: !Sub 'integrations/${HttpIntegration}'
+
+  AiQueryInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ApiAlias
+      Action: 'lambda:InvokeFunction'
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref 'AWS::AccountId'
+      SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/$default/POST/api/v1/ai/query'
+
   ApiInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -281,6 +302,8 @@ Resources:
           - PathPattern: '/api/*'
             TargetOriginId: http-api
             ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+            CachedMethods: [GET, HEAD]
             CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
             OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
             ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03
