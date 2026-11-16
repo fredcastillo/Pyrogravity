@@ -176,13 +176,14 @@ jobs:
         working-directory: ai
         run: |
           python -m pip install -r requirements.txt
+          python -m pip install boto3==1.44.3
           python -c 'import pyrogravity_ai'
       - name: Ejecutar todos los casos de IA y permisos
         shell: bash
         run: |
           : "${AI_SCHEMA_TEST_DATABASE_URL:?Falta la conexión a PostgreSQL desechable para las pruebas de IA.}"
           report="$RUNNER_TEMP/ai-tests.xml"
-          python -m pytest ai/tests infrastructure/supabase/tests -v -ra --junitxml="$report"
+          python -m pytest ai/tests infrastructure/supabase/tests infrastructure/aws/private_tests -v -ra --junitxml="$report"
           python - "$report" <<'PY'
           import sys
           import xml.etree.ElementTree as ET
@@ -192,6 +193,8 @@ jobs:
           if skipped:
               sys.exit("La suite obligatoria de IA omitió casos: " + ", ".join(skipped))
           PY
+      - name: Compilar la Lambda privada
+        run: python infrastructure/aws/build_private_ai.py
 
   postgres:
     name: PostgreSQL y RLS reales
@@ -291,7 +294,7 @@ jobs:
     needs: repository
     if: ${{ needs.repository.outputs.aws_demo == 'true' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -299,23 +302,41 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Compilar Command Center para CloudFront
+        working-directory: frontend
+        env:
+          VITE_STATIC_HOST: 'true'
+          VITE_AI_DEMO_MODE: 'false'
+        run: |
+          npm ci
+          npm run build -- --base ./
       - name: Compilar y verificar la demo
         shell: bash
         run: |
-          python -m pip install -r data/requirements.txt -r infrastructure/demo/requirements.txt uvicorn==0.40.0 cfn-lint==1.60.1 playwright==1.58.0
-          cfn-lint --regions us-east-1 --template infrastructure/aws/artifacts.yaml infrastructure/aws/demo.yaml infrastructure/aws/monitoring.yaml infrastructure/aws/proposals/ai-private-pdfs.yaml
+          python -m pip install -r requirements.txt cfn-lint==1.60.1 playwright==1.58.0
+          cfn-lint --regions us-east-1 --template infrastructure/aws/artifacts.yaml infrastructure/aws/demo.yaml infrastructure/aws/monitoring.yaml infrastructure/aws/proposals/ai-private-pdfs.yaml infrastructure/aws/private-ai.yaml
           python -m unittest discover -s infrastructure/aws/tests
           python infrastructure/aws/build.py --release-id "$GITHUB_SHA"
           demo_app="$RUNNER_TEMP/demo-app"
-          unzip -q infrastructure/aws/.build/lambda.zip app.py snapshot.json analyses.json release.txt -d "$demo_app"
-          ln -s "$GITHUB_WORKSPACE/infrastructure/demo/web" "$demo_app/web"
-          python -m uvicorn app:api --app-dir "$demo_app" --host 127.0.0.1 --port 8000 &
+          unzip -q infrastructure/aws/.build/lambda.zip -d "$demo_app"
+          cp -R infrastructure/demo/web "$demo_app/infrastructure/demo/web"
+          cp -R frontend/dist "$demo_app/infrastructure/demo/web/assets/command-center"
+          (
+            cd "$demo_app"
+            exec python -m uvicorn infrastructure.aws.lambda_entry:application --lifespan off --host 127.0.0.1 --port 8000
+          ) &
           server=$!
           trap 'kill "$server" 2>/dev/null || true' EXIT
           curl --fail --silent --show-error --retry 10 --retry-connrefused --max-time 2 http://127.0.0.1:8000/api/v1/health
           python infrastructure/aws/smoke.py http://127.0.0.1:8000 --api-release-id "$GITHUB_SHA"
+          python infrastructure/aws/smoke_command_center.py http://127.0.0.1:8000
           python -m playwright install --with-deps chromium
-          python infrastructure/aws/browser_smoke.py http://127.0.0.1:8000
+          python infrastructure/aws/browser_smoke.py http://127.0.0.1:8000 --command-center
       - name: Preparar los archivos probados
         if: github.ref == 'refs/heads/main'
         shell: bash
@@ -324,6 +345,7 @@ jobs:
           mkdir -p "$release"
           cp infrastructure/aws/.build/lambda.zip "$release/"
           cp -R infrastructure/demo/web "$release/site"
+          cp -R frontend/dist "$release/site/assets/command-center"
       - name: Guardar la compilación
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

@@ -6,7 +6,7 @@ import logging
 import os
 import secrets
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from uuid import UUID
 
@@ -25,6 +25,7 @@ from pyrogravity_ai.core.engine import (
 from pyrogravity_ai.database.connection import DatabaseSettings
 from pyrogravity_ai.llm.cohere_client import CohereResponseError, CohereServiceError, CohereTextClient
 from pyrogravity_ai.llm.cohere_embed import CohereEmbeddingClient, CohereEmbeddingResponseError
+from pyrogravity_ai.llm.cohere_rerank import CohereReranker
 from pyrogravity_ai.retrieval.postgres import RetrievalError
 from pyrogravity_ai.retrieval.runtime import PostgresPassageRetriever
 from pyrogravity_ai.schemas.contracts_v11 import AiQueryRequest, AiResponse, ErrorEnvelope
@@ -39,17 +40,21 @@ def _service_values() -> dict[str, str]:
     return values
 
 
-def build_engine() -> AiEngine:
+def build_engine(environ: Mapping[str, str] | None = None) -> AiEngine:
     """Construct the production engine without using administrator database access."""
-    values = _service_values()
+    values = _service_values() if environ is None else environ
     strategy = values.get("AI_RETRIEVAL_STRATEGY", "text")
-    settings = Settings.from_environment()
-    database = DatabaseSettings.from_environment()
+    settings = Settings.from_environment(environ=values)
+    database = DatabaseSettings.from_environment(environ=values)
     text = CohereTextClient(settings)
     embedder = CohereEmbeddingClient(settings) if strategy == "hybrid" else None
+    rerank_model = values.get("COHERE_RERANK_MODEL", "").strip()
+    if rerank_model and strategy != "hybrid":
+        raise ValueError("COHERE_RERANK_MODEL requires hybrid retrieval")
     retriever = PostgresPassageRetriever(
         database, strategy=strategy, embedder=embedder,
         config_hash=values.get("AI_EMBED_CONFIG_HASH"),
+        reranker=CohereReranker(settings, rerank_model) if rerank_model else None,
     )
     return AiEngine(retriever, CohereEvidenceSelector(text),
                     classifier=CohereIntentClassifier(text))

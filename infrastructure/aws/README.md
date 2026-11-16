@@ -47,6 +47,8 @@ Cada actualización de `main` ejecuta el CI. Si pasa la verificación general, e
 
 GitHub Actions solicita una sesión temporal de AWS por OIDC. La variable de repositorio `PYROGRAVITY_AWS_DEMO` contiene un JSON con `roleArn` y `templateUrl`. El rol solo puede publicar en los buckets de esta demo, actualizar su pila con la versión aprobada de la plantilla e invalidar su distribución. La lista de permisos se administra en AWS.
 
+El enlace **Abrir Command Center** carga la compilación React del mismo commit. La interfaz consulta el catálogo científico y envía preguntas a `POST /api/v1/ai/query` en el mismo origen. Durante la publicación se prueba el contrato y su respuesta de evidencia insuficiente. La activación del proveedor real y del corpus se prepara según [el runbook de IA](../../docs/operacion-ia.md).
+
 Los archivos de `infrastructure/demo/web`, las rutas de FastAPI en `infrastructure/demo/app.py` y los datos usados por el exportador se publican con este flujo. Para cambiar la infraestructura, un administrador aplica las plantillas con `deploy.ps1` y registra la nueva versión aprobada antes del siguiente despliegue, actualizando la política y la variable de GitHub.
 
 ## Operación y siguientes cambios

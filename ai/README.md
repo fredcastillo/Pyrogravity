@@ -44,17 +44,18 @@ The probe reports existence and schema-level permissions for `scientific`, `ai`,
 
 The [source registry design](docs/source-registry.md) defines catalog, PDF artifact, chunk and citation provenance. The first curated NASA NTRS record is in `sources/ntrs_20130014061.json`; its DOI and declared version are left null because the publisher's catalog does not list either.
 
-The [database schema](docs/database-schema.md) describes five private `ai` tables for provenance, chunks, embeddings and ingestion runs. The initial migration was applied to Supabase on 2026-11-15; the tables remain empty according to the last remote check. Generations and the citation view are local proposals and are not deployed.
+The [database schema](docs/database-schema.md) describes five private `ai` tables for provenance, chunks, embeddings and ingestion runs. The initial migration, generations, private citation view and group-role policies are now applied to Supabase. The four content tables inspected remotely are still empty; no Knowledge Base generation is active. The group roles have `NOLOGIN`; deploy credentials separately.
 
-The draft [scientific canonicalization rule](docs/scientific-canonical-v1.md) fixes cross-store `data_version`, stable dataset IDs and aggregate input hashes for `ScientificResult v1.1`. Its synthetic examples are in `contracts/v1_1/`; Stanley's adapter and real Parquet/PostgreSQL parity remain pending.
+The [scientific canonicalization rule](docs/scientific-canonical-v1.md) fixes cross-store `data_version`, stable dataset IDs and aggregate input hashes for `ScientificResult v1.1`. Its synthetic examples are in `contracts/v1_1/`; Stanley's adapter and Parquet/PostgreSQL parity are in PR #32, pending integration into `main`.
 
-## Inspect the first PDF
+## Inspect a pinned NASA PDF
 
 The source manifest pins the SHA-256 of the NASA PDF. The script downloads it into ignored `.cache/` if absent, rejects changed bytes, extracts text with `pypdf` and original 1-based page numbers, normalizes typographic ligatures, removes only repeated first-line headers, and creates page-bounded chunks. It does not send the document to Cohere or write to Supabase.
 
 ```powershell
 .venv\Scripts\python.exe scripts\inspect_source.py
 .venv\Scripts\python.exe scripts\inspect_source.py --page 5
+.venv\Scripts\python.exe scripts\inspect_source.py --source sources\ntrs_20160000593.json
 ```
 
 Review the reported page count, text quality and sample chunks before using the document for retrieval. [Extraction quality notes](docs/extraction-quality.md) record the current review limits. PDF text extraction may need a document-specific adjustment for columns, tables or scanned pages.
@@ -65,19 +66,21 @@ After configuring Cohere, prepare the pinned document and its embeddings without
 
 ```powershell
 .venv\Scripts\python.exe scripts\prepare_ingestion.py
+.venv\Scripts\python.exe scripts\prepare_ingestion.py --source sources\ntrs_20160000593.json
 ```
 
 The command prints the document hash, extraction version, fragment count, embedding dimensions and deterministic configuration/plan hashes. These hashes identify the input and settings for later idempotent persistence. A changed PDF, chunking strategy or embedding model produces a different plan; existing reviewed documents must never be silently overwritten. Preparation does not mark the document `reviewed` or create database rows.
 
-`pyrogravity_ai.database.ingestion_repository.persist_ingestion()` can store a prepared plan transactionally in the five initial `ai` tables. It requires an injected connection using a dedicated, non-owner ingestion role with explicit RLS policies; it rejects a PostgreSQL administrator or table owner. A repeat run leaves chunks and embeddings unchanged and records another job. With the **published but undeployed generations migration**, another processing configuration of the same PDF gets a separate document row. No ingestion command has been run against Supabase, and the private runtime role has not yet been provisioned. The updated writer must not run against the remote schema until that migration is applied.
+`pyrogravity_ai.database.ingestion_repository.persist_ingestion()` can store a prepared plan transactionally. It requires a dedicated, non-owner ingestion login with the deployed `pyrogravity_ai_ingest` group role; it rejects a PostgreSQL administrator or table owner. A repeat run leaves chunks and embeddings unchanged and records another job. Another processing configuration of the same PDF gets a separate document row. No ingestion command has been run against Supabase yet; provision the dedicated login before writing.
 
-`scripts/ingest_source.py` is the guarded writer entry point. A plain run prepares and prints the exact plan without database access. A write requires both `--apply` and `--expect-plan-hash <hash-from-dry-run>`, plus a dedicated `AI_INGEST_DATABASE_URL` in the ignored `.env`. It enforces TLS and the repository rejects privileged roles. Do not use `--apply` against Supabase until the generation migration, writer role and RLS policies are reviewed and deployed.
+`scripts/ingest_source.py` is the guarded writer entry point. A plain run prepares and prints the exact plan without database access. A write requires both `--apply` and `--expect-plan-hash <hash-from-dry-run>`, plus a dedicated `AI_INGEST_DATABASE_URL` in the ignored `.env`. It enforces TLS and the repository rejects privileged roles. The migrations, RLS and dedicated database logins are deployed. Private PDF archival and service deployment remain with the infrastructure operator.
 
 ## Retrieve reviewed evidence
 
-`pyrogravity_ai.retrieval.postgres` provides English full-text search, exact cosine vector search for an explicit `config_hash`, and reciprocal-rank fusion of the two lists. Each query filters to `reviewed` documents from `catalog_verified` sources **in the active Knowledge Base generation** and returns document and passage hashes plus page number. The module accepts an injected PostgreSQL connection; it does not expose a public route or generate answers. The first NASA document is still `extracted`, so it must not appear in production retrieval until manual review. Fusion is an evaluation candidate, not the chosen ranking strategy; Spanish questions, expected passages, recall and abstention thresholds still need a reviewed test set.
+`pyrogravity_ai.retrieval.postgres` provides English full-text search, exact cosine vector search for an explicit `config_hash`, and reciprocal-rank fusion of the two lists. Text search first requires all English lexemes and falls back to a sanitized OR query when that yields no hits. Each route filters to `reviewed` documents from `catalog_verified` sources **in the active Knowledge Base generation** and returns document and passage hashes plus page number. The module accepts an injected PostgreSQL connection; it does not expose a public route or generate answers. The review packet and five evaluation cases for the first NASA PDF were approved by Johan on 2026-11-15; the shared Supabase database still has no indexed AI rows, so the PDF remains unavailable to production retrieval. The local retrieval results are an initial smoke test, not a production benchmark; see [`ntrs_20130014061_run_20261115.md`](evaluations/ntrs_20130014061_run_20261115.md). RRF is not selected, and abstention thresholds remain unresolved.
 
-Five draft cases are in `evaluations/ntrs_20130014061_candidates.json`. Their expected excerpts and hashes match the current extraction, but their scientific relevance needs human review. `retrieval.evaluation` refuses to report hit rate, mean reciprocal rank or abstention accuracy while any case is still marked `candidate`.
+Five reviewed cases are in `evaluations/ntrs_20130014061_candidates.json`, including an unsupported BASS-II question used to check abstention for this PDF. `retrieval.evaluation` refuses to report hit rate, mean reciprocal rank or abstention accuracy while any case is still marked `candidate`.
+The BASS-II source `sources/ntrs_20160000593.json` and its five evaluation cases are catalogued separately. Those cases remain `candidate` and cannot be included in measured reports until reviewed.
 Once the answer keys are reviewed, `compare_retrievers()` can score several strategies on the same cases and report each case's first expected rank, returned count and abstention. It has no hard-coded quality threshold and does not mark candidate cases as approved.
 
 Build or verify the [human review packet](evaluations/ntrs_20130014061_review.md) from the pinned PDF:
@@ -94,6 +97,14 @@ The packet lists each question, expected page, passage hash and a short excerpt.
 
 The runner reads the active private generation, embeds each question once with Cohere and compares text, vector and RRF at the same `k`. It returns only metrics and case IDs, ranks and counts. Other documents' passages count as distractors. It stops before external access while any case is still `candidate`; it does not write to PostgreSQL or approve evidence.
 
+To evaluate the full engine—including Command A's evidence selection and its `insufficient_evidence` decision—run:
+
+```powershell
+.venv\Scripts\python.exe scripts\evaluate_engine.py --cases evaluations\ntrs_20130014061_candidates.json
+```
+
+This command first verifies, using a read-only AI database role, that the approved PDF and passage hashes belong to the active generation. It then routes each reviewed question as documentary and runs the configured engine. The report includes per-case status, whether the expected passage was selected, correct rate for the answerable and unsupported cases, negative abstention accuracy, and false support rate. It does not print questions, answers, or passage text, and it does not write to PostgreSQL. It calls Command A (and Cohere Embed when hybrid retrieval is configured); provider usage may incur charges. The five current cases are a smoke test only and cannot establish production quality or a calibrated threshold.
+
 ## Internal AI service
 
 The [integration readiness guide](docs/integration-readiness.md) lists the manual CI, database-role, migration, service-authentication, and private-PDF steps required before enabling the real provider.
@@ -104,6 +115,12 @@ The service endpoint is `POST /internal/v1/ai/query` with the versioned `AiQuery
 .venv\Scripts\uvicorn.exe pyrogravity_ai.service.app:create_app --factory --host 127.0.0.1 --port 8010
 ```
 
-The server needs `COHERE_API_KEY`, `COHERE_MODEL` and a dedicated read-only `AI_DATABASE_URL`. It defaults to reviewed text retrieval; `AI_RETRIEVAL_STRATEGY=hybrid` additionally requires `AI_EMBED_CONFIG_HASH` for the active generation. Do not point the current code at Supabase until the local Knowledge Base generation migration, RLS policies and reader role are deployed. Keep the service behind private TLS and authenticate the backend to it; the browser must only call the backend.
+The server needs `COHERE_API_KEY`, `COHERE_MODEL` and a dedicated read-only `AI_DATABASE_URL`. It defaults to reviewed text retrieval; `AI_RETRIEVAL_STRATEGY=hybrid` additionally requires `AI_EMBED_CONFIG_HASH` for the active generation. The generation migrations, RLS, reader roles and a two-document active generation are deployed in Supabase. Keep the service behind private TLS and authenticate the backend to it; the browser must only call the backend.
 
 The orchestrator routes clear questions by rules and asks Cohere for ambiguous intent. Cohere selects evidence IDs from bounded candidates; the final claim text is assembled from validated scientific values or literal reviewed passages. Unknown IDs, malformed model output, altered passage hashes and unauthorized chart references fail closed. Numeric context comes only from the backend's `ScientificResult` objects. The backend still has to verify every returned datum and citation against its authorized source and hydrate charts from scientific data. HTTP errors use `ErrorEnvelope`; `insufficient_evidence` is a successful HTTP 200 with no claims.
+
+For a request with selected trials, `schemas.scientific_scope.scope_scientific_result` limits a validated full analysis result to the requested `experiment_ids` and `variables`, then recomputes `data_version` from the exact subset. It retains direct measurements and point derivations whose input cells all belong to selected trials. Aggregates with only an input-set hash are excluded because that hash cannot establish trial-level scope. The backend must still authenticate the request and verify the original scientific result; this helper neither queries `scientific` nor makes the public-to-internal mapper operational.
+
+## Integrated deployment handoff
+
+See [deployment instructions](../docs/despliegue-ia-integrada.md) for service-specific secrets, Docker/TLS configuration, current evaluation limitations and acceptance commands. The public route now uses the five-analysis PostgreSQL resolver. Runtime does not need an administrator DSN or PDF access per request. Remaining tests and deployment are delegated to the team.

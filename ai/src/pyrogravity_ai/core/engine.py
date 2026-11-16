@@ -25,6 +25,7 @@ from pyrogravity_ai.schemas.scientific_canonical import canonical_decimal
 
 Intent = Literal["scientific_analysis", "document_question", "combined", "unknown"]
 _NUMBER_WORDS = re.compile(r"\b(cu[aá]nto|valor|duraci[oó]n|di[aá]metro|presi[oó]n|co2|media|mediana|compar|how much|value|duration|diameter|pressure|average)\b", re.I)
+_WHICH_WORDS = re.compile(r"\b(cu[aá]l|which)\b", re.I)
 _DOCUMENT_WORDS = re.compile(r"\b(por qu[eé]|explica|describ|mecanismo|evidencia|fuente|why|explain|describe|source)\b", re.I)
 
 
@@ -61,7 +62,9 @@ def route(request: AiQueryRequest, classifier: IntentClassifier | None = None) -
         return "document_question"
     if request.query_type in {"mixed", "summary"}:
         return "combined" if scientific_available else "document_question"
-    numeric = bool(_NUMBER_WORDS.search(request.question))
+    numeric = bool(_NUMBER_WORDS.search(request.question)) or bool(
+        scientific_available and request.experiment_ids and _WHICH_WORDS.search(request.question)
+    )
     documentary = bool(_DOCUMENT_WORDS.search(request.question))
     if numeric and documentary:
         return "combined" if scientific_available else "scientific_analysis"
@@ -85,11 +88,7 @@ def _scientific_candidates(request: AiQueryRequest) -> tuple[Candidate, ...]:
                 f"{result.result_id}:{result.data_version}:{datum.datum_id}".encode("utf-8")
             ).hexdigest()[:32]
             value = canonical_decimal(datum.value)
-            if isinstance(datum, MeasurementDatum):
-                text = f"{datum.variable_code}: {value} {datum.unit} (ensayo {datum.trial_code})."
-            else:
-                text = (f"{datum.variable_code}: {value} {datum.unit} "
-                        f"(método {datum.method} v{datum.method_version}; n={datum.sample_count}).")
+            text = f"{datum.variable_code}: {value} {datum.unit}."
             candidates.append(Candidate(
                 evidence_id, "numeric", text,
                 ScientificEvidence(evidence_id=evidence_id, result_id=result.result_id,
@@ -214,7 +213,8 @@ class CohereEvidenceSelector:
                   "If none is relevant, select none. Return only JSON in the form "
                   "{\"selected_ids\":[\"id\"]}.\nDATA:\n"
                   + json.dumps(payload, ensure_ascii=False))
-        raw = _unwrap_model_output(self._text_client.generate(prompt))
+        generate = getattr(self._text_client, "generate_json", self._text_client.generate)
+        raw = _unwrap_model_output(generate(prompt))
         try:
             parsed = json.loads(raw)
         except (TypeError, ValueError):

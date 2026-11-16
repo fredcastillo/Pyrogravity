@@ -19,6 +19,19 @@ Parameters:
   ArtifactSha256:
     Type: String
     AllowedPattern: '[A-Za-z0-9+/]{43}='
+  PrivateAiFunctionArn:
+    Type: String
+    Default: ''
+    AllowedPattern: '(|arn:[a-z0-9-]+:lambda:[a-z0-9-]+:[0-9]{12}:function:[A-Za-z0-9_-]+)'
+  BackendAiSecretArn:
+    Type: String
+    Default: ''
+    AllowedPattern: '(|arn:[a-z0-9-]+:secretsmanager:[a-z0-9-]+:[0-9]{12}:secret:.+)'
+
+Conditions:
+  PrivateAiConfigured: !And
+    - !Not [!Equals [!Ref PrivateAiFunctionArn, '']]
+    - !Not [!Equals [!Ref BackendAiSecretArn, '']]
 
 Resources:
   SiteBucket:
@@ -135,7 +148,14 @@ Resources:
       Handler: app.handler
       Architectures: [x86_64]
       MemorySize: 256
-      Timeout: 10
+      Timeout: 27
+      Environment: !If
+        - PrivateAiConfigured
+        - Variables:
+            AI_PROVIDER_ENABLED: 'true'
+            AI_INTERNAL_FUNCTION_ARN: !Ref PrivateAiFunctionArn
+            PYROGRAVITY_BACKEND_SECRET_ARN: !Ref BackendAiSecretArn
+        - !Ref AWS::NoValue
       Code:
         S3Bucket: !Ref ArtifactBucket
         S3Key: !Ref ArtifactKey
@@ -146,6 +166,7 @@ Resources:
     Properties:
       FunctionName: !Ref ApiFunction
       CodeSha256: !Ref ArtifactSha256
+      Description: !If [PrivateAiConfigured, 'Private AI enabled', 'Scientific demo']
 
   ApiAlias:
     Type: AWS::Lambda::Alias
@@ -198,7 +219,7 @@ Resources:
       IntegrationType: AWS_PROXY
       IntegrationUri: !Ref ApiAlias
       PayloadFormatVersion: '2.0'
-      TimeoutInMillis: 12000
+      TimeoutInMillis: !If [PrivateAiConfigured, 29000, 12000]
 
   HealthRoute:
     Type: AWS::ApiGatewayV2::Route
@@ -234,6 +255,27 @@ Resources:
       ApiId: !Ref HttpApi
       RouteKey: 'GET /api/v1/analyses/{analysis_id}'
       Target: !Sub 'integrations/${HttpIntegration}'
+
+  AiQueryRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: The Command Center uses the public v1.1 AI contract on the same origin.
+        must:
+          - Public requests can reach the public API contract only.
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'POST /api/v1/ai/query'
+      Target: !Sub 'integrations/${HttpIntegration}'
+
+  AiQueryInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ApiAlias
+      Action: 'lambda:InvokeFunction'
+      Principal: apigateway.amazonaws.com
+      SourceAccount: !Ref 'AWS::AccountId'
+      SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/$default/POST/api/v1/ai/query'
 
   ApiInvokePermission:
     Type: AWS::Lambda::Permission
@@ -281,6 +323,8 @@ Resources:
           - PathPattern: '/api/*'
             TargetOriginId: http-api
             ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, PATCH, POST, DELETE]
+            CachedMethods: [GET, HEAD]
             CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
             OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac
             ResponseHeadersPolicyId: 67f7725c-6f97-4210-82d7-5512b31e9d03

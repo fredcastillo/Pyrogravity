@@ -65,6 +65,12 @@ def _query(value: str) -> str:
     return value.strip()
 
 
+def _relaxed_terms_query(value: str) -> str:
+    """Build a safe OR query from words when strict plainto_tsquery has no hits."""
+    terms = dict.fromkeys(re.findall(r"[^\W_]+", value, flags=re.UNICODE))
+    return " | ".join(term for term in terms if term.strip())
+
+
 def _hits(rows: list[tuple], *, vector: bool = False) -> tuple[PassageHit, ...]:
     hits = []
     for row in rows:
@@ -105,6 +111,18 @@ def search_text(connection: psycopg.Connection, query: str, *, limit: int = 8) -
         ORDER BY score DESC, c.id ASC LIMIT %s"""
     try:
         rows = connection.execute(statement, (question, question, count)).fetchall()
+        if not rows:
+            relaxed_query = _relaxed_terms_query(question)
+            if relaxed_query:
+                relaxed_statement = f"""{_SELECT},
+                    ts_rank_cd(c.content_tsv, to_tsquery('english', %s)) AS score
+                    {_JOINS}
+                    WHERE {_REVIEWED}
+                      AND c.content_tsv @@ to_tsquery('english', %s)
+                    ORDER BY score DESC, c.id ASC LIMIT %s"""
+                rows = connection.execute(
+                    relaxed_statement, (relaxed_query, relaxed_query, count)
+                ).fetchall()
     except psycopg.Error:
         raise RetrievalError("AI text retrieval failed") from None
     return _hits(rows)

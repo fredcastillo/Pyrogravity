@@ -1,0 +1,202 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Private Pyrogravity AI Lambda, encrypted NASA PDF corpus and separate runtime credentials.
+Metadata:
+  AWSToolsMetrics:
+    AWSAgentToolkit: aws-cloudformation@3
+  com.aws.cloudformation.Context:
+    ref: ../../docs/operacion-ia.md
+    must:
+      - Invoke the service through the AWS Lambda HTTPS API using IAM.
+      - Keep Supabase and Cohere credentials in Secrets Manager.
+
+Parameters:
+  ArtifactBucket:
+    Type: String
+    AllowedPattern: '[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]'
+  ArtifactKey:
+    Type: String
+    AllowedPattern: 'private-ai/[a-f0-9]{64}\.zip'
+  BackendRoleName:
+    Type: String
+    AllowedPattern: '[A-Za-z0-9+=,.@_-]{1,64}'
+  IngestOperatorArn:
+    Type: String
+    AllowedPattern: 'arn:[a-z0-9-]+:iam::[0-9]{12}:(user|role)/.+'
+
+Resources:
+  RuntimeSecret:
+    Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: Private AI runtime settings and restricted Supabase reader login.
+      Name: !Sub '${AWS::StackName}/runtime'
+  BackendSecret:
+    Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: Restricted backend citations and scientific reader logins.
+      Name: !Sub '${AWS::StackName}/backend'
+  IngestSecret:
+    Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: Restricted corpus ingestor login and embedding credential.
+      Name: !Sub '${AWS::StackName}/ingest'
+  Corpus:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Keeps the source PDF identified by the same SHA-256 as its citations.
+        must:
+          - Require HTTPS and block public access.
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+  RuntimeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: PrivateAiRuntime
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref RuntimeSecret
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub '${Corpus.Arn}/pdf/*.pdf'
+              - Effect: Allow
+                Action: [logs:CreateLogStream, logs:PutLogEvents]
+                Resource: !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}:log-stream:*'
+  IngestRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Ref IngestOperatorArn
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: PrivateAiIngest
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: secretsmanager:GetSecretValue
+                Resource: !Ref IngestSecret
+              - Effect: Allow
+                Action: [s3:GetObject, s3:PutObject]
+                Resource: !Sub '${Corpus.Arn}/pdf/*.pdf'
+  CorpusPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref Corpus
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource: [!GetAtt Corpus.Arn, !Sub '${Corpus.Arn}/*']
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'
+          - Effect: Deny
+            Principal: '*'
+            Action: 's3:GetObject*'
+            Resource: !Sub '${Corpus.Arn}/*'
+            Condition:
+              ArnNotEquals:
+                aws:PrincipalArn: [!GetAtt RuntimeRole.Arn, !GetAtt IngestRole.Arn]
+          - Effect: Deny
+            Principal: '*'
+            Action: s3:PutObject
+            Resource: !Sub '${Corpus.Arn}/*'
+            Condition:
+              ArnNotEquals:
+                aws:PrincipalArn: !GetAtt IngestRole.Arn
+  RuntimeLogs:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${AWS::StackName}'
+      RetentionInDays: 14
+  Service:
+    Type: AWS::Lambda::Function
+    DependsOn: RuntimeLogs
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Processes contract v1.1 requests from the authenticated backend.
+        must:
+          - Keep the service free of public event sources and function URLs.
+    Properties:
+      FunctionName: !Ref AWS::StackName
+      Role: !GetAtt RuntimeRole.Arn
+      Runtime: python3.12
+      Handler: private_ai_handler.handler
+      Architectures: [x86_64]
+      MemorySize: 512
+      Timeout: 25
+      Code:
+        S3Bucket: !Ref ArtifactBucket
+        S3Key: !Ref ArtifactKey
+      Environment:
+        Variables:
+          RUNTIME_SECRET_ARN: !Ref RuntimeSecret
+          CORPUS_BUCKET: !Ref Corpus
+  BackendAccess:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${AWS::StackName}-client'
+      Roles: [!Ref BackendRoleName]
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: lambda:InvokeFunction
+            Resource: !GetAtt Service.Arn
+          - Effect: Allow
+            Action: secretsmanager:GetSecretValue
+            Resource: !Ref BackendSecret
+
+Outputs:
+  FunctionArn:
+    Value: !GetAtt Service.Arn
+  IngestRoleArn:
+    Value: !GetAtt IngestRole.Arn
+  CorpusBucket:
+    Value: !Ref Corpus
+  RuntimeSecretArn:
+    Value: !Ref RuntimeSecret
+  IngestSecretArn:
+    Value: !Ref IngestSecret
+  BackendSecretArn:
+    Value: !Ref BackendSecret

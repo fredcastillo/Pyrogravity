@@ -58,6 +58,15 @@ def test_blank_prompt_is_rejected_before_api_call() -> None:
     assert fake.calls == []
 
 
+def test_json_generation_requests_provider_json_mode() -> None:
+    from pyrogravity_ai.llm.cohere_client import CohereTextClient
+
+    fake = FakeCohereClient(response=response('{"selected_ids":[]}'))
+    result = CohereTextClient(settings(), client=fake).generate_json("Return JSON evidence IDs")
+    assert result == '{"selected_ids":[]}'
+    assert fake.calls[0]["response_format"] == {"type": "json_object"}
+
+
 def test_provider_error_is_sanitized_and_classified() -> None:
     from pyrogravity_ai.llm.cohere_client import CohereServiceError, CohereTextClient
 

@@ -1,5 +1,5 @@
--- Borrador posterior a 20261115120000_ai_initial.sql. No aplicar fuera de la
--- cadena compartida de Supabase ni conceder acceso antes de acordar el rol lector.
+-- Posterior a la migración de generaciones. El acceso se concede por separado
+-- a un rol lector dedicado, nunca a los roles de la Data API.
 CREATE VIEW ai.citation_passages WITH (security_barrier = true) AS
 SELECT
     c.id AS passage_id,

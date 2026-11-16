@@ -29,14 +29,20 @@ class PublicAiOrchestrator:
         except AiUpstreamError as error:
             raise PublicAiOrchestrationError(error.code, 504 if error.code == "timeout" else 503) from error
         try:
-            return map_internal_response(
+            mapped = map_internal_response(
                 internal_request,
                 internal_response,
                 provenance="live",
                 citation_lookup=self.citation_lookup,
             )
+            if public_request.chart_preference:
+                for chart in mapped.charts:
+                    chart.type = public_request.chart_preference
+            return mapped
         except (MapperValidationError, ValueError, KeyError, TypeError) as error:
             raise PublicAiOrchestrationError("AI_UNGROUNDED_RESPONSE", 502) from error
+        except RuntimeError:
+            raise PublicAiOrchestrationError("upstream_unavailable", 503) from None
 
 
 class PublicAiOrchestrationError(RuntimeError):
