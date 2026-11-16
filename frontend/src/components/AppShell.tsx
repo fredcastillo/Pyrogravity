@@ -22,8 +22,15 @@ const navigation = [
   { to: '/status', label: 'Estado', icon: Activity },
 ]
 
+const publishedNavigation = [
+  { href: '/#catalog-title', label: 'Tablas NASA', icon: Database },
+  { href: '/#science-title', label: 'Análisis y gráficas', icon: Search },
+  { href: '/#comparison-title', label: 'Comparador de ensayos', icon: GitCompareArrows },
+]
+
 export function AppShell({ children }: PropsWithChildren) {
   const [open, setOpen] = useState(false)
+  const published = import.meta.env.VITE_STATIC_HOST === 'true'
 
   return (
     <div className="app-shell">
@@ -49,15 +56,17 @@ export function AppShell({ children }: PropsWithChildren) {
         </div>
         <nav aria-label="Navegación principal">
           <p className="eyebrow">OPERACIONES</p>
-          {navigation.map(({ to, label, icon: Icon, end }) => (
+          {published ? publishedNavigation.map(({ href, label, icon: Icon }) => (
+            <a key={href} href={href} className="nav-link"><Icon aria-hidden="true" /><span>{label}</span></a>
+          )) : navigation.map(({ to, label, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end} onClick={() => setOpen(false)} className={({ isActive }) => isActive ? 'nav-link nav-link--active' : 'nav-link'}>
               <Icon aria-hidden="true" /><span>{label}</span>
             </NavLink>
           ))}
         </nav>
         <div className="sidebar__footer">
-          <div className="system-pill"><span className="status-dot" /> Sistemas nominales</div>
-          <div className="sidebar__meta"><ShieldCheck aria-hidden="true" /><span>Snapshot científico<br /><strong>NASA · 15 NOV 2026</strong></span></div>
+          {!published && <div className="system-pill"><span className="status-dot" /> Sistemas nominales</div>}
+          <div className="sidebar__meta"><ShieldCheck aria-hidden="true" /><span>Snapshot científico<br /><strong>NASA</strong></span></div>
         </div>
       </aside>
       <main id="main-content" className="main-content">{children}</main>

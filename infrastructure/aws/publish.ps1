@@ -80,8 +80,11 @@ $sameBackend = $stack.Parameters.ArtifactKey -eq $package.ArtifactKey -and
 if ($sameBackend -and (Get-FileHash -LiteralPath $previousHtml).Hash -eq (Get-FileHash -LiteralPath $nextHtml).Hash) {
     & $PythonExecutable (Join-Path $PSScriptRoot 'smoke.py') $site.SiteUrl --release-id $ReleaseId
     if ($LASTEXITCODE -eq 0) {
-        Write-Output "La versión $ReleaseId ya está publicada y verificada. No se modificó AWS."
-        return
+        & $PythonExecutable (Join-Path $PSScriptRoot 'smoke_command_center.py') $site.SiteUrl
+        if ($LASTEXITCODE -eq 0) {
+            Write-Output "La versión $ReleaseId ya está publicada y verificada. No se modificó AWS."
+            return
+        }
     }
     Write-Warning 'El índice y el backend coinciden, pero falló la comprobación pública. Se intentará recuperar la publicación.'
 }
@@ -100,6 +103,8 @@ try {
     Clear-PageCache
     & $PythonExecutable (Join-Path $PSScriptRoot 'smoke.py') $site.SiteUrl --release-id $ReleaseId
     if ($LASTEXITCODE -ne 0) { throw 'La versión publicada no pasó la verificación de la página.' }
+    & $PythonExecutable (Join-Path $PSScriptRoot 'smoke_command_center.py') $site.SiteUrl
+    if ($LASTEXITCODE -ne 0) { throw 'La versión publicada no pasó la verificación del Command Center.' }
     Write-Output "Publicado $ReleaseId en $($site.SiteUrl)"
 } catch {
     if ($newPage) {
