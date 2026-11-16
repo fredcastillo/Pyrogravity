@@ -1,6 +1,7 @@
 """Genera el ZIP de Lambda a partir del snapshot y las dependencias de la demo."""
 
 import argparse
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -12,7 +13,9 @@ DEMO_DIR = AWS_DIR.parent / "demo"
 ROOT = AWS_DIR.parent.parent
 
 
-def build(output: Path, etl_python: str) -> None:
+def build(output: Path, etl_python: str, release_id: str | None = None) -> None:
+    if release_id is not None and not re.fullmatch(r"[0-9a-f]{40}", release_id):
+        raise ValueError("El identificador de publicación debe ser un SHA de Git completo.")
     subprocess.run([etl_python, "-m", "infrastructure.demo.export_data"], cwd=ROOT, check=True)
 
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -41,6 +44,8 @@ def build(output: Path, etl_python: str) -> None:
                     write_file(archive, relative.as_posix(), file)
             for name in ("app.py", "snapshot.json", "analyses.json"):
                 write_file(archive, name, DEMO_DIR / name)
+            if release_id:
+                archive.writestr(ZipInfo("release.txt"), release_id)
     print(f"{output}: {output.stat().st_size:,} B")
 
 
@@ -53,5 +58,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=AWS_DIR / ".build" / "lambda.zip")
     parser.add_argument("--etl-python", default=sys.executable)
+    parser.add_argument("--release-id")
     arguments = parser.parse_args()
-    build(arguments.output.resolve(), arguments.etl_python)
+    build(arguments.output.resolve(), arguments.etl_python, arguments.release_id)
