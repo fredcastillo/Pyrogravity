@@ -14,6 +14,7 @@ Este directorio reúne los planes, la imagen del proyecto y el estado de cada á
 
 ## Estado y fuentes
 
+- [Entorno local, Compose y diagnóstico](operacion-local.md).
 - [AI: decisiones, avance y próximos pasos](IA.md).
 - [Referencias y enlaces](references/README.md): fuentes NASA, documentación técnica y material de consulta.
 - [Nota original sobre CSV](references/message.txt): material recibido con marcadores como «Descargar CSV»; no contiene URLs directas verificadas para todos los archivos.
