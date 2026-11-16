@@ -1,0 +1,11 @@
+{
+  "schema_version": "public-1.1",
+  "id": "b3c0e1a5-b79a-40fb-b28d-69c40be37daf",
+  "status": "insufficient_evidence",
+  "answer": "No hay evidencia suficiente para responder.",
+  "claims": [],
+  "citations": [],
+  "limitations": ["No se seleccionaron ensayos y no hay pasajes documentales verificados."],
+  "charts": [],
+  "provenance": "demo"
+}

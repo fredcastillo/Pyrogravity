@@ -1,0 +1,90 @@
+{
+  "schema_version": "public-1.1",
+  "id": "b3c0e1a5-b79a-40fb-b28d-69c40be37daf",
+  "status": "supported",
+  "answer": "Los burn_time registrados fueron 4.30 s y 5.00 s.",
+  "claims": [
+    {
+      "id": "claim_psi69_burn_time_1",
+      "text": "burn_time = 4.30 s.",
+      "citation_ids": [
+        "evidence_psi69_row_1"
+      ]
+    },
+    {
+      "id": "claim_psi69_burn_time_2",
+      "text": "burn_time = 5.00 s.",
+      "citation_ids": [
+        "evidence_psi69_row_2"
+      ]
+    }
+  ],
+  "citations": [
+    {
+      "id": "evidence_psi69_row_1",
+      "kind": "scientific",
+      "title": "Flame Extinguishment Experiment",
+      "url": "https://psi.nasa.gov/physci/repo/data/investigations/PSI-69",
+      "page": null,
+      "snippet": "PSI-69:psi-69_flex:1; Burn time; s: 4.3 s",
+      "source": "PSI-69",
+      "measurement": {
+        "variable": "burn_time",
+        "value": "4.3",
+        "unit": "s",
+        "provenance": "demo"
+      }
+    },
+    {
+      "id": "evidence_psi69_row_2",
+      "kind": "scientific",
+      "title": "Flame Extinguishment Experiment",
+      "url": "https://psi.nasa.gov/physci/repo/data/investigations/PSI-69",
+      "page": null,
+      "snippet": "PSI-69:psi-69_flex:2; Burn time; s: 5 s",
+      "source": "PSI-69",
+      "measurement": {
+        "variable": "burn_time",
+        "value": "5",
+        "unit": "s",
+        "provenance": "demo"
+      }
+    }
+  ],
+  "limitations": [
+    "El manifiesto clasifica el dataset como validated_with_flags; estos dos registros pasan los criterios de candidato cuantitativo y no presentan flags."
+  ],
+  "charts": [
+    {
+      "id": "psi69_flex_burn_time",
+      "type": "bar",
+      "title": "PSI-69 FLEX burn time by test",
+      "x_label": "trial_code",
+      "y_label": "burn_time",
+      "provenance": "demo",
+      "data_ref": null,
+      "series": [
+        {
+          "id": "psi69_flex_burn_time",
+          "label": "burn_time",
+          "unit": "s",
+          "validated": true,
+          "points": [
+            {
+              "x": "PSI-69:psi-69_flex:1",
+              "y": 4.3
+            },
+            {
+              "x": "PSI-69:psi-69_flex:2",
+              "y": 5.0
+            }
+          ]
+        }
+      ],
+      "limitations": [
+        "El manifiesto clasifica el dataset como validated_with_flags; estos dos registros pasan los criterios de candidato cuantitativo y no presentan flags."
+      ]
+    }
+  ],
+  "provenance": "demo"
+}
