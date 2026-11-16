@@ -21,12 +21,14 @@ jobs:
     timeout-minutes: 6
     outputs:
       python_modules: ${{ steps.modules.outputs.python }}
+      ai: ${{ steps.modules.outputs.ai }}
       frontend: ${{ steps.modules.outputs.frontend }}
       aws_demo: ${{ steps.modules.outputs.aws_demo }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 2
 
       - name: Validar workflows
         shell: bash
@@ -44,7 +46,7 @@ jobs:
         shell: bash
         run: |
           modules=()
-          for directory in data rag backend tests; do
+          for directory in data backend tests; do
             if [[ -n "$(git ls-files -- ":(glob)$directory/**/*.py")" ]]; then
               modules+=("$directory")
             fi
@@ -52,6 +54,20 @@ jobs:
           python_modules=$(printf '%s\n' "${modules[@]}" | jq -cRn '[inputs | select(length > 0)]')
           echo "python=$python_modules" >> "$GITHUB_OUTPUT"
           echo "Módulos Python detectados: $python_modules"
+
+          if [[ -n "$(git ls-files -- ai/ 'supabase/migrations/*_ai_*.sql' data/src/analysis/scientific_result.py)" ]]; then
+            if [[ ! -f ai/pyproject.toml || ! -f ai/requirements.txt || ! -d ai/tests ]]; then
+              echo "::error::La integración de IA requiere ai/pyproject.toml, ai/requirements.txt y ai/tests."
+              exit 1
+            fi
+            echo "ai=true" >> "$GITHUB_OUTPUT"
+          elif git cat-file -e HEAD^1:ai/pyproject.toml 2>/dev/null; then
+            echo "::error::El cambio eliminó el módulo de IA y sus pruebas."
+            exit 1
+          else
+            echo "ai=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Esta revisión precede a la incorporación del módulo de IA."
+          fi
 
           frontend=false
           if [[ -f frontend/package.json ]]; then
@@ -105,6 +121,10 @@ jobs:
         working-directory: .
         run: |
           python -m pip install -r data/requirements.txt
+          if [[ -f ai/pyproject.toml ]]; then
+            python -m pip install --editable ./ai
+            python -c 'import pyrogravity_ai'
+          fi
           python -m pytest data/tests -v
 
       - name: Ejecutar pytest
@@ -128,17 +148,62 @@ jobs:
           fi
           python -m pytest "$test_path"
 
+  ai:
+    name: IA · pruebas, pgvector y permisos
+    needs: repository
+    if: needs.repository.outputs.ai == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.2-pg17-bookworm@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: pyrogravity_ai_test
+        ports: ['127.0.0.1:5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      AI_SCHEMA_TEST_DATABASE_URL: postgresql://127.0.0.1:5432/pyrogravity_ai_test?user=postgres
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Instalar e importar el módulo de IA
+        working-directory: ai
+        run: |
+          python -m pip install -r requirements.txt
+          python -c 'import pyrogravity_ai'
+      - name: Ejecutar todos los casos de IA y permisos
+        shell: bash
+        run: |
+          : "${AI_SCHEMA_TEST_DATABASE_URL:?Falta la conexión a PostgreSQL desechable para las pruebas de IA.}"
+          report="$RUNNER_TEMP/ai-tests.xml"
+          python -m pytest ai/tests infrastructure/supabase/tests -v -ra --junitxml="$report"
+          python - "$report" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+
+          report = ET.parse(sys.argv[1])
+          skipped = [test.get("name") for test in report.iter("testcase") if test.find("skipped") is not None]
+          if skipped:
+              sys.exit("La suite obligatoria de IA omitió casos: " + ", ".join(skipped))
+          PY
+
   postgres:
     name: PostgreSQL y RLS reales
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     services:
       postgres:
-        image: postgres:17.6
+        image: pgvector/pgvector:0.8.2-pg17-bookworm@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966
         env:
-          POSTGRES_PASSWORD: ci-disposable-only
+          POSTGRES_HOST_AUTH_METHOD: trust
           POSTGRES_DB: postgres
-        ports: ['5432:5432']
+        ports: ['127.0.0.1:5432:5432']
         options: >-
           --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 12
     steps:
@@ -150,9 +215,14 @@ jobs:
           python-version: '3.12'
       - name: Probar migraciones, carga, equivalencia científica y permisos
         env:
-          PYRO_TEST_DATABASE_URL: postgresql://postgres:ci-disposable-only@localhost:5432/postgres
+          PYRO_TEST_DATABASE_URL: postgresql://127.0.0.1:5432/postgres?user=postgres
         run: |
           python -m pip install -r data/requirements.txt -r requirements.txt
+          python scripts/prepare_ci_postgres.py
+          if [[ -f ai/pyproject.toml ]]; then
+            python -m pip install --editable ./ai
+            python -c 'import pyrogravity_ai'
+          fi
           python -m pytest data/integration -v
 
   frontend:
@@ -186,6 +256,36 @@ jobs:
       - name: Compilar el frontend
         run: npm run build
 
+  compose:
+    name: Integración Docker Compose
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      PYRO_DEV_DB_PASSWORD: ci-db-ephemeral
+      PYRO_DEV_LOADER_PASSWORD: ci-loader-ephemeral
+      PYRO_DEV_READER_PASSWORD: ci-reader-ephemeral
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Iniciar frontend y API en modo demo
+        run: |
+          docker compose up --build --wait --wait-timeout 120
+          python3 infrastructure/local/smoke.py demo
+      - name: Iniciar PostgreSQL y validar el cargador y el lector
+        run: |
+          docker compose -f docker-compose.yml -f compose.postgres.yml config --quiet
+          docker compose -f docker-compose.yml -f compose.postgres.yml up --build --wait --wait-timeout 180
+          python3 infrastructure/local/smoke.py real
+      - name: Mostrar diagnóstico
+        if: failure()
+        run: |
+          docker compose -f docker-compose.yml -f compose.postgres.yml ps -a
+          docker compose -f docker-compose.yml -f compose.postgres.yml logs --tail 60
+      - name: Limpiar recursos desechables del runner
+        if: always()
+        run: docker compose -f docker-compose.yml -f compose.postgres.yml down --volumes
+
   aws-demo:
     name: Demo de AWS
     needs: repository
@@ -203,14 +303,17 @@ jobs:
         shell: bash
         run: |
           python -m pip install -r data/requirements.txt -r infrastructure/demo/requirements.txt uvicorn==0.40.0 cfn-lint==1.60.1 playwright==1.58.0
-          cfn-lint --regions us-east-1 --template infrastructure/aws/artifacts.yaml infrastructure/aws/demo.yaml infrastructure/aws/monitoring.yaml
+          cfn-lint --regions us-east-1 --template infrastructure/aws/artifacts.yaml infrastructure/aws/demo.yaml infrastructure/aws/monitoring.yaml infrastructure/aws/proposals/ai-private-pdfs.yaml
           python -m unittest discover -s infrastructure/aws/tests
-          python infrastructure/aws/build.py
-          python -m uvicorn app:api --app-dir infrastructure/demo --host 127.0.0.1 --port 8000 &
+          python infrastructure/aws/build.py --release-id "$GITHUB_SHA"
+          demo_app="$RUNNER_TEMP/demo-app"
+          unzip -q infrastructure/aws/.build/lambda.zip app.py snapshot.json analyses.json release.txt -d "$demo_app"
+          ln -s "$GITHUB_WORKSPACE/infrastructure/demo/web" "$demo_app/web"
+          python -m uvicorn app:api --app-dir "$demo_app" --host 127.0.0.1 --port 8000 &
           server=$!
           trap 'kill "$server" 2>/dev/null || true' EXIT
           curl --fail --silent --show-error --retry 10 --retry-connrefused --max-time 2 http://127.0.0.1:8000/api/v1/health
-          python infrastructure/aws/smoke.py http://127.0.0.1:8000
+          python infrastructure/aws/smoke.py http://127.0.0.1:8000 --api-release-id "$GITHUB_SHA"
           python -m playwright install --with-deps chromium
           python infrastructure/aws/browser_smoke.py http://127.0.0.1:8000
       - name: Preparar los archivos probados
@@ -233,7 +336,7 @@ jobs:
   gate:
     name: Verificación general
     if: ${{ always() }}
-    needs: [repository, python, frontend, aws-demo, postgres]
+    needs: [repository, python, ai, frontend, compose, aws-demo, postgres]
     runs-on: ubuntu-24.04
     timeout-minutes: 3
     steps:
@@ -241,19 +344,28 @@ jobs:
         env:
           REPOSITORY: ${{ needs.repository.result }}
           PYTHON: ${{ needs.python.result }}
+          AI_PRESENT: ${{ needs.repository.outputs.ai }}
+          AI: ${{ needs.ai.result }}
           FRONTEND: ${{ needs.frontend.result }}
+          COMPOSE: ${{ needs.compose.result }}
           AWS_DEMO: ${{ needs.aws-demo.result }}
           POSTGRES: ${{ needs.postgres.result }}
         shell: bash
         run: |
           echo "Repositorio: $REPOSITORY"
           echo "Python: $PYTHON"
+          echo "IA: $AI (módulo presente: $AI_PRESENT)"
           echo "Frontend: $FRONTEND"
+          echo "Docker Compose: $COMPOSE"
           echo "Demo AWS: $AWS_DEMO"
           echo "PostgreSQL: $POSTGRES"
-          if [[ "$POSTGRES" != success || "$REPOSITORY" != success || ! "$PYTHON" =~ ^(success|skipped)$ || ! "$FRONTEND" =~ ^(success|skipped)$ || ! "$AWS_DEMO" =~ ^(success|skipped)$ ]]; then
+          if [[ "$POSTGRES" != success || "$COMPOSE" != success || "$REPOSITORY" != success || ! "$PYTHON" =~ ^(success|skipped)$ || ! "$FRONTEND" =~ ^(success|skipped)$ || ! "$AWS_DEMO" =~ ^(success|skipped)$ ]]; then
             exit 1
           fi
+          case "$AI_PRESENT:$AI" in
+            true:success|false:skipped) ;;
+            *) echo "::error::El resultado de la suite obligatoria de IA es $AI."; exit 1 ;;
+          esac
 
   deploy:
     name: Publicar la demo en AWS
@@ -262,8 +374,7 @@ jobs:
       ${{ !cancelled() && needs.gate.result == 'success' && needs.aws-demo.result == 'success' &&
           github.repository == 'fredcastillo/Pyrogravity' &&
           github.ref == 'refs/heads/main' &&
-          (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-          vars.PYROGRAVITY_AWS_DEMO != '' }}
+          (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     permissions:
       contents: read
       id-token: write

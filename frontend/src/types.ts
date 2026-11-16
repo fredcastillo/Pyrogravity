@@ -25,6 +25,10 @@ export interface Experiment {
   updated: string
   summary: string
   series: DataPoint[]
+  aiContext?: {
+    experimentIds: string[]
+    variables: string[]
+  }
 }
 
 export interface MissionContext {

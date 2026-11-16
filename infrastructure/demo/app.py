@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from mangum import Mangum
@@ -13,6 +13,8 @@ from pydantic import BaseModel
 
 DEMO_DIR = Path(__file__).resolve().parent
 WEB_DIR = DEMO_DIR / "web"
+RELEASE_FILE = DEMO_DIR / "release.txt"
+RELEASE_ID = RELEASE_FILE.read_text(encoding="ascii").strip() if RELEASE_FILE.is_file() else None
 DatasetName = Literal["flex", "bass_ii"]
 api = FastAPI(title="Pyrogravity | Demo científica", docs_url=None, redoc_url=None, openapi_url=None)
 
@@ -91,7 +93,9 @@ def snapshot():
 
 
 @api.get("/api/v1/health")
-def health() -> dict[str, str]:
+def health(response: Response) -> dict[str, str]:
+    if RELEASE_ID:
+        response.headers["X-Pyrogravity-Release"] = RELEASE_ID
     snapshot()
     return {"status": "ok", "mode": "demo"}
 

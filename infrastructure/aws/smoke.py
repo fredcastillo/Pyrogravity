@@ -12,7 +12,7 @@ from urllib.request import urlopen
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
 
-def verify(base_url: str, release_id: str | None = None) -> None:
+def verify(base_url: str, release_id: str | None = None, *, api_release_id: str | None = None) -> None:
     def fetch(path):
         with urlopen(base_url + path, timeout=12) as response:
             return response.read()
@@ -40,7 +40,11 @@ def verify(base_url: str, release_id: str | None = None) -> None:
     published_hashes = {table["source_path"]: table["source_sha256"] for table in source_catalog}
     assert csv_hashes and len(source_catalog) == len(csv_hashes)
     assert published_hashes == csv_hashes, "El catálogo publicado debe corresponder a todos los CSV del commit."
-    assert json.loads(fetch("/api/v1/health")) == {"status": "ok", "mode": "demo"}
+    with urlopen(base_url + "/api/v1/health", timeout=12) as response:
+        expected_api_release = api_release_id or release_id
+        if expected_api_release:
+            assert response.headers.get("X-Pyrogravity-Release") == expected_api_release, "Lambda sirve otro commit."
+        assert json.load(response) == {"status": "ok", "mode": "demo"}
     science = json.loads(fetch("/api/v1/analyses"))
     assert {item["analysis_id"] for item in science} == {"bass-ii", "flex", "flame-design", "cfi-g", "spice"}
     for item in science:
@@ -89,5 +93,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("base_url")
     parser.add_argument("--release-id")
+    parser.add_argument("--api-release-id")
     arguments = parser.parse_args()
-    verify(arguments.base_url.rstrip("/"), arguments.release_id)
+    verify(arguments.base_url.rstrip("/"), arguments.release_id, api_release_id=arguments.api_release_id)

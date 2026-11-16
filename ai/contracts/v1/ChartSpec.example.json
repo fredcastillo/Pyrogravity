@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "chart_id": "chart_1",
+  "type": "scatter",
+  "title": "Duración de combustión por ensayo",
+  "data_ref": "analysis:flex:example-opaque-result",
+  "x": {"field": "experiment_id", "label": "Ensayo", "kind": "categorical", "unit": null},
+  "y": {"field": "burn_time", "label": "Duración", "kind": "numeric", "unit": "s"},
+  "filters": {},
+  "dataset_ref_ids": ["flex_dataset"],
+  "limitations": ["Ejemplo sintético; resolver data_ref en un endpoint autorizado."]
+}

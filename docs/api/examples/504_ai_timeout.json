@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "AI_UNAVAILABLE",
+    "message": "El servicio de IA agotó el tiempo de espera.",
+    "details": {},
+    "request_id": "00000000-0000-0000-0000-000000000504"
+  }
+}

@@ -45,15 +45,17 @@ def test_real_mode_never_claims_demo_is_real(client, scientific_data):
     app.dependency_overrides[get_settings] = lambda: Settings(
         demo_mode=False, scientific_data_dir=scientific_data,
         pyrogravity_database_url=SecretStr("postgresql://reader:do-not-disclose@127.0.0.1:1/postgres"))
-    response = client.post("/api/v1/ai/query", json={"query_type":"concept","question":"What is combustion?"})
+    response = client.post("/api/v1/ai/query", json={"id":"qa-real-mode","question":"What is combustion?","language":"en","experiment_ids":["PSI-69 FLEX"],"variables":[],"chart_preference":None})
     assert response.status_code == 503
+    assert response.json()["error"]["code"] == "AI_UNAVAILABLE"
     health = client.get("/health")
     assert health.status_code == 503
     assert "do-not-disclose" not in health.text
 
-def test_demo_is_explicit_fallback(client):
-    response = client.post("/api/v1/ai/query", json={"query_type":"concept","question":"What is combustion?"})
-    assert response.json()["status"] == "fallback"
+def test_public_ai_provider_is_disabled_in_demo_until_auth_is_ready(client):
+    response = client.post("/api/v1/ai/query", json={"id":"qa-demo-mode","question":"What is combustion?","language":"en","experiment_ids":["PSI-69 FLEX"],"variables":[],"chart_preference":None})
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "AI_UNAVAILABLE"
 
 def test_decimal_evidence_is_not_serialized_as_float():
     evidence = Evidence(experiment_id="PSI-25", variable="co2", metric="exact",

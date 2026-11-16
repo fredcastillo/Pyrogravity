@@ -1,0 +1,22 @@
+{
+  "status": "partial",
+  "data_version": "6499d859c4a8589d0722789a2c383d864a271415c99de6e95cc51cd57edb2d12",
+  "datasets": {
+    "psi-10_flame_design_normal_flame": "4a663292bd3f65201943cc71bd661a70383639276a9176f64105b285bf0b6deb",
+    "psi-10_flame_design_inverse_flame": "97933ee9ae0b9ebc6b948a67485a0fe2f8218f753253a4f2be93c40d374c44e4"
+  },
+  "counts": {"measurement": 614, "derived": 499},
+  "aggregate": {
+    "table_name": "psi-10_flame_design_normal_flame",
+    "catalog_path": ["configurations", "normal"],
+    "inputs": ["pinit_atm", "pfinal_atm"],
+    "variable_code": "delta_pressure_median",
+    "value": "0.0068046",
+    "unit": "atm",
+    "method": "median",
+    "group": "normal",
+    "cohort": null,
+    "sample_count": 187,
+    "input_set_sha256": "af32ce60cb7f6c5803b2ef5024ac90d33e4b26721831206be84b8770795ffffd"
+  }
+}

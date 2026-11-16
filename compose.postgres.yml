@@ -1,0 +1,48 @@
+services:
+  api:
+    environment:
+      DEMO_MODE: "false"
+      PYROGRAVITY_DATABASE_URL: "postgresql://pyrogravity_api_reader:${PYRO_DEV_READER_PASSWORD:?Define PYRO_DEV_READER_PASSWORD}@db:5432/postgres"
+    depends_on:
+      data-load:
+        condition: service_completed_successfully
+    networks: [default, database]
+  db:
+    image: pgvector/pgvector:0.8.2-pg17-bookworm@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966
+    environment:
+      POSTGRES_PASSWORD: "${PYRO_DEV_DB_PASSWORD:?Define PYRO_DEV_DB_PASSWORD}"
+      POSTGRES_DB: postgres
+      PYRO_DEV_LOADER_PASSWORD: "${PYRO_DEV_LOADER_PASSWORD:?Define PYRO_DEV_LOADER_PASSWORD}"
+      PYRO_DEV_READER_PASSWORD: "${PYRO_DEV_READER_PASSWORD:?Define PYRO_DEV_READER_PASSWORD}"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./supabase/migrations:/migrations:ro
+      - ./infrastructure/local/init-postgres.sh:/docker-entrypoint-initdb.d/init-pyrogravity.sh:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "postgres"]
+      interval: 5s
+      timeout: 4s
+      start_period: 10s
+      retries: 12
+    networks: [database]
+    restart: unless-stopped
+  data-load:
+    build: .
+    command: ["python", "-m", "scripts.load_to_supabase"]
+    environment:
+      PYROGRAVITY_DATABASE_URL: "postgresql://pyrogravity_nasa_loader:${PYRO_DEV_LOADER_PASSWORD:?Define PYRO_DEV_LOADER_PASSWORD}@db:5432/postgres"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [database]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+
+networks:
+  database:
+    internal: true
+
+volumes:
+  postgres-data:
