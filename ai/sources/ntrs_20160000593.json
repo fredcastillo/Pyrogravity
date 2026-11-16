@@ -1,0 +1,24 @@
+{
+  "source_id": "ntrs:20160000593",
+  "ntrs_id": "20160000593",
+  "title": "Combustion of Solids in Microgravity: Results from the BASS-II Experiment",
+  "authors": [
+    "Paul V. Ferkul",
+    "Subrata Bhattacharjee",
+    "Carlos Fernandez-Pello",
+    "Fletcher Miller",
+    "Sandra L. Olson",
+    "Fumiaki Takahashi",
+    "James S. T’ien"
+  ],
+  "publisher": "NASA Technical Reports Server / Glenn Research Center",
+  "publication_date": "2014-10-23",
+  "catalog_url": "https://ntrs.nasa.gov/citations/20160000593",
+  "document_url": "https://ntrs.nasa.gov/api/citations/20160000593/downloads/20160000593.pdf",
+  "experiment": "BASS-II",
+  "report_numbers": ["GRC-E-DAA-TN18274"],
+  "doi": null,
+  "document_version": null,
+  "expected_document_sha256": "9f2c89db9e1954c3c44409364ed6764f7e7466250264c28ff2d425350287546c",
+  "catalog_status": "catalog_verified"
+}

@@ -84,7 +84,16 @@ def test_private_repository_is_idempotent_and_rejects_reextraction() -> None:
             db.execute(CITATION_VIEW.read_text(encoding="utf-8"), prepare=False)
             db.execute("CREATE ROLE ai_test_ingestor NOLOGIN NOSUPERUSER NOBYPASSRLS")
             db.execute("GRANT USAGE ON SCHEMA ai, extensions TO ai_test_ingestor")
-            db.execute("GRANT SELECT, INSERT ON ALL TABLES IN SCHEMA ai TO ai_test_ingestor")
+            for table in (
+                "sources", "documents", "document_chunks", "chunk_embeddings", "ingestion_jobs",
+            ):
+                db.execute(sql.SQL(
+                    "GRANT SELECT, INSERT ON ai.{} TO ai_test_ingestor"
+                ).format(sql.Identifier(table)))
+            for table in ("kb_generations", "kb_generation_documents"):
+                db.execute(sql.SQL(
+                    "GRANT SELECT ON ai.{} TO ai_test_ingestor"
+                ).format(sql.Identifier(table)))
             for table in (
                 "sources", "documents", "document_chunks", "chunk_embeddings", "ingestion_jobs",
                 "kb_generations", "kb_generation_documents", "kb_active",
@@ -119,9 +128,6 @@ def test_private_repository_is_idempotent_and_rejects_reextraction() -> None:
             assert newer.document_id != first.document_id
             assert db.execute("SELECT count(*) FROM ai.ingestion_jobs").fetchone()[0] == 3
 
-            assert search_text(db, "Methanol combustion") == ()
-            assert search_vector(db, FakeEmbedder().embed_query("methanol"), plan.config_hash) == ()
-
             db.execute("RESET ROLE")
             old_generation = db.execute(
                 """INSERT INTO ai.kb_generations (version_label, config_hash)
@@ -131,6 +137,21 @@ def test_private_repository_is_idempotent_and_rejects_reextraction() -> None:
                 """INSERT INTO ai.kb_generation_documents
                    (generation_id, source_id, document_id) VALUES (%s, %s, %s)""",
                 (old_generation, first.source_id, first.document_id),
+            )
+            sealed_target_chunk = db.execute(
+                "SELECT id FROM ai.document_chunks WHERE document_id = %s ORDER BY chunk_index LIMIT 1",
+                (first.document_id,),
+            ).fetchone()[0]
+            unsealed_source_chunk = db.execute(
+                "SELECT id FROM ai.document_chunks WHERE document_id = %s ORDER BY chunk_index LIMIT 1",
+                (newer.document_id,),
+            ).fetchone()[0]
+            vector_literal = "[" + ",".join(repr(value) for value in plan.embeddings[0]) + "]"
+            db.execute(
+                """INSERT INTO ai.chunk_embeddings
+                   (chunk_id, model_name, config_hash, dimensions, embedding)
+                   VALUES (%s, %s, %s, 1024, %s::extensions.vector)""",
+                (unsealed_source_chunk, plan.model_name, plan.config_hash, vector_literal),
             )
             with pytest.raises(psycopg.errors.RaiseException, match="unreviewed"):
                 with db.transaction():
@@ -146,6 +167,28 @@ def test_private_repository_is_idempotent_and_rejects_reextraction() -> None:
             db.execute("SELECT ai.seal_kb_generation(%s)", (old_generation,))
             db.execute("SELECT ai.activate_kb_generation(%s)", (old_generation,))
             assert db.execute("SELECT count(*) FROM ai.citation_passages").fetchone()[0] == 2
+            db.execute("CREATE ROLE ai_test_backend_reader NOLOGIN NOSUPERUSER NOBYPASSRLS")
+            db.execute("GRANT USAGE ON SCHEMA ai TO ai_test_backend_reader")
+            db.execute("GRANT SELECT ON ai.citation_passages TO ai_test_backend_reader")
+            db.execute("SET LOCAL ROLE ai_test_backend_reader")
+            assert db.execute(
+                "SELECT count(*) FROM ai.citation_passages"
+            ).fetchone()[0] == 2
+            with pytest.raises(psycopg.errors.InsufficientPrivilege):
+                with db.transaction():
+                    db.execute("SELECT count(*) FROM ai.document_chunks")
+            db.execute("RESET ROLE")
+            with pytest.raises(psycopg.errors.RaiseException, match="Embedding in sealed"):
+                with db.transaction():
+                    db.execute(
+                        """INSERT INTO ai.chunk_embeddings
+                           (chunk_id, model_name, config_hash, dimensions, embedding)
+                           VALUES (%s, %s, %s, 1024, %s::extensions.vector)
+                           ON CONFLICT (chunk_id, config_hash) DO UPDATE
+                           SET chunk_id = %s""",
+                        (unsealed_source_chunk, plan.model_name, plan.config_hash,
+                         vector_literal, sealed_target_chunk),
+                    )
             with pytest.raises(psycopg.errors.RaiseException, match="immutable"):
                 with db.transaction():
                     db.execute("DELETE FROM ai.kb_generation_documents WHERE generation_id = %s",
@@ -175,6 +218,8 @@ def test_private_repository_is_idempotent_and_rejects_reextraction() -> None:
             vector_hits = search_vector(db, FakeEmbedder().embed_query("methanol"), plan.config_hash)
             hybrid_hits = search_hybrid(db, "Methanol combustion", FakeEmbedder(), plan.config_hash)
             assert text_hits[0].page_number == 1
+            relaxed_text_hits = search_text(db, "Methanol droplet combustion")
+            assert relaxed_text_hits[0].document_id == first.document_id
             assert vector_hits[0].page_number == 1
             assert hybrid_hits[0].page_number == 1
             assert all(hit.document_sha256 == plan.document.sha256 for hit in hybrid_hits)

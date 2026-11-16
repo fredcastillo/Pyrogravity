@@ -20,6 +20,7 @@ from pyrogravity_ai.llm.cohere_client import CohereServiceError
 from pyrogravity_ai.llm.cohere_embed import CohereEmbeddingClient, CohereEmbeddingResponseError
 from pyrogravity_ai.retrieval.evaluation import (
     EvaluationEnvironmentError,
+    combine_retrieval_evaluations,
     evaluate_active_kb,
     load_evaluation_set,
 )
@@ -31,15 +32,20 @@ def main() -> int:
     if hasattr(sys.stderr, "reconfigure"):
         sys.stderr.reconfigure(encoding="utf-8", errors="backslashreplace")
     parser = argparse.ArgumentParser(description="Comparar recuperación sobre casos revisados")
-    parser.add_argument("--cases", type=Path, required=True, help="JSON con review_status=reviewed")
+    parser.add_argument("--cases", type=Path, nargs="+", required=True,
+                        help="uno o más JSON revisados, uno por documento NASA")
     parser.add_argument("--config-hash", required=True, help="SHA-256 de la configuración activa")
     parser.add_argument("--k", type=int, default=5)
     args = parser.parse_args()
 
     try:
-        evaluation_set = load_evaluation_set(args.cases)
-        if any(case.review_status != "reviewed" for case in evaluation_set.cases):
-            print("Evaluación no disponible: los casos siguen como candidatos.", file=sys.stderr)
+        evaluation_sets = [load_evaluation_set(path) for path in args.cases]
+        if any(any(case.review_status != "reviewed" for case in item.cases)
+               for item in evaluation_sets):
+            print("Evaluación no disponible: hay casos que siguen como candidatos.", file=sys.stderr)
+            return 1
+        if len({item.source_id for item in evaluation_sets}) != len(evaluation_sets):
+            print("Evaluación no disponible: cada archivo debe representar una fuente distinta.", file=sys.stderr)
             return 1
         ai_dir = Path(__file__).resolve().parents[1]
         db_settings = DatabaseSettings.from_environment(env_file=ai_dir / ".env")
@@ -55,10 +61,14 @@ def main() -> int:
             options="-c default_transaction_read_only=on",
             prepare_threshold=None,
         ) as connection:
-            results = evaluate_active_kb(
-                evaluation_set, connection, CohereEmbeddingClient(model_settings),
-                args.config_hash, k=args.k,
-            )
+            embedder = CohereEmbeddingClient(model_settings)
+            source_results = [
+                (evaluation_set, evaluate_active_kb(
+                    evaluation_set, connection, embedder, args.config_hash, k=args.k,
+                ))
+                for evaluation_set in evaluation_sets
+            ]
+            results = combine_retrieval_evaluations(source_results)
     except (OSError, json.JSONDecodeError, ValueError, psycopg.Error,
             DatabaseConfigurationError, ConfigurationError,
             EvaluationEnvironmentError, CohereServiceError,
@@ -66,8 +76,16 @@ def main() -> int:
         print(f"Evaluación no disponible: {type(exc).__name__}", file=sys.stderr)
         return 1
 
-    print(json.dumps({name: asdict(result) for name, result in results.items()},
-                     ensure_ascii=False, indent=2))
+    output = {
+        "overall": {name: asdict(result) for name, result in results.items()},
+        "sources": {
+            evaluation_set.source_id: {
+                name: asdict(result) for name, result in source_result.items()
+            }
+            for evaluation_set, source_result in source_results
+        },
+    }
+    print(json.dumps(output, ensure_ascii=False, indent=2))
     return 0
 
 
