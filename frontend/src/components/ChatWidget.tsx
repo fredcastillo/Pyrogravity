@@ -4,7 +4,6 @@ import { planChat, studyOnPage, type ChatLink } from '../chatRouting'
 import type { AiResponse } from '../contracts/ai'
 import { AiHttpError, buildAiQuery, queryAi } from '../services/ai'
 import { getStudy, studies, studyIds, type StudyId } from '../studies'
-import { spanishCitationSummary } from '../studyQuestions'
 import './chatWidget.css'
 import pyrogravityMark from '../assets/pyrogravity-mark.png'
 
@@ -37,11 +36,7 @@ function safeLink(value: string) {
 }
 
 function chatbotAnswer(answer: AiResponse) {
-  if (answer.status === 'insufficient_evidence') {
-    return 'No encontré una fuente que respalde ese detalle. Puedes decirme qué estudio te interesa, pedir el método o indicarme el ensayo y la variable que quieres localizar.'
-  }
-  const summaries = [...new Set(answer.citations.map(spanishCitationSummary).filter(Boolean))]
-  return summaries.length ? summaries.join('\n\n') : answer.answer.replace(/^1\.\s*/, '')
+  return answer.answer.replace(/^1\.\s*/, '')
 }
 
 export function ChatWidget({ autoOpen = false, trigger }: { autoOpen?: boolean; trigger?: HTMLElement }) {
@@ -100,7 +95,7 @@ export function ChatWidget({ autoOpen = false, trigger }: { autoOpen?: boolean; 
     add({ role: 'user', text: clean })
     setDraft('')
     const plan = planChat(clean, study)
-    if (plan.study) setStudy(plan.study)
+    if ('study' in plan) setStudy(plan.study)
     if ('text' in plan) {
       add({ role: 'assistant', text: plan.text, links: plan.links })
       return
