@@ -28,9 +28,18 @@ def prepare(output: Path, frontend: Path) -> None:
         )
     html = html.replace("</head>", "\n".join(hero_preloads) + "\n</head>")
     root_html = html.replace('"./assets/', '"/assets/command-center/assets/')
-    root_html = root_html.replace('</head>', '<meta name="pyrogravity-science" content="/assets/science/index.html">\n</head>')
+    root_html = root_html.replace(
+        '</head>',
+        '<link rel="canonical" href="/">\n'
+        '<meta name="pyrogravity-science" content="/assets/science/index.html">\n</head>',
+    )
     (output / "index.html").write_text(root_html, encoding="utf-8")
-    nested_html = html.replace('</head>', '<meta name="pyrogravity-science" content="../science/index.html">\n</head>')
+    nested_html = (
+        '<!doctype html><html lang="es"><head><meta charset="utf-8">'
+        '<title>Pyrogravity</title><link rel="canonical" href="/">'
+        '<meta http-equiv="refresh" content="0; url=/"></head>'
+        '<body><a href="/">Ir a Pyrogravity</a></body></html>'
+    )
     (assets / "command-center" / "index.html").write_text(nested_html, encoding="utf-8")
 
 

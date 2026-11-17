@@ -42,7 +42,7 @@ a:hover { color: #d1f7ff; }
   background: #080f1de8;
   backdrop-filter: blur(14px);
 }
-.masthead-inner, main, .atlas-footer { width: min(83rem, calc(100% - 3rem)); margin-inline: auto; }
+.masthead-inner, main, .atlas-footer { width: calc(100% - 2 * clamp(.75rem, 3vw, 3.5rem)); margin-inline: auto; }
 .masthead-inner {
   min-height: 4.25rem;
   display: grid;
@@ -171,7 +171,7 @@ details p { margin-top: .4rem; }
 code, pre { font-family: var(--mono); }
 #science-method { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; }
 #science-result figure { margin: 1rem 0; padding: .65rem; background: #0a1323; border: 1px solid var(--line); border-radius: .72rem; overflow-x: auto; }
-#science-chart { display: block; width: 100%; min-width: 300px; max-height: 420px; }
+#science-chart { display: block; width: 100%; min-width: 300px; max-height: clamp(420px, 42vw, 600px); }
 #science-chart text { fill: #c7d9ef; font: 15px var(--mono); }
 #science-result figcaption { padding: .45rem; color: var(--muted); font-size: .82rem; }
 #bars { list-style: none; padding: 0; display: grid; gap: .5rem; }
@@ -182,7 +182,6 @@ meter::-moz-meter-bar { background: var(--cyan); }
 .atlas-footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .6rem; padding-block: 1rem 1.8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .82rem; }
 
 @media (max-width: 730px) {
-  .masthead-inner, main, .atlas-footer { width: calc(100% - 1.5rem); }
   .masthead-inner { grid-template-columns: minmax(0, 1fr) auto; padding-block: .4rem .55rem; gap: .3rem; }
   .atlas-nav { grid-area: 2 / 1 / 3 / -1; justify-content: space-between; }
   .atlas-nav a { display: grid; place-items: center; padding: .4rem .48rem; min-height: 2.75rem; font-size: .73rem; }

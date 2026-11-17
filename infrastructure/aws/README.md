@@ -54,7 +54,7 @@ Cada actualización de `main` ejecuta el CI. Si pasa la verificación general, e
 
 GitHub Actions solicita una sesión temporal de AWS por OIDC. La variable de repositorio `PYROGRAVITY_AWS_DEMO` contiene un JSON con `roleArn` y `templateUrl`. El rol solo puede publicar en los buckets de esta demo, actualizar su pila con la versión aprobada de la plantilla e invalidar su distribución. La lista de permisos se administra en AWS.
 
-El enlace **Abrir Command Center** carga la compilación React del mismo commit. La interfaz consulta el catálogo científico y envía preguntas a `POST /api/v1/ai/query` en el mismo origen. Durante la publicación se prueba el contrato y su respuesta de evidencia insuficiente. La activación del proveedor real y del corpus se prepara según [el runbook de IA](../../docs/operacion-ia.md).
+La portada React se abre en `/` y el enlace **Inicio** del Atlas vuelve a esa ruta. La función `pyrogravity-legacy-home` de CloudFront, asociada en `viewer-request` al comportamiento por defecto, redirige las antiguas portadas del directorio de publicaciones a `/`. Su código está en `redirect_legacy_home.js`. La interfaz consulta el catálogo científico y envía preguntas a `POST /api/v1/ai/query` en el mismo origen. Durante la publicación se prueba el contrato y su respuesta de evidencia insuficiente. La activación del proveedor real y del corpus se prepara según [el runbook de IA](../../docs/operacion-ia.md).
 
 ### Publicación opcional del motor privado
 
