@@ -39,6 +39,21 @@ export function planChat(input: string, previous?: StudyId): ChatPlan {
   const current = mentioned.length === 1 ? mentioned[0] : mentioned.length ? undefined : previous
   const study = current ? getStudy(current) : undefined
 
+  if (/^(?:hola|hey|buenas)(?: como estas| que tal| de nuevo)$|^(?:como estas|que tal|quien eres|eres una ia)$/.test(query))
+    return { study: current, text: 'Hola, soy el asistente de IA de Pyrogravity. Te acompaño a explorar los estudios, entender sus métodos y localizar evidencia. ¿Prefieres empezar por una pregunta sobre microgravedad o por las mediciones de un estudio?', links: navigation }
+
+  if (/^(?:ayudame a explorar los datos|quiero explorar los datos|por donde empiezo|no se por donde empezar)$/.test(query))
+    return { study: current, text: 'Podemos empezar por lo que quieres observar: CO₂ en BASS-II, gotas de combustible en FLEX, presión en Flame Design, duración en CFI-G o flujos en SPICE. Elige una ficha para ver su gráfica y los registros que la respaldan. Después podemos revisar el método o las fuentes.', links: catalogLinks }
+
+  if (/^(?:como verifico (?:una respuesta|estos datos|la fuente de estos datos)|puedo confiar en ti|puedes cometer errores)$/.test(query))
+    return { study: current, text: 'Puedo cometer errores. Abre las citas, comprueba el documento y la página, y contrasta el fragmento con lo que se afirma. Para una cifra, revisa también el ensayo, la variable, la unidad y la fila original en la ficha. Una medición trazable no demuestra por sí sola una causa física.', links: current ? [{ title: `Revisar las fuentes de ${study?.name}`, href: `/estudios/${current}#fuentes` }] : catalogLinks }
+
+  if (/^(?:que significa|explicame)(?: la)? (?:evidencia insuficiente|falta de evidencia)$/.test(query))
+    return { study: current, text: 'Significa que la evidencia disponible no alcanza para respaldar la respuesta. No significa que el fenómeno no exista. Podemos precisar el estudio, revisar otra variable o abrir la fuente original.', links: current ? [{ title: 'Ver los datos disponibles', href: `/estudios/${current}#datos` }] : catalogLinks }
+
+  if (/^(?:fuentes|ver fuentes)$/.test(query) && current)
+    return { study: current, text: `Puedes revisar la procedencia de ${study?.name} en su ficha. Allí se conservan las referencias y el método; las citas de mis respuestas documentales también se pueden desplegar en el chat.`, links: [{ title: `Fuentes de ${study?.name}`, href: `/estudios/${current}#fuentes` }] }
+
   if (/^(hola|hey|buenas|buenos dias|buenas tardes|buenas noches)( que tal)?$/.test(query))
     return { study: current, text: '¡Hola! Soy el asistente de Pyrogravity. Puedo explicarte qué se estudia en microgravedad, ayudarte a encontrar mediciones o revisar una fuente de NASA.', links: navigation }
 

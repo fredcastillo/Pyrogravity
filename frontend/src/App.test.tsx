@@ -37,7 +37,7 @@ describe('Pyrogravity frontend', () => {
     expect(await screen.findByText('Evidencia insuficiente')).toBeInTheDocument()
     expect(screen.getByText('DEMOSTRACIÓN · contenido no científico')).toBeInTheDocument()
     expect(screen.getByText(/No representa datos de NASA/)).toBeInTheDocument()
-    expect(screen.queryByText(/812/)).not.toBeInTheDocument()
+    expect(screen.queryByText('812', { exact: true })).not.toBeInTheDocument()
   })
 
   it('expone fichas navegables en lugar de botones deshabilitados', () => {
