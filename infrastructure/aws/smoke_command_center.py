@@ -18,8 +18,13 @@ def verify(base_url: str) -> None:
         html = response.read().decode()
     script = re.search(r'<script\b[^>]+src="([^"]+\.js)"', html)
     assert 'id="root"' in html and script, "El HTML debe montar la SPA compilada."
-    with urlopen(urljoin(spa_url, script[1]), timeout=20) as response:
-        assert b"/api/v1/ai/query" in response.read(), "El frontend debe consumir el contrato de la API."
+    modules = re.findall(r'<link\b(?=[^>]*\brel="modulepreload")[^>]*\bhref="([^"]+\.js)"', html)
+    for path in dict.fromkeys([script[1], *modules]):
+        with urlopen(urljoin(spa_url, path), timeout=20) as response:
+            if b"/api/v1/ai/query" in response.read():
+                break
+    else:
+        raise AssertionError("El frontend debe consumir el contrato de la API.")
 
     payload = {
         "id": str(uuid4()),
