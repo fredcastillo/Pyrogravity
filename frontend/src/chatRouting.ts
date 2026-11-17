@@ -39,6 +39,14 @@ export function planChat(input: string, previous?: StudyId): ChatPlan {
   const current = mentioned.length === 1 ? mentioned[0] : mentioned.length ? undefined : previous
   const study = current ? getStudy(current) : undefined
 
+  if (!mentioned.length && /^(?:(?:explicame|que es|que me puedes contar de|cuentame sobre|hablame de|como es|como funciona) )?(?:la |el |las )?(?:combustion en microgravedad|fuego (?:en microgravedad|en el espacio)|llamas en el espacio)$/.test(query))
+    return { study: current, text: 'Pyrogravity explora cómo arden los combustibles en microgravedad. BASS-II estudió la ignición, propagación y extinción de llamas en sólidos. FLEX estudió la quema de gotas de combustible bajo distintas condiciones. Puedes seguir esas dos pistas en las fichas de NASA.', links: psiLinks }
+
+  // An explicit broad science question should not inherit a selected study's retrieval scope.
+  if (!mentioned.length && /^(?:(?:y )?(?:que es|que significa|explicame|define|defineme|como (?:cambia|afecta|se comporta)|que (?:ocurre|pasa)|por que|hablame de)\b)/.test(query) &&
+    /(?:microgravedad|gravedad cero|falta de gravedad|combustion|llama|llamas|fuego)/.test(query))
+    return { study: undefined, question: input }
+
   if (/^(?:hola|hey|buenas)(?: como estas| que tal| de nuevo)$|^(?:como estas|que tal|quien eres|eres una ia)$/.test(query))
     return { study: current, text: 'Hola, soy el asistente de IA de Pyrogravity. Te acompaño a explorar los estudios, entender sus métodos y localizar evidencia. ¿Prefieres empezar por una pregunta sobre microgravedad o por las mediciones de un estudio?', links: navigation }
 
@@ -63,21 +71,30 @@ export function planChat(input: string, previous?: StudyId): ChatPlan {
   if (/^(que (?:estudios|investigaciones|experimentos)(?: tienen| hay| puedo ver)?|que datos puedo ver|que puedes hacer|ayuda|como funciona|muestrame el catalogo|resumen general|que es pyrogravity|que hay en esta pagina)$/.test(query))
     return { study: current, text: 'Puedes explorar cinco análisis de combustión en microgravedad. Las fichas muestran CO₂ en BASS-II, combustión de gotas en FLEX, presión en Flame Design, duración en CFI-G y flujos en SPICE. Abre una para ver la gráfica, las filas originales y el método.', links: catalogLinks }
 
-  if (!mentioned.length && /^(?:(?:explicame|que es|que me puedes contar de|cuentame sobre|hablame de|como es|como funciona) )?(?:la |el |las )?(?:combustion en microgravedad|fuego (?:en microgravedad|en el espacio)|llamas en el espacio)$/.test(query))
-    return { study: current, text: 'Pyrogravity explora cómo arden los combustibles en microgravedad. BASS-II estudió la ignición, propagación y extinción de llamas en sólidos. FLEX estudió la quema de gotas de combustible bajo distintas condiciones. Puedes seguir esas dos pistas en las fichas de NASA.', links: psiLinks }
-
   if (!current && !mentioned.length && /^(?:y )?(?:(?:para que|que|como|quien(?:es)?|de donde) [a-z ]{1,50}|resultados?|metodologia|fuentes|objetivos|detalles)$/.test(query) &&
     /(?:investigaron|descubrieron|encontraron|experimento|estos datos|resultados?|metodologia|fuentes|objetivos|detalles|estudio)$/.test(query))
     return { text: 'Puedo buscarlo. Elige un estudio o dime si quieres un panorama general de la combustión en microgravedad.', links: catalogLinks }
+
+  if (current && study && /^(?:(?:cual|que) es )?(?:la )?(?:metodologia|metodo)(?: de)?$|^(?:como se seleccionaron los datos|como se procesa(?:n)? los datos|criterios? de seleccion)$/.test(
+    query.replace(aliases[current], '').replace(/\s+/g, ' ').trim(),
+  )) {
+    const analysisMethod = `Para el análisis de datos de Pyrogravity de ${study.name}, ${study.method.join(' ')} Esta metodología describe cómo se seleccionan e interpretan los registros en Pyrogravity; no necesariamente describe el protocolo experimental original de NASA.`
+    const originalProtocolNote = study.document
+      ? ''
+      : ' No hay un informe de este estudio indexado en la biblioteca de IA; para el protocolo experimental original, consulta la fuente NASA enlazada en la ficha.'
+    return {
+      study: current,
+      text: `${analysisMethod}${originalProtocolNote}`,
+      links: [{ title: `Leer la metodología de análisis de ${study.name}`, href: `/estudios/${current}#metodo` }],
+    }
+  }
 
   if (current && study && !study.document) {
     const links = [{ title: `Ver ${study.name} y su procedencia`, href: `/estudios/${current}#fuentes` }]
     const overview = query.replace(aliases[current], '').replace(/\s+/g, ' ').trim()
     if (/^(?:|que es|que se analizo|que investigaron|que investigo|resultados?(?: de)?|hablame (?:de|sobre)|cuentame (?:de|sobre))$/.test(overview))
       return { study: current, text: study.description + ' La ficha muestra las mediciones registradas y la selección aplicada.', links }
-    if (/^(?:metodologia(?: de)?|metodo(?: de)?|como hicieron el experimento|como se seleccionaron los datos)$/.test(overview))
-      return { study: current, text: study.method.join(' '), links }
-    return { study: current, text: `La ficha de ${study.name} tiene la metodología, la gráfica y la fuente original. Todavía no hay un documento de ese estudio en la biblioteca de IA para verificar detalles adicionales.`, links }
+    return { study: current, text: `Todavía no hay un documento de ese estudio en la biblioteca de IA para verificar detalles adicionales. La ficha resumida de ${study.name} sí explica qué variables analiza, cómo Pyrogravity selecciona los registros y dónde consultar la fuente NASA original.`, links }
   }
 
   return { study: current, question: study && !mentioned.length ? studyQuestion(input, study.name) : input, source: study?.document }

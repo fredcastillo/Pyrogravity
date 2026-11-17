@@ -213,7 +213,7 @@ def verify(url, executable=None, screenshots=None, command_center=False):
             panel = page.get_by_role("dialog", name="Pyrogravity")
             panel.get_by_role("textbox", name="Escribe tu pregunta").fill("Explica el resultado de los ensayos de combustión de antimateria de BASS-II.")
             panel.get_by_role("button", name="Enviar mensaje").click()
-            expect(panel.get_by_text("No encontré una fuente que respalde ese detalle", exact=False)).to_be_visible(timeout=25000)
+            expect(panel.get_by_text("No hay ensayos seleccionados ni pasajes documentales verificados para responder.", exact=True)).to_be_visible(timeout=25000)
         assert not errors, errors
         browser.close()
     print(json.dumps(results))

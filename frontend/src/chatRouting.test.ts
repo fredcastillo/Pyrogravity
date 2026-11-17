@@ -17,6 +17,17 @@ it('responde saludos, temas amplios y preguntas por el catálogo', () => {
   ]))
 })
 
+it('quita el alcance del estudio para conceptos generales y responde el método de análisis publicado', () => {
+  expect(planChat('¿Qué es la microgravedad y la combustión?', 'bass-ii')).toEqual({
+    study: undefined,
+    question: '¿Qué es la microgravedad y la combustión?',
+  })
+  const spiceMethod = planChat('¿Cuál es la metodología de SPICE?')
+  expect(spiceMethod).toHaveProperty('study', 'spice')
+  expect(spiceMethod).toHaveProperty('text', expect.stringContaining('La selección disponible requiere lecturas exactas y finitas'))
+  expect(spiceMethod).toHaveProperty('text', expect.stringContaining('no necesariamente describe el protocolo experimental original de NASA'))
+})
+
 it('conserva el contexto de seguimiento y respeta un cambio de estudio', () => {
   expect(planChat('¿Cómo hicieron el experimento?', 'bass-ii')).toEqual({
     study: 'bass-ii', question: 'Metodología de BASS-II', source: 'ntrs:20160000593',
