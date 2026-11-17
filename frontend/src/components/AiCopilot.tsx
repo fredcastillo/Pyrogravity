@@ -102,7 +102,6 @@ export function AiCopilot({ experimentId, experimentName, aiContext, studySource
   const StatusIcon = currentStatus?.icon
   const catalogQuery = experimentId === 'catalogo'
   const suggestions = studySource ? ['¿Qué investigaron?', '¿Cómo hicieron el experimento?', '¿Qué descubrieron?', 'Fuentes'] : catalogQuery ? catalogQuestions : experimentQuestions
-  const summaries = [...new Set(response?.citations.map(spanishCitationSummary).filter(Boolean))]
   return <section className="panel copilot-panel copilot-panel--contract" aria-labelledby="ai-copilot-title">
     <div className="panel__header"><div><p className="eyebrow">Biblioteca científica</p><h2 id="ai-copilot-title">Consulta científica verificable</h2></div><Sparkles aria-hidden="true" /></div>
     {catalogQuery ? <p className="published-query-intro">Escribe el nombre de un estudio o pregunta por sus objetivos, método o resultados. Abre las citas para consultar la fuente.</p> :
@@ -115,8 +114,7 @@ export function AiCopilot({ experimentId, experimentName, aiContext, studySource
     {response && currentStatus && StatusIcon && <div className="ai-response" data-status={response.status} data-provenance={response.provenance}>
       {response.provenance === 'demo' && <div className="ai-demo-banner"><AlertTriangle /><strong>DEMOSTRACIÓN · contenido no científico</strong></div>}
       <header className="ai-response__status"><StatusIcon /><div><strong>{currentStatus.label}</strong><span>{currentStatus.detail}</span></div><small>{provenanceCopy[response.provenance]}</small></header>
-      <div className="ai-answer"><Sparkles /><div>{summaries.length ? <><strong>Resumen en español</strong>{summaries.map(text => <p key={text}>{text}</p>)}
-        <details><summary>Ver respuesta con los pasajes originales</summary><p>{response.answer}</p></details></> : <p>{response.answer}</p>}
+      <div className="ai-answer"><Sparkles /><div><p>{response.answer}</p>
         {response.limitations.length > 0 && <div className="ai-limitations-inline"><strong>Limitaciones</strong><ul>{response.limitations.map((item) => <li key={item}>{item}</li>)}</ul></div>}</div></div>
       {response.claims.length > 0 && <section className="ai-section"><div className="ai-section__title"><CheckCircle2 /><h3>Afirmaciones y citas</h3><span>{response.claims.length}</span></div><ol className="claim-list">{response.claims.map((claim) => <li key={claim.id}><p>{claim.text}</p><div className="claim-citations">{claim.citation_ids.map((id) => { const citation = citationMap.get(id); return citation ? <span key={id} className={`citation-chip citation-chip--${citation.kind}`}>{citation.kind === 'document' ? <BookOpen /> : <Database />}{citation.title}{citation.page ? ` · p. ${citation.page}` : ''}</span> : <span key={id} className="citation-chip citation-chip--missing"><ShieldAlert />Cita {id} no recibida</span> })}</div></li>)}</ol></section>}
       {response.citations.length > 0 && <section className="ai-section"><div className="ai-section__title"><Database /><h3>Citas resueltas</h3><span>{response.citations.length}</span></div><div className="evidence-grid">{response.citations.map((citation) => <CitationCard key={citation.id} citation={citation} />)}</div></section>}

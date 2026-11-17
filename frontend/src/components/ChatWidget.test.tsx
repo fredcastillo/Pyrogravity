@@ -2,6 +2,7 @@ import { beforeEach, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { ChatWidget } from './ChatWidget'
 import { queryAi } from '../services/ai'
+import type { AiResponse } from '../contracts/ai'
 
 vi.mock('../services/ai', async importOriginal => ({ ...await importOriginal<typeof import('../services/ai')>(), queryAi: vi.fn() }))
 
@@ -38,4 +39,22 @@ it('cancela una consulta en curso sin mostrar una respuesta tardía', async () =
   expect(screen.getByText(/Consulta detenida/)).toBeVisible()
   await waitFor(() => expect(screen.queryByText(/Buscando evidencia/)).not.toBeInTheDocument())
   expect(screen.getByText(/Estás hablando con una IA/)).toBeVisible()
+})
+
+it('conserva la respuesta del backend aunque una cita tenga un resumen editorial conocido', async () => {
+  vi.mocked(queryAi).mockResolvedValue({
+    schema_version: 'public-1.1', id: 'request-1', status: 'supported',
+    answer: 'Respuesta del backend a la pregunta actual.', claims: [],
+    citations: [{ id: 'citation-1', kind: 'document', title: 'Informe BASS-II', url: 'https://ntrs.nasa.gov/report',
+      page: 18, snippet: 'plastic rods blowoff and quenching extinction limits', source: 'ntrs:20160000593' }],
+    limitations: [], charts: [], provenance: 'live',
+  } satisfies AiResponse)
+  render(<ChatWidget autoOpen />)
+  fireEvent.change(screen.getByLabelText('Estudio del chat'), { target: { value: 'bass-ii' } })
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: '¿Qué es la microgravedad y la combustión?' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Enviar mensaje' }))
+  await waitFor(() => expect(queryAi).toHaveBeenCalledWith(expect.objectContaining({ question: '¿Qué es la microgravedad y la combustión?' }), expect.anything()))
+  expect(await screen.findByText('Respuesta del backend a la pregunta actual.')).toBeVisible()
+  expect(screen.queryByText(/quemaron varillas de plástico/)).not.toBeInTheDocument()
+  expect(screen.getByLabelText('Estudio del chat')).toHaveValue('')
 })
