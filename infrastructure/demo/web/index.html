@@ -72,9 +72,14 @@
           </div>
           <a id="catalog-source" class="secondary-link" target="_blank" rel="noopener noreferrer"></a>
         </div>
-        <p class="surface-note" id="catalog-scroll-note">Desliza la tabla horizontalmente para ver más columnas.</p>
+        <details class="catalog-column-chooser">
+          <summary>Elegir columnas</summary>
+          <fieldset id="catalog-column-options"><legend>Columnas visibles</legend></fieldset>
+        </details>
+        <p class="surface-note" id="catalog-scroll-note">Desliza para ver más columnas. Pulsa un número de fila para abrir todos sus campos.</p>
         <div class="table-wrap catalog-table" role="region" aria-label="Filas del CSV seleccionado" aria-describedby="catalog-scroll-note" tabindex="0">
           <table>
+            <caption class="surface-note" id="catalog-table-caption"></caption>
             <thead><tr id="catalog-columns"></tr></thead>
             <tbody id="catalog-rows"></tbody>
           </table>
@@ -89,6 +94,11 @@
           <p id="catalog-file"></p>
           <p>SHA-256 <code id="catalog-sha"></code></p>
         </details>
+        <dialog id="catalog-row-dialog" aria-labelledby="catalog-row-title">
+          <h3 id="catalog-row-title"></h3>
+          <dl id="catalog-row-fields"></dl>
+          <form method="dialog"><button type="submit">Cerrar</button></form>
+        </dialog>
       </div>
     </section>
 
@@ -104,6 +114,7 @@
       <p id="science-status" role="status">Cargando análisis…</p>
       <div id="science-result" hidden>
         <h3 id="science-description"></h3>
+        <a id="science-study-link" class="secondary-link">Abrir ficha del estudio</a>
         <section class="science-provenance" aria-labelledby="science-provenance-title">
           <h4 id="science-provenance-title">Procedencia de los datos</h4>
           <p id="science-source" class="source"></p>

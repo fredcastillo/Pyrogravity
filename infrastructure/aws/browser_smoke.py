@@ -1,8 +1,10 @@
 """Exercise scientific selectors, charts and pagination in a real browser."""
 import argparse
+import csv
 import json
 from pathlib import Path
 from urllib.parse import parse_qs, urljoin, urlsplit
+from xml.etree import ElementTree
 from playwright.sync_api import sync_playwright, expect
 
 
@@ -14,18 +16,67 @@ def verify_analysis_links(page, home_url):
         link = selector.nth(index)
         expected_psi = link.locator("xpath=ancestor::li[1]").locator(".published-analysis-title span").inner_text()
         link.click()
-        analysis = parse_qs(urlsplit(page.url).query)["analysis"][0]
+        path = urlsplit(page.url).path
+        assert path.startswith("/estudios/"), page.url
+        analysis = path.split("/")[-1]
         visited.add(analysis)
-        expect(page.locator("#science-analysis")).to_have_value(analysis)
-        expect(page.locator("#science-result")).to_be_visible()
-        expect(page.locator("#science-description")).to_contain_text(expected_psi)
-        expect(page.locator("#science-chart circle").first).to_be_attached()
-        expect(page.locator("#science-source")).to_contain_text("SHA-256")
-        expect(page.locator("#science-source a")).to_have_attribute(
+        expect(page.locator("#resultados")).to_be_visible()
+        expect(page.locator(".study-hero")).to_contain_text(expected_psi)
+        expect(page.locator(".study-chart circle").first).to_be_attached()
+        expect(page.locator("#fuentes")).to_contain_text("SHA-256")
+        expect(page.locator("#fuentes a")).to_have_attribute(
             "href", f"https://psi.nasa.gov/physci/repo/data/investigations/{expected_psi}",
         )
         page.goto(home_url)
     assert visited == {"bass-ii", "flex", "flame-design", "cfi-g", "spice"}
+
+
+def verify_study_features(page, home_url):
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(urljoin(home_url, "/estudios/spice?cohorte=available"))
+    cohort = page.get_by_label("Configuración o cohorte")
+    expect(cohort).to_have_value("available")
+    group = page.get_by_role("combobox", name="Combustible", exact=True)
+    group_value = group.locator("option").nth(1).get_attribute("value")
+    assert group_value
+    group.select_option(group_value)
+    assert parse_qs(urlsplit(page.url).query) == {"cohorte": ["available"], "grupo": [group_value]}
+    page.reload()
+    expect(cohort).to_have_value("available")
+    expect(group).to_have_value(group_value)
+    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+    assert not page.evaluate(r"""() => performance.getEntriesByType('resource')
+        .some(entry => /nasa-flame-design|three\.module/.test(entry.name))""")
+    page.locator(".study-column-choice summary").click()
+    page.get_by_role("checkbox", name="Combustible", exact=True).check()
+    expect(page.get_by_role("columnheader", name="Combustible", exact=True)).to_be_visible()
+    page.locator(".study-table tbody summary").first.click()
+    expect(page.locator(".study-table tbody dl").first).to_be_visible()
+    with page.expect_download() as pending:
+        page.get_by_role("button", name="Descargar CSV").click()
+    with Path(pending.value.path()).open(newline="", encoding="utf-8-sig") as handle:
+        rows = list(csv.DictReader(handle))
+    assert rows
+    assert all(row["fuel"] == group_value and row["pyrogravity_cohort"] == "available"
+               and len(row["pyrogravity_sha256"]) == 64 for row in rows)
+    with page.expect_download() as pending:
+        page.get_by_role("button", name="Descargar gráfica SVG").click()
+    saved = ElementTree.parse(pending.value.path()).getroot()
+    assert saved.tag == "{http://www.w3.org/2000/svg}svg"
+    page.get_by_role("button", name="¿De dónde salen los datos?").click()
+    expect(page.locator(".study-lookup-answer")).to_contain_text("NASA PSI-107")
+    page.goto(urljoin(home_url, "/estudios/bass-ii"))
+    page.get_by_role("button", name="¿Cómo hicieron el experimento?").click()
+    expect(page.get_by_role("textbox", name="Pregunta para el copiloto")).to_have_value("¿Cómo hicieron el experimento?")
+    if urlsplit(home_url).hostname == "127.0.0.1":
+        path = "**/api/v1/ai/query"
+        page.route(path, lambda route: route.fulfill(status=503, json={}))
+        with page.expect_request(lambda request: request.url.endswith("/api/v1/ai/query")) as request:
+            page.get_by_role("button", name="Enviar pregunta").click()
+        assert request.value.post_data_json["question"] == "Metodología de BASS-II"
+        page.unroute(path)
+    page.set_viewport_size({"width": 1280, "height": 1000})
+    page.goto(home_url)
 
 
 def verify_home_layout(page):
@@ -66,10 +117,7 @@ def verify(url, executable=None, screenshots=None, command_center=False):
             page.get_by_role("link", name="Abrir comparador", exact=True).click()
             expect(page.locator("#dataset")).to_have_value("bass_ii")
             page.goto(url, wait_until="networkidle")
-            page.locator(".published-analysis-list li").filter(has_text="Combustión de gotas en FLEX").get_by_role(
-                "link", name="Ver resultado y procedencia",
-            ).click()
-            expect(page.locator("#science-analysis")).to_have_value("flex")
+            page.get_by_role("link", name="Abrir el Atlas").click()
         search = page.get_by_role("searchbox", name="Buscar en el catálogo")
         expect(search).to_be_enabled()
         search.fill("psi-69")
@@ -77,6 +125,11 @@ def verify(url, executable=None, screenshots=None, command_center=False):
         expect(page.locator("#catalog-source")).to_have_attribute("href", "https://psi.nasa.gov/physci/repo/data/investigations/PSI-69")
         first_row = page.locator("#catalog-rows th").first
         expect(first_row).to_have_text("1")
+        page.locator("#catalog-rows button").first.click()
+        expect(page.get_by_role("dialog")).to_be_visible()
+        expect(page.get_by_role("heading", name="Fila 1 del CSV")).to_be_visible()
+        page.get_by_role("button", name="Cerrar", exact=True).click()
+        expect(page.get_by_role("dialog")).to_be_hidden()
         page.locator("#catalog-next").click()
         expect(first_row).to_have_text("11")
         page.locator("#catalog-previous").click()
@@ -111,6 +164,8 @@ def verify(url, executable=None, screenshots=None, command_center=False):
             page.set_viewport_size({"width": width, "height": 1000})
             assert page.evaluate("document.documentElement.scrollWidth <= innerWidth"), f"Horizontal overflow at {width}px"
             assert page.locator("main").bounding_box()["width"] >= width - 130
+            if width == 390:
+                expect(page.locator("#catalog-columns th:visible")).to_have_count(3)
             if screenshots:
                 Path(screenshots).mkdir(parents=True, exist_ok=True)
                 page.screenshot(path=str(Path(screenshots) / f"science-{width}.png"), full_page=True)
@@ -124,6 +179,7 @@ def verify(url, executable=None, screenshots=None, command_center=False):
             expect(page.get_by_role("heading", name="El fuego en microgravedad.")).to_be_visible()
             assert urlsplit(page.url).path == "/"
             verify_analysis_links(page, page.url)
+            verify_study_features(page, page.url)
             page.get_by_role("textbox", name="Pregunta para el copiloto").fill("Explica el resultado de los ensayos de combustión de antimateria de BASS-II.")
             page.get_by_role("button", name="Enviar pregunta").click()
             expect(page.get_by_text("Evidencia insuficiente", exact=True)).to_be_visible()

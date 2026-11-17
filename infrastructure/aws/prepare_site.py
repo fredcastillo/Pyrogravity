@@ -26,7 +26,15 @@ def prepare(output: Path, frontend: Path) -> None:
         hero_preloads.append(
             f'<link rel="preload" as="image" href="./{entry["file"]}" media="{media}" fetchpriority="high">'
         )
-    html = html.replace("</head>", "\n".join(hero_preloads) + "\n</head>")
+    # Study URLs share the home HTML but do not display the home photograph.
+    hero_links = "\n".join(hero_preloads)
+    html = html.replace(
+        "</head>",
+        f'<template id="home-image-preloads">\n{hero_links}\n</template>\n'
+        '<script>if (location.pathname === "/" || location.pathname === "/index.html") '
+        '{ document.head.append(document.getElementById("home-image-preloads").content.cloneNode(true)); }</script>\n'
+        '</head>',
+    )
     root_html = html.replace('"./assets/', '"/assets/command-center/assets/')
     root_html = root_html.replace(
         '</head>',

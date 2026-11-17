@@ -13,5 +13,11 @@ function handler(event) {
         };
     }
 
+    // The same index owns the versioned assets for the home and study routes.
+    if ((request.method === "GET" || request.method === "HEAD") &&
+        /^\/estudios\/[a-z0-9]+(?:-[a-z0-9]+)*\/?$/.test(request.uri)) {
+        request.uri = "/index.html";
+    }
+
     return request;
 }

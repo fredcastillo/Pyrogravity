@@ -32,7 +32,7 @@
 .observatory-navigation svg, .observatory-footer svg { width: 15px; height: 15px; }
 .observatory-menu { display: none; }
 .observatory-content { padding-block: clamp(24px, 4.3vw, 66px) 5rem; }
-.observatory :is(#main-content, #primer-experimento, #scientific-query) { scroll-margin-top: 89px; }
+.observatory :is(#main-content, #primer-experimento, #estudios, #scientific-query) { scroll-margin-top: 89px; }
 
 .published-hero { display: grid; grid-template-columns: minmax(0, 1.03fr) minmax(0, .97fr); align-items: center; gap: clamp(20px, 4.8vw, 72px); margin: 0 0 clamp(32px, 6vw, 86px); }
 .published-hero__copy { container-type: inline-size; min-width: 0; }
@@ -144,8 +144,9 @@
 .published-grid .panel__header { padding: clamp(16px, 2vw, 26px); }
 .published-grid .panel__header h2 { margin-top: 5px; font-size: clamp(1.14rem, 1.9vw, 1.6rem); color: #edf5fc; }
 .published-grid .panel__header > svg { color: var(--ice); }
-.published-catalog .published-analysis-list { list-style: none; margin: 0; padding-inline: clamp(16px, 2vw, 26px); }
-.published-analysis-list > li { padding: .95rem 0; border-top: 1px solid var(--observatory-line); }
+.published-catalog .published-analysis-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: .8rem; list-style: none; margin: 0; padding: 0 clamp(16px, 2vw, 26px) 1rem; }
+.published-analysis-list > li { min-width: 0; padding: 1rem; border: 1px solid var(--observatory-line); border-radius: 8px; background: #132030; }
+.published-analysis-list > li:focus-within { border-color: #8ccbe5; }
 .published-analysis-title { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .35rem .8rem; }
 .published-analysis-title h3 { margin: 0; font-size: clamp(.97rem, 1.35vw, 1.15rem); color: #edf6ff; }
 .published-analysis-title > span { font: .72rem "DM Mono", monospace; color: var(--ice); }
@@ -156,7 +157,7 @@
 .published-variables { display: flex; flex-wrap: wrap; gap: .36rem .45rem; margin: .65rem 0 .35rem; padding: 0; list-style: none; }
 .published-variables li { max-width: 100%; overflow-wrap: anywhere; padding: .25rem .45rem; border: 1px solid var(--observatory-line); border-radius: .26rem; background: #152233; font: .7rem "DM Mono", monospace; color: #bed6ee; }
 .published-variables li span { color: var(--ice); }
-.published-analysis-list .text-link { min-height: 30px; font-size: .74rem; }
+.published-analysis-list .text-link { min-height: 44px; font-size: .79rem; }
 .published-catalog > .published-analysis-link { margin: 0 clamp(16px, 2vw, 26px) clamp(16px, 2vw, 26px); }
 .published-catalog [role="status"], .published-status { padding-inline: 25px; color: var(--observatory-muted); }
 #scientific-query { min-width: 0; }
@@ -164,6 +165,8 @@
 .published-grid .ai-suggestions button { min-height: 34px; font-size: .72rem; color: #bedaed; }
 .published-grid .ai-query-form input { min-height: 45px; font-size: .88rem; }
 .published-grid .ai-query-note { font-size: .73rem; color: #a0b5cb; }
+.observatory .citation-summary { color: #d7ecfc; margin: .55rem 0; line-height: 1.6; }
+.observatory .evidence-card summary, .observatory .ai-answer summary { min-height: 40px; padding-top: .35rem; color: #a8def2; cursor: pointer; }
 .observatory-footer { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.5rem 0 3rem; border-top: 1px solid var(--observatory-line); font-size: .85rem; }
 .observatory-footer .observatory-brand { color: #f7f9fb; }
 

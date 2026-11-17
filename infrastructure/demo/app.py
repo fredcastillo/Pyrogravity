@@ -129,6 +129,10 @@ if WEB_DIR.is_dir():
     def dashboard():
         return FileResponse(WEB_DIR / "index.html")
 
+    @api.get("/estudios/{study}", include_in_schema=False)
+    def study_page(study: str):
+        return dashboard()
+
     api.mount("/assets", StaticFiles(directory=WEB_DIR / "assets"), name="assets")
 
 

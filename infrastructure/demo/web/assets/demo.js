@@ -18,10 +18,15 @@ const catalogSurface = document.querySelector(".catalog-table");
 const catalogScrollNote = document.querySelector("#catalog-scroll-note");
 const catalogPrevious = document.querySelector("#catalog-previous");
 const catalogNext = document.querySelector("#catalog-next");
+const catalogColumnOptions = document.querySelector("#catalog-column-options");
+const catalogRowDialog = document.querySelector("#catalog-row-dialog");
+const compactCatalog = window.matchMedia("(max-width: 730px)");
 const catalogTables = new Map();
 const pageSize = 10;
 let firstRow = 0;
 let catalogSummary = "";
+let chosenColumns = null;
+let renderedTable = "";
 const scopeLabels = {
   experimental_summary: "Resumen experimental",
   conditions_only: "Condiciones experimentales",
@@ -131,6 +136,25 @@ function textElement(tag, value) {
   return element;
 }
 
+function showCatalogRow(headers, row) {
+  document.querySelector("#catalog-row-title").textContent = `Fila ${row[0]} del CSV`;
+  document.querySelector("#catalog-row-fields").replaceChildren(...headers.map((label, index) => {
+    const field = document.createElement("div");
+    const value = row[index + 1];
+    field.append(textElement("dt", label), textElement("dd", value === "" || value == null ? "—" : value));
+    return field;
+  }));
+  catalogRowDialog.showModal();
+}
+
+function updateCatalogColumns() {
+  const defaults = index => !compactCatalog.matches || index < 2;
+  const visible = index => chosenColumns ? chosenColumns.has(index) : defaults(index);
+  for (const node of catalogSurface.querySelectorAll("[data-column]")) node.hidden = !visible(Number(node.dataset.column));
+  for (const input of catalogColumnOptions.querySelectorAll("input")) input.checked = visible(Number(input.value));
+  updateCatalogScrollNote();
+}
+
 function renderCatalog() {
   const table = catalogTables.get(catalogSelect.value);
   if (!table) {
@@ -145,18 +169,43 @@ function renderCatalog() {
 
   const headers = table.columns.map(({ label, unit }) =>
     unit && !label.includes(unit) ? `${label} (${unit})` : label);
-  catalogColumns.replaceChildren(...["Fila del CSV", ...headers].map((title) => {
+  document.querySelector("#catalog-table-caption").textContent = `${table.study} · ${table.label}`;
+  if (renderedTable !== table.id) {
+    renderedTable = table.id;
+    chosenColumns = null;
+    catalogColumnOptions.replaceChildren(textElement("legend", "Columnas visibles"), ...headers.map((title, index) => {
+      const label = document.createElement("label");
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.value = String(index);
+      label.append(input, textElement("span", title));
+      return label;
+    }));
+  }
+  catalogColumns.replaceChildren(...["Fila del CSV", ...headers].map((title, index) => {
     const heading = textElement("th", title);
     heading.scope = "col";
+    if (index) heading.dataset.column = String(index - 1);
     return heading;
   }));
 
   const lastRow = Math.min(firstRow + pageSize, table.rows.length);
   catalogRows.replaceChildren(...table.rows.slice(firstRow, lastRow).map((row) => {
     const line = document.createElement("tr");
-    const origin = textElement("th", row[0]);
+    const origin = document.createElement("th");
     origin.scope = "row";
-    line.append(origin, ...row.slice(1).map((cell) => textElement("td", cell === "" || cell === null ? "—" : cell)));
+    const button = textElement("button", row[0]);
+    button.type = "button";
+    button.className = "catalog-row-number";
+    button.setAttribute("aria-label", `Ver fila ${row[0]}`);
+    button.addEventListener("click", () => showCatalogRow(headers, row));
+    origin.append(button);
+    line.append(origin, ...headers.map((_, index) => {
+      const cell = row[index + 1];
+      const node = textElement("td", cell === "" || cell == null ? "—" : cell);
+      node.dataset.column = String(index);
+      return node;
+    }));
     return line;
   }));
 
@@ -173,7 +222,7 @@ function renderCatalog() {
   document.querySelector("#catalog-sha").textContent = table.source_sha256;
   catalogResults.hidden = false;
   catalogSurface.scrollLeft = 0;
-  updateCatalogScrollNote();
+  updateCatalogColumns();
 }
 
 function updateCatalogScrollNote() {
@@ -232,6 +281,11 @@ catalogSelect.addEventListener("change", () => {
   renderCatalog();
 });
 catalogSearch.addEventListener("input", filterCatalog);
+catalogColumnOptions.addEventListener("change", () => {
+  chosenColumns = new Set([...catalogColumnOptions.querySelectorAll("input:checked")].map(input => Number(input.value)));
+  updateCatalogColumns();
+});
+compactCatalog.addEventListener("change", updateCatalogColumns);
 new ResizeObserver(updateCatalogScrollNote).observe(catalogSurface);
 catalogPrevious.addEventListener("click", () => {
   firstRow -= pageSize;
