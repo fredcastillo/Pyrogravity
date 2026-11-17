@@ -1,0 +1,88 @@
+.study-page {
+  --study-surface: #101a28;
+  --study-border: #2a4058;
+  display: grid;
+  gap: clamp(.9rem, 2.4vw, 1.75rem);
+  color: #e9f2fb;
+}
+.study-page [id] { scroll-margin-top: 6rem; }
+.study-breadcrumb, .study-related { display: flex; flex-wrap: wrap; gap: .4rem 1rem; }
+.study-breadcrumb a, .study-related a, .study-link {
+  display: inline-flex; align-items: center; gap: .35rem; min-height: 42px;
+  color: var(--ice); text-decoration: underline; text-underline-offset: .23em;
+}
+.study-breadcrumb svg, .study-related svg, .study-link svg, .study-page button svg { width: 16px; height: 16px; flex: none; }
+.study-hero {
+  padding: clamp(1.2rem, 3vw, 2.65rem) clamp(1.2rem, 4vw, 4rem);
+  border: 1px solid var(--study-border); border-radius: 12px;
+  background: radial-gradient(ellipse at 92% 15%, #203c52, #132132 42%, #0d1623 90%);
+}
+.study-hero h1 { max-width: 22ch; margin: .65rem 0; font-size: clamp(2.2rem, 5vw, 5.1rem); line-height: 1; letter-spacing: -.055em; overflow-wrap: anywhere; }
+.study-hero p:not(.editorial-label) { max-width: 62ch; margin: .7rem 0 1.1rem; font-size: clamp(1rem, 2vw, 1.2rem); color: #bfd0e4; }
+.study-hero nav { display: flex; flex-wrap: wrap; gap: .5rem .65rem; }
+.study-hero nav a {
+  display: inline-flex; align-items: center; min-height: 44px; padding: .4rem .7rem;
+  border: 1px solid #43627c; border-radius: .4rem; color: #def2ff; font-size: .86rem;
+}
+.study-hero nav a:hover { background: #24445f; }
+.study-controls, .study-card, .study-query .copilot-panel {
+  min-width: 0; padding: clamp(.9rem, 2.4vw, 2rem);
+  border: 1px solid var(--study-border); border-radius: 12px; background: var(--study-surface);
+}
+.study-controls { display: flex; flex-wrap: wrap; align-items: end; gap: .65rem 1rem; }
+.study-controls > label { min-width: min(11rem, 100%); max-width: 100%; display: grid; gap: .3rem; font-size: .86rem; font-weight: 700; }
+.study-controls p, .study-controls > input { width: 100%; margin: 0; }
+.study-page select, .study-page button, .study-controls > input {
+  min-height: 44px; padding: .45rem .7rem; color: #e9f5ff; background: #15263a;
+  border: 1px solid #46627c; border-radius: 6px; font: inherit; font-size: .83rem;
+}
+.study-page button { display: inline-flex; align-items: center; justify-content: center; gap: .43rem; font-weight: 750; cursor: pointer; }
+.study-page button:hover:not(:disabled), .study-tools button[aria-pressed="true"] { background: #26465f; border-color: #91c6e0; }
+.study-page button:disabled { opacity: .5; cursor: default; }
+.study-tools { display: flex; flex-wrap: wrap; gap: .55rem; }
+.study-controls .study-tools { margin-inline-start: auto; }
+.study-section-heading { display: flex; flex-wrap: wrap; gap: .8rem 1rem; justify-content: space-between; align-items: end; margin-block-end: 1rem; }
+.study-card h2 { margin: 0 0 .45rem; font-size: clamp(1.35rem, 2.65vw, 2rem); color: #edf6ff; }
+.study-card p { color: #bbcee1; line-height: 1.55; }
+.study-section-heading p { margin: 0; }
+.study-chart { margin: 0; padding: .6rem; border: 1px solid #263b53; border-radius: 9px; background: #0b1421; }
+.study-chart svg { display: block; width: 100%; max-height: 520px; }
+.study-chart figcaption { margin: .55rem .35rem .2rem; color: #b9cde0; font-size: .9rem; line-height: 1.55; }
+.study-column-choice { margin-bottom: .8rem; color: #e1ecfa; }
+.study-column-choice > summary, .study-table td, .study-table th { padding: .65rem .55rem; }
+.study-page summary { cursor: pointer; color: #b6e5f8; }
+.study-column-choice fieldset { display: flex; flex-wrap: wrap; gap: .4rem 1rem; margin: 0; padding: .6rem; border: 1px solid var(--study-border); border-radius: 5px; }
+.study-column-choice label { display: inline-flex; align-items: center; gap: .5rem; min-height: 42px; font-size: .88rem; }
+.study-column-choice input { width: 17px; height: 17px; accent-color: #72ccea; }
+.study-table-scroll { width: 100%; overflow-x: auto; border: 1px solid var(--study-border); border-radius: 8px; }
+.study-table table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.study-table td, .study-table th { text-align: start; vertical-align: top; color: #dae9f7; border-bottom: 1px solid #2a4058; overflow-wrap: anywhere; }
+.study-table thead { background: #1d3045; color: #e8f4ff; }
+.study-table tbody tr:nth-child(even) { background: #142236; }
+.study-table th { font-size: .81rem; }
+.study-table td { font-size: .86rem; padding-top: .85rem; }
+.study-table th[scope="row"] summary { display: list-item; min-height: 34px; padding-top: .2rem; }
+.study-table dl { display: grid; gap: .5rem; min-width: min(16rem, 36vw); margin: .5rem 0; font-weight: 450; }
+.study-table dt { color: #a5c1db; overflow-wrap: anywhere; }
+.study-table dd { margin: .2rem 0 0; overflow-wrap: anywhere; max-width: 42ch; }
+.study-pagination { display: flex; justify-content: space-between; align-items: center; gap: .25rem; margin-top: .75rem; font-size: .8rem; }
+.study-evidence-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(.8rem, 2vw, 1.5rem); }
+.study-method-list { padding-inline-start: 1.2rem; color: #c9daeb; line-height: 1.65; }
+.study-method-list li + li { margin-top: .6rem; }
+.study-source dt { color: #bdd4ea; font-size: .78rem; font-weight: 700; }
+.study-source dd { margin: .4rem 0 .8rem; overflow-wrap: anywhere; }
+.study-lookup-answer { margin-top: 1rem; padding: .75rem; border-inline-start: 3px solid #83cbe4; background: #0b1421; }
+.study-lookup-answer p { margin: 0; }
+.study-lookup-answer a { color: #b6e7ff; text-decoration: underline; }
+.study-query .copilot-panel { padding: 0; }
+.study-query .panel__header { padding: 1.25rem; }
+.study-query .panel__header h2 { font-size: clamp(1.12rem, 2.4vw, 1.65rem); }
+.study-query .ai-query-form button { min-width: 44px; }
+@media (max-width: 680px) {
+  .study-evidence-grid { grid-template-columns: minmax(0, 1fr); }
+  .study-controls { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .study-controls .study-tools { margin: 0; }
+  .study-table th, .study-table td { padding-inline: .4rem; }
+  .study-table th[scope="row"] { min-width: 5.4rem; }
+  .study-table dl { min-width: 9.5rem; }
+}

@@ -2,11 +2,13 @@ import { AlertTriangle, BookOpen, CheckCircle2, Database, ExternalLink, FileBarC
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import type { AiResponse, AiSupportStatus, HydratedChart, ResolvedCitation, ValidatedChartPoint } from '../contracts/ai'
 import { AiHttpError, buildAiQuery, queryAi } from '../services/ai'
+import { spanishCitationSummary, studyQuestion } from '../studyQuestions'
 
 interface AiCopilotProps {
   experimentId: string
   experimentName: string
   aiContext?: { experimentIds: string[]; variables: string[] }
+  studySource?: string
 }
 
 const statusCopy: Record<AiSupportStatus, { label: string; detail: string; icon: typeof CheckCircle2 }> = {
@@ -59,10 +61,14 @@ function ValidatedChart({ chart }: { chart: HydratedChart }) {
 
 function CitationCard({ citation }: { citation: ResolvedCitation }) {
   const url = safeExternalUrl(citation.url)
-  return <article className="evidence-card"><div className="evidence-card__icon">{citation.kind === 'document' ? <BookOpen /> : <Database />}</div><div><span>{citation.kind === 'document' ? 'Fuente documental' : 'Fuente científica'}</span><strong>{citation.title}</strong><p className="citation-snippet">“{citation.snippet}”</p><dl><div><dt>Fuente</dt><dd>{citation.source}</dd></div><div><dt>Página</dt><dd>{citation.page ?? 'No aplica'}</dd></div>{citation.measurement && <><div><dt>Cifra</dt><dd>{citation.measurement.value} {citation.measurement.unit}</dd></div><div><dt>Procedencia</dt><dd>{provenanceCopy[citation.measurement.provenance]}</dd></div></>}</dl>{url ? <a href={url} target="_blank" rel="noreferrer">Abrir fuente <ExternalLink /></a> : <small>URL no válida</small>}</div></article>
+  const summary = spanishCitationSummary(citation)
+  return <article className="evidence-card"><div className="evidence-card__icon">{citation.kind === 'document' ? <BookOpen /> : <Database />}</div><div><span>{citation.kind === 'document' ? 'Fuente documental' : 'Fuente científica'}</span><strong>{citation.title}</strong>
+    {summary ? <><p className="citation-summary">{summary}</p><details><summary>Ver cita original</summary><p className="citation-snippet">“{citation.snippet}”</p></details></> :
+      <p className="citation-snippet">“{citation.snippet}”</p>}
+    <dl><div><dt>Fuente</dt><dd>{citation.source}</dd></div><div><dt>Página</dt><dd>{citation.page ?? 'No aplica'}</dd></div>{citation.measurement && <><div><dt>Cifra</dt><dd>{citation.measurement.value} {citation.measurement.unit}</dd></div><div><dt>Procedencia</dt><dd>{provenanceCopy[citation.measurement.provenance]}</dd></div></>}</dl>{url ? <a href={url} target="_blank" rel="noreferrer">Abrir fuente <ExternalLink /></a> : <small>URL no válida</small>}</div></article>
 }
 
-export function AiCopilot({ experimentId, experimentName, aiContext }: AiCopilotProps) {
+export function AiCopilot({ experimentId, experimentName, aiContext, studySource }: AiCopilotProps) {
   const [question, setQuestion] = useState('')
   const [response, setResponse] = useState<AiResponse | null>(null)
   const [error, setError] = useState<{ status: number; code: string; message: string; requestId?: string } | null>(null)
@@ -78,8 +84,13 @@ export function AiCopilot({ experimentId, experimentName, aiContext }: AiCopilot
     const controller = new AbortController(); abortRef.current = controller
     setLoading(true); setError(null); setResponse(null)
     try {
-      const request = buildAiQuery(question, { experimentIds: aiContext?.experimentIds ?? [], variables: aiContext?.variables ?? [], chartPreference: 'line' })
-      setResponse(await queryAi(request, controller.signal)); setQuestion('')
+      const request = buildAiQuery(studySource ? studyQuestion(question, experimentName) : question, { experimentIds: aiContext?.experimentIds ?? [], variables: aiContext?.variables ?? [], chartPreference: 'line' })
+      const next = await queryAi(request, controller.signal)
+      if (studySource && next.citations.some(citation => citation.source !== studySource)) {
+        setError({ status: 0, code: 'FUERA_DEL_ESTUDIO', message: `La respuesta no pudo verificarse con las fuentes de ${experimentName}. Pregunta por este estudio o usa la consulta general.` })
+        return
+      }
+      setResponse(next); setQuestion('')
     } catch (cause) {
       if ((cause as Error).name !== 'AbortError') setError(cause instanceof AiHttpError
         ? { status: cause.status, code: cause.code, message: cause.message, requestId: cause.requestId }
@@ -90,11 +101,13 @@ export function AiCopilot({ experimentId, experimentName, aiContext }: AiCopilot
   const currentStatus = response ? statusCopy[response.status] : null
   const StatusIcon = currentStatus?.icon
   const catalogQuery = experimentId === 'catalogo'
+  const suggestions = studySource ? ['¿Qué investigaron?', '¿Cómo hicieron el experimento?', '¿Qué descubrieron?', 'Fuentes'] : catalogQuery ? catalogQuestions : experimentQuestions
+  const summaries = [...new Set(response?.citations.map(spanishCitationSummary).filter(Boolean))]
   return <section className="panel copilot-panel copilot-panel--contract" aria-labelledby="ai-copilot-title">
     <div className="panel__header"><div><p className="eyebrow">Biblioteca científica</p><h2 id="ai-copilot-title">Consulta científica verificable</h2></div><Sparkles aria-hidden="true" /></div>
     {catalogQuery ? <p className="published-query-intro">Escribe el nombre de un estudio o pregunta por sus objetivos, método o resultados. Abre las citas para consultar la fuente.</p> :
       <div className="ai-context"><span>Investigación seleccionada</span><strong>{experimentName}</strong><small>{aiContext ? `Ensayos: ${aiContext.experimentIds.join(', ')} · variables: ${aiContext.variables.join(', ')}` : 'La consulta se limita a las fuentes documentales disponibles.'}</small></div>}
-    <div className="ai-suggestions" aria-label="Preguntas sugeridas">{(catalogQuery ? catalogQuestions : experimentQuestions).map((suggestion) => <button type="button" key={suggestion} onClick={() => setQuestion(suggestion)}>{suggestion}</button>)}</div>
+    <div className="ai-suggestions" aria-label="Preguntas sugeridas">{suggestions.map((suggestion) => <button type="button" key={suggestion} onClick={() => setQuestion(suggestion)}>{suggestion}</button>)}</div>
     <form className="ai-query-form" onSubmit={ask}><label htmlFor="copilot-question" className="sr-only">Pregunta para el copiloto</label><input id="copilot-question" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder={catalogQuery ? '¿Qué te gustaría investigar?' : `Pregunta sobre ${experimentName}…`} aria-describedby="ai-query-note" /><button type="submit" disabled={!question.trim() || loading} aria-label="Enviar pregunta">{loading ? <span className="ai-spinner" /> : <Send />}</button></form>
     <small id="ai-query-note" className="ai-query-note">{catalogQuery ? 'Puedes escribir sin tildes. Incluye el nombre del estudio si buscas un hallazgo concreto.' : 'El alcance de la respuesta depende de las fuentes disponibles.'}</small>
     {loading && <div className="ai-loading" role="status"><span /><div><strong>Buscando evidencia</strong><small>Consultando las fuentes disponibles…</small></div></div>}
@@ -102,7 +115,9 @@ export function AiCopilot({ experimentId, experimentName, aiContext }: AiCopilot
     {response && currentStatus && StatusIcon && <div className="ai-response" data-status={response.status} data-provenance={response.provenance}>
       {response.provenance === 'demo' && <div className="ai-demo-banner"><AlertTriangle /><strong>DEMOSTRACIÓN · contenido no científico</strong></div>}
       <header className="ai-response__status"><StatusIcon /><div><strong>{currentStatus.label}</strong><span>{currentStatus.detail}</span></div><small>{provenanceCopy[response.provenance]}</small></header>
-      <div className="ai-answer"><Sparkles /><div><p>{response.answer}</p>{response.limitations.length > 0 && <div className="ai-limitations-inline"><strong>Limitaciones</strong><ul>{response.limitations.map((item) => <li key={item}>{item}</li>)}</ul></div>}</div></div>
+      <div className="ai-answer"><Sparkles /><div>{summaries.length ? <><strong>Resumen en español</strong>{summaries.map(text => <p key={text}>{text}</p>)}
+        <details><summary>Ver respuesta con los pasajes originales</summary><p>{response.answer}</p></details></> : <p>{response.answer}</p>}
+        {response.limitations.length > 0 && <div className="ai-limitations-inline"><strong>Limitaciones</strong><ul>{response.limitations.map((item) => <li key={item}>{item}</li>)}</ul></div>}</div></div>
       {response.claims.length > 0 && <section className="ai-section"><div className="ai-section__title"><CheckCircle2 /><h3>Afirmaciones y citas</h3><span>{response.claims.length}</span></div><ol className="claim-list">{response.claims.map((claim) => <li key={claim.id}><p>{claim.text}</p><div className="claim-citations">{claim.citation_ids.map((id) => { const citation = citationMap.get(id); return citation ? <span key={id} className={`citation-chip citation-chip--${citation.kind}`}>{citation.kind === 'document' ? <BookOpen /> : <Database />}{citation.title}{citation.page ? ` · p. ${citation.page}` : ''}</span> : <span key={id} className="citation-chip citation-chip--missing"><ShieldAlert />Cita {id} no recibida</span> })}</div></li>)}</ol></section>}
       {response.citations.length > 0 && <section className="ai-section"><div className="ai-section__title"><Database /><h3>Citas resueltas</h3><span>{response.citations.length}</span></div><div className="evidence-grid">{response.citations.map((citation) => <CitationCard key={citation.id} citation={citation} />)}</div></section>}
       {response.charts.length > 0 && <section className="ai-section"><div className="ai-section__title"><FileBarChart /><h3>Gráficos validados</h3><span>{response.charts.length}</span></div><div className="chart-spec-list">{response.charts.map((chart) => <article key={chart.id} className="chart-spec-card"><div><FileBarChart /><span>{chart.type} · {provenanceCopy[chart.provenance]}</span></div><h4>{chart.title}</h4><ValidatedChart chart={chart} />{chart.limitations.length > 0 && <ul className="chart-limitations">{chart.limitations.map((item) => <li key={item}>{item}</li>)}</ul>}</article>)}</div></section>}

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { AiCopilot } from '../components/AiCopilot'
 import { FeaturedExperiment } from '../components/FeaturedExperiment'
 import { scientificCatalogUrl } from '../scientificCatalog'
+import { getStudy, variableNames } from '../studies'
 import flame from '../assets/nasa-flame-design.webp'
 import smallFlame from '../assets/nasa-flame-design-small.webp'
 
@@ -12,14 +13,6 @@ interface Analysis {
   psi_code: string
   description: string
   variables: { name: string; unit: string }[]
-}
-
-const editorial: Record<string, [string, string]> = {
-  'bass-ii': ['CO₂ en BASS-II', 'Compara la concentración de CO₂ al inicio y al final de los ensayos.'],
-  flex: ['Combustión de gotas en FLEX', 'Explora la duración, el diámetro inicial de la gota y la presión ambiente.'],
-  'flame-design': ['Presión en Flame Design', 'Compara los cambios de presión en configuraciones de llama normal e inversa.'],
-  'cfi-g': ['Duración en CFI-G', 'Consulta cuánto duró la combustión por configuración y tipo de terminación.'],
-  spice: ['Flujos en SPICE', 'Explora los ajustes del flujo de aire y combustible por boquilla y tipo de combustible.'],
 }
 
 export function PublishedCenter() {
@@ -49,7 +42,8 @@ export function PublishedCenter() {
           <h1 id="home-title">El fuego en <span>microgravedad.</span></h1>
           <p>Mira cómo arde una llama en órbita, compara ensayos y sigue cada medición hasta el archivo de NASA.</p>
           <div className="published-hero__actions">
-            <a className="published-primary" href={scientificCatalogUrl('catalog-title')}>Abrir el Atlas <ArrowRight aria-hidden="true" /></a>
+            <a className="published-primary" href="#estudios">Explorar estudios <ArrowRight aria-hidden="true" /></a>
+            <a className="published-secondary" href={scientificCatalogUrl('catalog-title')}>Abrir el Atlas</a>
             <a className="published-secondary" href="#primer-experimento">Ver un experimento</a>
           </div>
         </div>
@@ -69,7 +63,7 @@ export function PublishedCenter() {
       </section>
       <FeaturedExperiment />
       <div className="published-grid">
-        <section className="panel published-catalog" aria-labelledby="published-analysis-title">
+        <section id="estudios" className="panel published-catalog" aria-labelledby="published-analysis-title">
           <div className="panel__header">
             <div><p className="eyebrow">Datos experimentales</p><h2 id="published-analysis-title">Análisis científicos</h2></div>
             <Database aria-hidden="true" />
@@ -79,18 +73,18 @@ export function PublishedCenter() {
           {analyses?.length === 0 && <p role="status">No hay análisis publicados disponibles.</p>}
           <ul className="published-analysis-list">
             {analyses?.map((item) => {
-              const [title, description] = editorial[item.analysis_id] ?? [item.analysis_name, item.description]
+              const study = getStudy(item.analysis_id)
               return <li key={item.analysis_id}>
-                <div className="published-analysis-title"><h3>{title}</h3><span>{item.psi_code}</span></div>
-                <p>{description}</p>
+                <div className="published-analysis-title"><h3>{study?.name ?? item.analysis_name}</h3><span>{item.psi_code}</span></div>
+                <p>{study?.description ?? item.description}</p>
                 <div className="published-analysis-actions">
-                  <a className="text-link" href={scientificCatalogUrl('science-title', { analysis: item.analysis_id })}>
+                  <a className="text-link" href={study ? `/estudios/${item.analysis_id}` : scientificCatalogUrl('science-title', { analysis: item.analysis_id })}>
                     Ver resultado y procedencia <ArrowRight aria-hidden="true" />
                   </a>
                   <details>
                     <summary>Variables y unidades</summary>
                     <ul className="published-variables" aria-label="Variables y unidades">
-                      {item.variables.map(({ name, unit }) => <li key={name}>{name} <span>{unit}</span></li>)}
+                      {item.variables.map(({ name, unit }) => <li key={name}>{study?.axes.find(axis => axis.key === name)?.label ?? variableNames[name] ?? name} <span>{unit === '% by vol' ? '% en volumen' : unit === 'percentage points' ? 'puntos porcentuales' : unit}</span></li>)}
                     </ul>
                   </details>
                 </div>

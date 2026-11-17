@@ -161,6 +161,18 @@ tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
 .catalog-table th:first-child { position: sticky; left: 0; min-width: 4.15rem; box-shadow: 1px 0 #375370; }
 .catalog-table th[scope="row"] { background: #101f35; color: var(--cyan); font: .82rem/1.5 var(--mono); }
 .catalog-table tr:nth-child(even) th[scope="row"] { background: #14253d; }
+.catalog-table caption { padding: .45rem .75rem; text-align: start; }
+.catalog-row-number { min-width: 44px; min-height: 44px; padding: .2rem .4rem; color: var(--cyan); }
+.catalog-column-chooser fieldset { display: flex; flex-wrap: wrap; gap: .4rem .9rem; padding: .6rem; border: 1px solid var(--line); border-radius: 6px; }
+.catalog-column-chooser label { display: inline-flex; flex-direction: row; gap: .5rem; align-items: center; min-height: 40px; }
+.catalog-column-chooser input { width: 16px; height: 16px; min-height: 0; accent-color: var(--cyan); }
+#catalog-row-dialog { width: min(38rem, calc(100% - 1.5rem)); max-height: 85dvh; padding: 1.1rem; border: 1px solid #53728d; border-radius: .6rem; background: var(--panel); color: var(--text); }
+#catalog-row-dialog::backdrop { background: #050917c9; }
+#catalog-row-dialog dl { display: grid; gap: .6rem; overflow-wrap: anywhere; }
+#catalog-row-dialog dt { color: var(--cyan); }
+#catalog-row-dialog dd { margin-inline-start: 0; }
+#catalog-row-dialog form { display: flex; justify-content: flex-end; }
+#science-study-link { margin-bottom: .65rem; }
 .catalog-pagination { display: flex; align-items: center; justify-content: space-between; gap: .4rem; margin-top: .95rem; font-size: .78rem; color: var(--muted); }
 .catalog-pagination span { text-align: center; }
 .source { margin-top: .9rem; font-size: .83rem; overflow-wrap: anywhere; }
@@ -192,6 +204,7 @@ meter::-moz-meter-bar { background: var(--cyan); }
   .hero-content { padding-block: 1.8rem 1.6rem; }
   h1 { font-size: clamp(1.95rem, 10.6vw, 2.65rem); }
   .hero-stats { margin-top: 1.2rem; }
+  .catalog-table th, .catalog-table td { min-width: 4.8rem; padding-inline: .42rem; }
   .catalog-controls, form { grid-template-columns: 1fr; }
   .catalog-pagination button { padding-inline: .55rem; }
   .catalog-pagination span { line-height: 1.25; }

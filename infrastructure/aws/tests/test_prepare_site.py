@@ -36,6 +36,7 @@ class PrepareSiteTests(unittest.TestCase):
             self.assertIn('content="/assets/science/index.html"', html)
             self.assertIn('href="/assets/command-center/assets/mobile.webp" media="(max-width: 650px)"', html)
             self.assertIn('href="/assets/command-center/assets/photo.webp" media="(width > 650px)"', html)
+            self.assertIn('<template id="home-image-preloads">', html)
             self.assertEqual((output / 'assets/catalog.json').read_bytes(), (demo / 'assets/catalog.json').read_bytes())
             atlas = (output / 'assets/science/index.html').read_text()
             self.assertIn('src="../demo.js"', atlas)

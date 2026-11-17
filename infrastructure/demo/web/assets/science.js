@@ -41,6 +41,10 @@
   function render() {
     const [x, y, xu, yu, group] = specs[result.analysis_id];
     const selected = rows.filter(row => !$('group').value || (row[group] ?? 'Sin etiqueta') === $('group').value);
+    const selection = new URLSearchParams();
+    if ($('cohort').value !== 'all') selection.set('cohorte', $('cohort').value);
+    if ($('group').value) selection.set('grupo', $('group').value);
+    $('study-link').href = `/estudios/${result.analysis_id}${selection.size ? '?' + selection : ''}`;
     const visible = selected.slice(page * 12, (page + 1) * 12);
     $('columns').replaceChildren();
     ['Fila de origen', group, `${x} (${xu})`, `${y} (${yu})`, 'Alertas'].forEach(label => cell($('columns'), label, 'th'));

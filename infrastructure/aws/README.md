@@ -56,6 +56,8 @@ GitHub Actions solicita una sesión temporal de AWS por OIDC. La variable de rep
 
 La portada React se abre en `/` y el enlace **Inicio** del Atlas vuelve a esa ruta. La función `pyrogravity-legacy-home` de CloudFront, asociada en `viewer-request` al comportamiento por defecto, redirige las antiguas portadas del directorio de publicaciones a `/`. Su código está en `redirect_legacy_home.js`. La interfaz consulta el catálogo científico y envía preguntas a `POST /api/v1/ai/query` en el mismo origen. Durante la publicación se prueba el contrato y su respuesta de evidencia insuficiente. La activación del proveedor real y del corpus se prepara según [el runbook de IA](../../docs/operacion-ia.md).
 
+Esa función sirve `/index.html` para `/estudios/{id}` conservando la ruta y los filtros en la barra de direcciones. Mantén publicada la versión de la función incluida en este repositorio al habilitar las fichas. La [guía del Atlas](../../docs/atlas-cientifico.md) documenta la metodología visible, las descargas y las pruebas de navegador.
+
 ### Publicación opcional del motor privado
 
 El job de IA prueba sus contratos, permisos PostgreSQL y adaptador privado; después

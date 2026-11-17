@@ -38,7 +38,7 @@ export function PublishedShell({ children }: PropsWithChildren) {
             aria-controls="observatory-navigation" aria-label={open ? 'Cerrar navegación' : 'Abrir navegación'}
             onClick={() => setOpen(!open)}>{open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}</button>
           <nav id="observatory-navigation" className="observatory-navigation" data-open={open} aria-label="Navegación principal">
-            {destinations.map(([label, id]) => <a key={id} href={scientificCatalogUrl(id)}>{label}</a>)}
+            {destinations.map(([label, id]) => <a key={id} href={id === 'science-title' ? '/#estudios' : scientificCatalogUrl(id)} onClick={() => setOpen(false)}>{label}</a>)}
             <a className="observatory-query-link" href="#scientific-query" onClick={() => setOpen(false)}>Consultar fuentes <ArrowUpRight aria-hidden="true" /></a>
           </nav>
         </div>
