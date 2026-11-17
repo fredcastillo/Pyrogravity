@@ -16,7 +16,7 @@ const statusCopy: Record<AiSupportStatus, { label: string; detail: string; icon:
 }
 
 const provenanceCopy = { live: 'Datos en vivo', cache: 'Caché validada', demo: 'Demostración', degraded: 'Servicio degradado' } as const
-const catalogQuestions = ['¿Qué investigó BASS-II?', '¿Por qué se estudian las gotas de combustible?', '¿Qué fuentes describen FLEX?']
+const catalogQuestions = ['BASS-II', '¿Qué investigó BASS-II?', 'Metodología de BASS-II']
 const experimentQuestions = ['¿Qué evidencia respalda la extinción?', 'Resume las limitaciones', '¿Qué gráfico validado está disponible?']
 
 function safeExternalUrl(value: string) {
@@ -92,11 +92,11 @@ export function AiCopilot({ experimentId, experimentName, aiContext }: AiCopilot
   const catalogQuery = experimentId === 'catalogo'
   return <section className="panel copilot-panel copilot-panel--contract" aria-labelledby="ai-copilot-title">
     <div className="panel__header"><div><p className="eyebrow">Biblioteca científica</p><h2 id="ai-copilot-title">Consulta científica verificable</h2></div><Sparkles aria-hidden="true" /></div>
-    {catalogQuery ? <p className="published-query-intro">Pregunta por los experimentos y abre las citas para leer los documentos de origen.</p> :
+    {catalogQuery ? <p className="published-query-intro">Escribe el nombre de un estudio o pregunta por sus objetivos, método o resultados. Abre las citas para consultar la fuente.</p> :
       <div className="ai-context"><span>Investigación seleccionada</span><strong>{experimentName}</strong><small>{aiContext ? `Ensayos: ${aiContext.experimentIds.join(', ')} · variables: ${aiContext.variables.join(', ')}` : 'La consulta se limita a las fuentes documentales disponibles.'}</small></div>}
     <div className="ai-suggestions" aria-label="Preguntas sugeridas">{(catalogQuery ? catalogQuestions : experimentQuestions).map((suggestion) => <button type="button" key={suggestion} onClick={() => setQuestion(suggestion)}>{suggestion}</button>)}</div>
     <form className="ai-query-form" onSubmit={ask}><label htmlFor="copilot-question" className="sr-only">Pregunta para el copiloto</label><input id="copilot-question" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder={catalogQuery ? '¿Qué te gustaría investigar?' : `Pregunta sobre ${experimentName}…`} aria-describedby="ai-query-note" /><button type="submit" disabled={!question.trim() || loading} aria-label="Enviar pregunta">{loading ? <span className="ai-spinner" /> : <Send />}</button></form>
-    <small id="ai-query-note" className="ai-query-note">El alcance de la respuesta depende de las fuentes disponibles.</small>
+    <small id="ai-query-note" className="ai-query-note">{catalogQuery ? 'Puedes escribir sin tildes. Incluye el nombre del estudio si buscas un hallazgo concreto.' : 'El alcance de la respuesta depende de las fuentes disponibles.'}</small>
     {loading && <div className="ai-loading" role="status"><span /><div><strong>Buscando evidencia</strong><small>Consultando las fuentes disponibles…</small></div></div>}
     {error && <div className="ai-error" role="alert"><ShieldAlert /><div><strong>{error.code}{error.status ? ` · HTTP ${error.status}` : ''}</strong><p>{error.message}</p>{error.requestId && <small>request_id · <code>{error.requestId}</code></small>}</div></div>}
     {response && currentStatus && StatusIcon && <div className="ai-response" data-status={response.status} data-provenance={response.provenance}>

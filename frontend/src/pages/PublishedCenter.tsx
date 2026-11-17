@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowUpRight, Database, ExternalLink } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, Database } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { AiCopilot } from '../components/AiCopilot'
 import { FeaturedExperiment } from '../components/FeaturedExperiment'
@@ -23,7 +23,7 @@ const editorial: Record<string, [string, string]> = {
 }
 
 export function PublishedCenter() {
-  const [analyses, setAnalyses] = useState<Analysis[]>([])
+  const [analyses, setAnalyses] = useState<Analysis[] | null>(null)
   const [error, setError] = useState(false)
 
   useEffect(() => {
@@ -75,23 +75,23 @@ export function PublishedCenter() {
             <Database aria-hidden="true" />
           </div>
           {error && <p className="published-status" role="alert">No se pudo cargar la lista. Abre el Atlas para consultar el catálogo.</p>}
-          {!error && !analyses.length && <p role="status">Cargando análisis…</p>}
+          {!error && analyses === null && <p role="status">Cargando análisis…</p>}
+          {analyses?.length === 0 && <p role="status">No hay análisis publicados disponibles.</p>}
           <ul className="published-analysis-list">
-            {analyses.map((item) => {
+            {analyses?.map((item) => {
               const [title, description] = editorial[item.analysis_id] ?? [item.analysis_name, item.description]
               return <li key={item.analysis_id}>
                 <div className="published-analysis-title"><h3>{title}</h3><span>{item.psi_code}</span></div>
                 <p>{description}</p>
                 <div className="published-analysis-actions">
                   <a className="text-link" href={scientificCatalogUrl('science-title', { analysis: item.analysis_id })}>
-                    Abrir análisis <ArrowRight aria-hidden="true" />
+                    Ver resultado y procedencia <ArrowRight aria-hidden="true" />
                   </a>
                   <details>
-                    <summary>Variables y procedencia</summary>
+                    <summary>Variables y unidades</summary>
                     <ul className="published-variables" aria-label="Variables y unidades">
                       {item.variables.map(({ name, unit }) => <li key={name}>{name} <span>{unit}</span></li>)}
                     </ul>
-                    <a className="text-link" href={`/api/v1/analyses/${encodeURIComponent(item.analysis_id)}`}>Ver resultado y procedencia <ExternalLink aria-hidden="true" /></a>
                   </details>
                 </div>
               </li>

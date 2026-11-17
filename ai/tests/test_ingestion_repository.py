@@ -224,6 +224,11 @@ def test_private_repository_is_idempotent_and_rejects_reextraction() -> None:
             assert hybrid_hits[0].page_number == 1
             assert all(hit.document_sha256 == plan.document.sha256 for hit in hybrid_hits)
             assert search_vector(db, FakeEmbedder().embed_query("methanol"), "0" * 64) == ()
+            scope = (plan.source.source_id,)
+            assert search_text(db, "Methanol combustion", source_ids=scope) == text_hits
+            assert search_text(db, "Methanol droplet combustion", source_ids=scope) == relaxed_text_hits
+            assert search_hybrid(db, "Methanol combustion", FakeEmbedder(), plan.config_hash,
+                                 source_ids=("nasa:other",)) == ()
             evaluation_set = EvaluationSet(
                 source_id=plan.source.source_id,
                 document_sha256=plan.document.sha256,

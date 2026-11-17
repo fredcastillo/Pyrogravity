@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+from dataclasses import replace
 from pathlib import Path
 from uuid import UUID
 
@@ -50,10 +51,11 @@ class FakeRetriever:
         self.hits = hits
         self.calls = 0
 
-    def retrieve(self, question: str, *, limit: int) -> tuple[PassageHit, ...]:
+    def retrieve(self, question: str, *, limit: int, source_ids: tuple[str, ...] = ()) -> tuple[PassageHit, ...]:
         self.calls += 1
+        self.lookup = (question, source_ids)
         assert 1 <= limit <= 8 and question
-        return self.hits
+        return tuple(hit for hit in self.hits if not source_ids or hit.source_id in source_ids)
 
 
 class FakeSelector:
@@ -95,6 +97,60 @@ def test_combined_answer_is_partial_when_only_one_evidence_type_exists() -> None
     assert response.status == "partially_supported"
     assert all(claim.kind == "numeric" for claim in response.claims)
     assert any("Falta evidencia" in item for item in response.limitations)
+
+
+@pytest.mark.parametrize("question", [
+    "BASS-II", "Estudio BASS-II", "¿Qué investigó BASS-II?", "¿Qué investigo BASS-II?",
+    "¿Qué es el estudio BASS-II?", "Investigación BASS-II", "Háblame sobre BASS-II.",
+    "  ¿QUÉ SE INVESTIGÓ EN BASS–II?  ", "PSI-25", "Burning and Suppression of Solids - II",
+])
+def test_document_shorthand_scopes_retrieval_and_preserves_citation(question: str) -> None:
+    hit = replace(passage("Objectives of the solid-fuel experiment"), source_id="ntrs:20160000593")
+    retriever = FakeRetriever((passage(), hit))
+    query = request(question=question, query_type=None, experiment_ids=[], scientific_results=[], chart_refs=[])
+    result = AiEngine(retriever, FakeSelector()).answer(query)
+    assert retriever.lookup == (
+        "What were the main objectives of the BASS-II investigation?", ("ntrs:20160000593",),
+    )
+    assert result.status == "supported"
+    assert [item.citation.source_id for item in result.evidence] == ["ntrs:20160000593"]
+
+
+@pytest.mark.parametrize(("question", "expected"), [
+    ("Resultados de BASS-II", "main findings and conclusions"),
+    ("¿Qué descubrieron en BASS-II?", "main findings and conclusions"),
+    ("Metodología de BASS-II", "apparatus and procedures"),
+    ("¿Cómo hicieron la investigación BASS-II?", "apparatus and procedures"),
+    ("Fuentes de BASS-II", "publication documents"),
+    ("¿De dónde salen los datos de BASS-II?", "publication documents"),
+    ("¿Quién realizó el estudio BASS-II?", "named authors or institutions"),
+])
+def test_document_intent_uses_requested_facet(question: str, expected: str) -> None:
+    retriever = FakeRetriever()
+    query = request(question=question, query_type=None, experiment_ids=[], scientific_results=[], chart_refs=[])
+    AiEngine(retriever, FakeSelector()).answer(query)
+    assert expected in retriever.lookup[0]
+    assert retriever.lookup[1] == ("ntrs:20160000593",)
+
+
+def test_specific_premise_is_preserved_and_other_sources_cannot_answer() -> None:
+    question = "Explica el resultado de los ensayos de combustión de antimateria de BASS-II."
+    retriever = FakeRetriever((replace(passage(), source_id="ntrs:20130014061"),))
+    query = request(question=question, query_type=None, experiment_ids=[], scientific_results=[], chart_refs=[])
+    result = AiEngine(retriever, FakeSelector()).answer(query)
+    assert retriever.lookup == (question, ("ntrs:20160000593",))
+    assert result.status == "insufficient_evidence"
+    assert not result.evidence
+
+
+def test_ambiguous_document_question_asks_for_study() -> None:
+    retriever = FakeRetriever((passage(),))
+    query = request(question="¿Qué investigaron?", query_type=None, experiment_ids=[],
+                    scientific_results=[], chart_refs=[])
+    result = AiEngine(retriever, FakeSelector()).answer(query)
+    assert retriever.calls == 0
+    assert result.status == "insufficient_evidence"
+    assert "nombre o código" in result.answer
 
 
 def test_numeric_question_without_selected_trials_abstains() -> None:

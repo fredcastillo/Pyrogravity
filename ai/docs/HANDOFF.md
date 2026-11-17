@@ -1,5 +1,12 @@
 # Handoff de Pyrogravity AI
 
+## Consultas por nombre de estudio · 2026-11-16
+
+- `core/document_queries.py` reconoce nombres, códigos PSI y preguntas breves de BASS-II y FLEX. Las variantes con y sin tilde llegan a la misma búsqueda. Si falta el estudio en una pregunta de seguimiento, se pide identificarlo.
+- `core/engine.py` y `retrieval/{runtime,postgres}.py` acotan la recuperación textual y vectorial a las fuentes de los estudios reconocidos. El selector sigue recibiendo las premisas completas cuando la pregunta formula una condición específica. Las citas siguen apuntando a pasajes literales.
+- La cobertura documental registrada es BASS-II (NTRS 20160000593) y FLEX (NTRS 20130014061). Para añadir estudios a la detección, registra sus alias con su fuente documental revisada y prueba una consulta por título y una abstención. Los cinco análisis por CSV se consultan desde el Atlas.
+- Verificación local de contratos y motor disponible en `ai/tests/test_engine.py`. La prueba de PostgreSQL en `ai/tests/test_ingestion_repository.py` cubre el alcance de la búsqueda y requiere la base desechable de CI. La confirmación final depende de la prueba pública del commit que publique AWS.
+
 ## Integración AWS · 2026-11-16
 
 Evaluación del parche y Rerank contra la generación activa: 10/10 casos correctos, incluidos 8 positivos con el pasaje esperado y 2 abstenciones. Reporte reproducible en `../evaluations/aws-20261116-engine.json`. Es una muestra acotada; no demuestra exactitud general. Las pruebas de API pública se repiten después del despliegue.

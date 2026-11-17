@@ -51,6 +51,7 @@ _JOINS = """FROM ai.document_chunks c
             JOIN ai.kb_active a ON a.generation_id = m.generation_id
             JOIN ai.kb_generations g ON g.id = a.generation_id"""
 _REVIEWED = "d.review_status = 'reviewed' AND s.catalog_status = 'catalog_verified'"
+_SOURCE_SCOPE = "s.source_key = ANY(COALESCE(%s::text[], ARRAY[s.source_key]))"
 
 
 def _limit(value: int) -> int:
@@ -98,30 +99,32 @@ def _require_reader(connection: psycopg.Connection) -> None:
         raise RetrievalError("A dedicated non-owner AI reader role is required")
 
 
-def search_text(connection: psycopg.Connection, query: str, *, limit: int = 8) -> tuple[PassageHit, ...]:
+def search_text(connection: psycopg.Connection, query: str, *, limit: int = 8,
+                source_ids: tuple[str, ...] = ()) -> tuple[PassageHit, ...]:
     """Use the English full-text index as a measured retrieval baseline."""
     question = _query(query)
     count = _limit(limit)
+    scope = list(source_ids) or None
     _require_reader(connection)
     statement = f"""{_SELECT},
         ts_rank_cd(c.content_tsv, plainto_tsquery('english', %s)) AS score
         {_JOINS}
-        WHERE {_REVIEWED}
+        WHERE {_REVIEWED} AND {_SOURCE_SCOPE}
           AND c.content_tsv @@ plainto_tsquery('english', %s)
         ORDER BY score DESC, c.id ASC LIMIT %s"""
     try:
-        rows = connection.execute(statement, (question, question, count)).fetchall()
+        rows = connection.execute(statement, (question, scope, question, count)).fetchall()
         if not rows:
             relaxed_query = _relaxed_terms_query(question)
             if relaxed_query:
                 relaxed_statement = f"""{_SELECT},
                     ts_rank_cd(c.content_tsv, to_tsquery('english', %s)) AS score
                     {_JOINS}
-                    WHERE {_REVIEWED}
+                    WHERE {_REVIEWED} AND {_SOURCE_SCOPE}
                       AND c.content_tsv @@ to_tsquery('english', %s)
                     ORDER BY score DESC, c.id ASC LIMIT %s"""
                 rows = connection.execute(
-                    relaxed_statement, (relaxed_query, relaxed_query, count)
+                    relaxed_statement, (relaxed_query, scope, relaxed_query, count)
                 ).fetchall()
     except psycopg.Error:
         raise RetrievalError("AI text retrieval failed") from None
@@ -134,6 +137,7 @@ def search_vector(
     config_hash: str,
     *,
     limit: int = 8,
+    source_ids: tuple[str, ...] = (),
 ) -> tuple[PassageHit, ...]:
     """Search only vectors produced by one explicit embedding configuration."""
     count = _limit(limit)
@@ -150,10 +154,11 @@ def search_vector(
         e.embedding OPERATOR(extensions.<=>) %s::extensions.vector AS distance
         {_JOINS}
         JOIN ai.chunk_embeddings e ON e.chunk_id = c.id
-        WHERE {_REVIEWED} AND e.config_hash = %s AND g.config_hash = e.config_hash
+        WHERE {_REVIEWED} AND {_SOURCE_SCOPE}
+          AND e.config_hash = %s AND g.config_hash = e.config_hash
         ORDER BY distance ASC, c.id ASC LIMIT %s"""
     try:
-        rows = connection.execute(statement, (literal, config_hash, count)).fetchall()
+        rows = connection.execute(statement, (literal, list(source_ids) or None, config_hash, count)).fetchall()
     except psycopg.Error:
         raise RetrievalError("AI vector retrieval failed") from None
     return _hits(rows, vector=True)
@@ -190,10 +195,12 @@ def search_hybrid(
     config_hash: str,
     *,
     limit: int = 8,
+    source_ids: tuple[str, ...] = (),
 ) -> tuple[PassageHit, ...]:
     """Retrieve document evidence from both baselines without generating answers."""
     question = _query(query)
     count = _limit(limit)
-    text_hits = search_text(connection, question, limit=count)
-    vector_hits = search_vector(connection, embedder.embed_query(question), config_hash, limit=count)
+    text_hits = search_text(connection, question, limit=count, source_ids=source_ids)
+    vector_hits = search_vector(connection, embedder.embed_query(question), config_hash,
+                                limit=count, source_ids=source_ids)
     return reciprocal_rank_fusion(text_hits, vector_hits, limit=count)

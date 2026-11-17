@@ -139,6 +139,9 @@ form button:hover:enabled { color: #10141d; background: #ffdaa8; border-color: #
 .secondary-link { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; white-space: nowrap; }
 #message, #science-status { margin-top: .9rem; font-size: .9rem; min-height: 1.25rem; }
 #science-description { margin-block: .8rem; }
+.science-provenance { margin-block: .8rem 1rem; padding: .85rem 1rem; background: #0a1323; border: 1px solid var(--line); border-radius: .72rem; }
+.science-provenance .source { margin: .35rem 0 0; }
+.science-provenance a { font-weight: 700; }
 #science-result label { max-width: 28rem; }
 #results h2 { margin-bottom: 1rem; }
 

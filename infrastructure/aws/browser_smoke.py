@@ -2,7 +2,30 @@
 import argparse
 import json
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 from playwright.sync_api import sync_playwright, expect
+
+
+def verify_analysis_links(page, home_url):
+    selector = page.get_by_role("link", name="Ver resultado y procedencia")
+    expect(selector).to_have_count(5)
+    visited = set()
+    for index in range(5):
+        link = selector.nth(index)
+        expected_psi = link.locator("xpath=ancestor::li[1]").locator(".published-analysis-title span").inner_text()
+        link.click()
+        analysis = parse_qs(urlsplit(page.url).query)["analysis"][0]
+        visited.add(analysis)
+        expect(page.locator("#science-analysis")).to_have_value(analysis)
+        expect(page.locator("#science-result")).to_be_visible()
+        expect(page.locator("#science-description")).to_contain_text(expected_psi)
+        expect(page.locator("#science-chart circle").first).to_be_attached()
+        expect(page.locator("#science-source")).to_contain_text("SHA-256")
+        expect(page.locator("#science-source a")).to_have_attribute(
+            "href", f"https://psi.nasa.gov/physci/repo/data/investigations/{expected_psi}",
+        )
+        page.goto(home_url)
+    assert visited == {"bass-ii", "flex", "flame-design", "cfi-g", "spice"}
 
 
 def verify(url, executable=None, screenshots=None, command_center=False):
@@ -15,7 +38,7 @@ def verify(url, executable=None, screenshots=None, command_center=False):
         page.goto(url, wait_until="networkidle")
         if page.locator('meta[name="pyrogravity-science"]').count():
             expect(page.get_by_role("heading", name="El fuego en microgravedad.")).to_be_visible()
-            expect(page.get_by_role("link", name="Abrir análisis")).to_have_count(5)
+            verify_analysis_links(page, url)
             featured = page.locator(".feature-chart")
             expect(featured.get_by_text("4,30 s", exact=True)).to_be_visible()
             featured.locator("label").filter(has_text="BASS-II").click()
@@ -25,7 +48,9 @@ def verify(url, executable=None, screenshots=None, command_center=False):
             page.get_by_role("link", name="Abrir comparador", exact=True).click()
             expect(page.locator("#dataset")).to_have_value("bass_ii")
             page.goto(url, wait_until="networkidle")
-            page.locator(".published-analysis-list li").filter(has_text="Combustión de gotas en FLEX").get_by_role("link", name="Abrir análisis").click()
+            page.locator(".published-analysis-list li").filter(has_text="Combustión de gotas en FLEX").get_by_role(
+                "link", name="Ver resultado y procedencia",
+            ).click()
             expect(page.locator("#science-analysis")).to_have_value("flex")
         search = page.get_by_role("searchbox", name="Buscar en el catálogo")
         expect(search).to_be_enabled()
@@ -74,7 +99,7 @@ def verify(url, executable=None, screenshots=None, command_center=False):
             page.set_viewport_size({"width": 1280, "height": 1000})
             page.get_by_role("link", name="Abrir Command Center").click()
             expect(page.get_by_role("heading", name="El fuego en microgravedad.")).to_be_visible()
-            expect(page.get_by_role("link", name="Abrir análisis")).to_have_count(5)
+            verify_analysis_links(page, page.url)
             page.get_by_role("textbox", name="Pregunta para el copiloto").fill("Explica el resultado de los ensayos de combustión de antimateria de BASS-II.")
             page.get_by_role("button", name="Enviar pregunta").click()
             expect(page.get_by_text("Evidencia insuficiente", exact=True)).to_be_visible()

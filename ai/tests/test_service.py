@@ -17,7 +17,7 @@ EXAMPLE = Path(__file__).resolve().parents[1] / "contracts" / "v1_1" / "AiQueryR
 
 
 class EmptyRetriever:
-    def retrieve(self, question: str, *, limit: int) -> tuple:
+    def retrieve(self, question: str, *, limit: int, source_ids: tuple[str, ...] = ()) -> tuple:
         return ()
 
 

@@ -103,12 +103,15 @@
       </div>
       <p id="science-status" role="status">Cargando análisis…</p>
       <div id="science-result" hidden>
-        <p id="science-description"></p>
+        <h3 id="science-description"></h3>
+        <section class="science-provenance" aria-labelledby="science-provenance-title">
+          <h4 id="science-provenance-title">Procedencia de los datos</h4>
+          <p id="science-source" class="source"></p>
+        </section>
         <label>Grupo <select id="science-group"></select></label>
         <figure><svg id="science-chart" viewBox="0 0 700 350" role="img" aria-label="Dispersión de mediciones científicas"></svg><figcaption id="science-caption"></figcaption></figure>
         <div class="table-wrap" role="region" tabindex="0" aria-label="Mediciones del análisis"><table><thead><tr id="science-columns"></tr></thead><tbody id="science-rows"></tbody></table></div>
         <div class="catalog-pagination"><button id="science-prev" type="button">Anterior</button><span id="science-page"></span><button id="science-next" type="button">Siguiente</button></div>
-        <p id="science-source" class="source"></p>
         <details><summary>Criterios y advertencias del análisis</summary><pre id="science-method"></pre></details>
         <a id="science-download" target="_blank" rel="noopener">Ver resultado completo (JSON)</a>
       </div>
