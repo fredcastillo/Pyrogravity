@@ -28,7 +28,8 @@
         <a href="#science-title">Análisis y gráficas</a>
         <a href="#comparison-title">Comparar ensayos</a>
       </nav>
-      <a class="return-link" href="/"><span aria-hidden="true">←</span> Inicio</a>
+      <div class="atlas-actions"><button class="atlas-chat-nav" type="button" data-open-pyrogravity-chat aria-haspopup="dialog">Consultar fuentes</button>
+        <a class="return-link" href="/"><span aria-hidden="true">←</span> Inicio</a></div>
     </div>
   </header>
 
@@ -120,7 +121,11 @@
           <p id="science-source" class="source"></p>
         </section>
         <label>Grupo <select id="science-group"></select></label>
-        <figure><svg id="science-chart" viewBox="0 0 700 350" role="img" aria-label="Dispersión de mediciones científicas"></svg><figcaption id="science-caption"></figcaption></figure>
+        <div class="science-chart-mode" role="group" aria-label="Tipo de gráfica">
+          <button id="science-line" type="button" aria-pressed="true">Líneas por fila</button>
+          <button id="science-scatter" type="button" aria-pressed="false">Relación entre variables</button>
+        </div>
+        <figure><svg id="science-chart" viewBox="0 0 700 350" role="img" aria-labelledby="science-caption"></svg><figcaption id="science-caption"></figcaption></figure>
         <div class="table-wrap" role="region" tabindex="0" aria-label="Mediciones del análisis"><table><thead><tr id="science-columns"></tr></thead><tbody id="science-rows"></tbody></table></div>
         <div class="catalog-pagination"><button id="science-prev" type="button">Anterior</button><span id="science-page"></span><button id="science-next" type="button">Siguiente</button></div>
         <details><summary>Criterios y advertencias del análisis</summary><pre id="science-method"></pre></details>
@@ -152,6 +157,11 @@
       <p class="source"><a id="source" target="_blank" rel="noopener noreferrer"></a> <span id="source-file"></span></p>
     </section>
   </main>
+  <button id="atlas-chat-launch" type="button" data-open-pyrogravity-chat aria-haspopup="dialog" aria-label="Abrir chat científico">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20.5 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.2 0-2.4-.25-3.4-.75L4 20.5l1.25-4.6A8.5 8.5 0 1 1 20.5 11.5Z"/><path d="M8 11.5h8"/></svg>
+    <span>Pregunta a Pyrogravity</span>
+  </button>
+  <p id="atlas-chat-status" role="status"></p><div id="atlas-chat"></div>
   <footer class="atlas-footer"><span>Pyrogravity · Combustión en microgravedad</span><a href="#catalog-title">Volver al atlas ↑</a></footer>
 </body>
 </html>

@@ -44,6 +44,13 @@ def verify_study_features(page, home_url):
     page.reload()
     expect(cohort).to_have_value("available")
     expect(group).to_have_value(group_value)
+    expect(page.locator("[data-study-series]")).to_be_attached()
+    expect(page.locator(".study-chart svg")).to_have_attribute("data-view", "line")
+    page.get_by_role("button", name="Relación entre variables").click()
+    expect(page.locator(".study-chart svg")).to_have_attribute("data-view", "scatter")
+    expect(page.locator("[data-study-series]")).to_have_count(0)
+    page.get_by_role("button", name="Líneas por fila").click()
+    expect(page.locator("[data-study-series]")).to_be_attached()
     assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
     assert not page.evaluate(r"""() => performance.getEntriesByType('resource')
         .some(entry => /nasa-flame-design|three\.module/.test(entry.name))""")
@@ -66,15 +73,21 @@ def verify_study_features(page, home_url):
     page.get_by_role("button", name="¿De dónde salen los datos?").click()
     expect(page.locator(".study-lookup-answer")).to_contain_text("NASA PSI-107")
     page.goto(urljoin(home_url, "/estudios/bass-ii"))
-    page.get_by_role("button", name="¿Cómo hicieron el experimento?").click()
-    expect(page.get_by_role("textbox", name="Pregunta para el copiloto")).to_have_value("¿Cómo hicieron el experimento?")
+    page.get_by_role("button", name="Consultar estudio").click()
+    panel = page.get_by_role("dialog", name="Pyrogravity")
+    expect(panel).to_be_visible()
+    expect(panel.get_by_role("combobox", name="Estudio del chat")).to_have_value("bass-ii")
+    assert panel.bounding_box()["width"] <= 390
     if urlsplit(home_url).hostname == "127.0.0.1":
         path = "**/api/v1/ai/query"
         page.route(path, lambda route: route.fulfill(status=503, json={}))
         with page.expect_request(lambda request: request.url.endswith("/api/v1/ai/query")) as request:
-            page.get_by_role("button", name="Enviar pregunta").click()
+            panel.get_by_role("button", name="¿Cómo hicieron el experimento?").click()
         assert request.value.post_data_json["question"] == "Metodología de BASS-II"
+        expect(panel.get_by_text("La biblioteca tarda en responder", exact=False)).to_be_visible()
         page.unroute(path)
+    page.keyboard.press("Escape")
+    expect(panel).to_be_hidden()
     page.set_viewport_size({"width": 1280, "height": 1000})
     page.goto(home_url)
 
@@ -96,6 +109,19 @@ def verify_home_layout(page):
     page.set_viewport_size({"width": 1280, "height": 1000})
 
 
+def verify_chat(page, trigger):
+    trigger.click()
+    panel = page.get_by_role("dialog", name="Pyrogravity")
+    expect(panel).to_be_visible()
+    panel.get_by_role("combobox", name="Estudio del chat").select_option("")
+    panel.get_by_role("button", name="¿Qué estudios hay?").click()
+    expect(panel.get_by_text("Puedes explorar cinco análisis", exact=False).last).to_be_visible()
+    expect(panel.get_by_role("link", name="Flame Design").last).to_have_attribute("href", urljoin(page.url, "/estudios/flame-design"))
+    page.keyboard.press("Escape")
+    expect(panel).to_be_hidden()
+    expect(trigger).to_be_focused()
+
+
 def verify(url, executable=None, screenshots=None, command_center=False):
     errors = []
     results = []
@@ -107,6 +133,7 @@ def verify(url, executable=None, screenshots=None, command_center=False):
         if page.locator('meta[name="pyrogravity-science"]').count():
             expect(page.get_by_role("heading", name="El fuego en microgravedad.")).to_be_visible()
             verify_home_layout(page)
+            verify_chat(page, page.get_by_role("button", name="Consultar fuentes"))
             verify_analysis_links(page, url)
             featured = page.locator(".feature-chart")
             expect(featured.get_by_text("4,30 s", exact=True)).to_be_visible()
@@ -120,6 +147,8 @@ def verify(url, executable=None, screenshots=None, command_center=False):
             page.get_by_role("link", name="Abrir el Atlas").click()
         search = page.get_by_role("searchbox", name="Buscar en el catálogo")
         expect(search).to_be_enabled()
+        if command_center:
+            verify_chat(page, page.get_by_role("button", name="Consultar fuentes"))
         search.fill("psi-69")
         expect(page.locator("#catalog-study")).to_have_text("PSI-69")
         expect(page.locator("#catalog-source")).to_have_attribute("href", "https://psi.nasa.gov/physci/repo/data/investigations/PSI-69")
@@ -180,9 +209,11 @@ def verify(url, executable=None, screenshots=None, command_center=False):
             assert urlsplit(page.url).path == "/"
             verify_analysis_links(page, page.url)
             verify_study_features(page, page.url)
-            page.get_by_role("textbox", name="Pregunta para el copiloto").fill("Explica el resultado de los ensayos de combustión de antimateria de BASS-II.")
-            page.get_by_role("button", name="Enviar pregunta").click()
-            expect(page.get_by_text("Evidencia insuficiente", exact=True)).to_be_visible()
+            page.get_by_role("button", name="Abrir chat científico").click()
+            panel = page.get_by_role("dialog", name="Pyrogravity")
+            panel.get_by_role("textbox", name="Escribe tu pregunta").fill("Explica el resultado de los ensayos de combustión de antimateria de BASS-II.")
+            panel.get_by_role("button", name="Enviar mensaje").click()
+            expect(panel.get_by_text("No encontré una fuente que respalde ese detalle", exact=False)).to_be_visible(timeout=25000)
         assert not errors, errors
         browser.close()
     print(json.dumps(results))

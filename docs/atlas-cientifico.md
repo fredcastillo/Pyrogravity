@@ -11,9 +11,17 @@ La portada enlaza las fichas de [BASS-II](https://pyrogravity.iclexi.tech/estudi
 
 ## Consultas y evidencia
 
-BASS-II y FLEX aceptan preguntas documentales en su propia ficha. La interfaz añade el estudio cuando falta y acepta citas resueltas de la fuente correspondiente. Los resúmenes editoriales en español solo se muestran cuando coinciden la fuente, la página y el contenido del pasaje revisado. La cita literal se conserva para comprobarlo. Para pasajes sin resumen editorial se presenta el original.
+La burbuja de chat aparece en la portada, las fichas y el Atlas. El botón **Consultar fuentes** abre la misma conversación. Puedes empezar con un saludo, pedir el catálogo o preguntar por la combustión en microgravedad. El menú **Estudio** fija el alcance de los seguimientos, como «¿Cómo hicieron el experimento?». Una mención explícita de otro estudio actualiza la selección. La conversación se conserva en esa pestaña y **Nueva conversación** la reinicia.
+
+BASS-II y FLEX aceptan preguntas documentales. La interfaz añade el estudio cuando falta y acepta citas resueltas de la fuente correspondiente. Los resúmenes editoriales en español solo se muestran cuando coinciden la fuente, la página y el contenido del pasaje revisado. La cita literal se conserva para comprobarlo. Para pasajes sin resumen editorial se presenta el original. Si falta evidencia, el chat pide un estudio, ensayo o variable más precisa.
 
 Flame Design, CFI-G y SPICE tienen una consulta guiada que responde con el método, los resultados y la fuente de la ficha. La disponibilidad de preguntas documentales depende de incorporar sus publicaciones revisadas a la biblioteca.
+
+## Visualizaciones
+
+**Líneas por fila** conecta las mediciones observadas en el orden del CSV. El eje horizontal muestra números de fila y los intervalos pueden contener registros excluidos. **Relación entre variables** muestra las dos mediciones emparejadas como puntos. En una ficha puedes mover **Inspeccionar punto** con el teclado para leer el valor exacto. La descarga SVG conserva el modo seleccionado.
+
+El desplazamiento suave y las animaciones de botones, secciones y gráficas respetan la preferencia de movimiento reducido del dispositivo.
 
 ## Implementación y verificación
 

@@ -8,7 +8,11 @@
     'cfi-g': ['source_record', 'duration', 'fila (no tiempo)', 'sec', 'termination'],
     spice: ['air_rate_cm_s', 'fuel_rate_mg_s', 'cm/s', 'mg/s', 'fuel'],
   };
+  const axisNames = { initial_co2: 'CO₂ inicial', final_co2: 'CO₂ final', droplet_initial_diameter: 'Diámetro inicial', burn_time: 'Duración de combustión',
+    pinit_atm: 'Presión inicial', pfinal_atm: 'Presión final', source_record: 'Fila del CSV', duration: 'Duración registrada',
+    air_rate_cm_s: 'Flujo de aire', fuel_rate_mg_s: 'Flujo de combustible' };
   let result, rows = [], page = 0, generation = 0;
+  let chartMode = 'line';
   function option(select, value, label) { select.add(new Option(label, value)); }
   function cell(row, text, tag = 'td') {
     const node = document.createElement(tag); node.textContent = text ?? '—'; row.append(node);
@@ -58,7 +62,14 @@
     $('prev').disabled = page === 0; $('next').disabled = (page + 1) * 12 >= selected.length;
     $('status').textContent = selected.length ? `${rows.length} registros incluidos por el motor científico; ${selected.length} en el grupo seleccionado.` : 'Evidencia insuficiente para esta selección.';
     const chart = $('chart'); chart.replaceChildren();
-    const points = selected.filter(row => row[x] !== null && row[y] !== null && Number.isFinite(Number(row[x])) && Number.isFinite(Number(row[y])));
+    const horizontal = chartMode === 'line' ? 'source_record' : x;
+    const axis = horizontal === 'source_record' ? 'Fila del CSV' : `${axisNames[horizontal]} (${xu === '% by vol' ? '% en volumen' : xu})`;
+    const vertical = `${axisNames[y]} (${yu === '% by vol' ? '% en volumen' : yu})`;
+    const valid = value => value != null && String(value).trim() !== '' && Number.isFinite(Number(value));
+    const points = selected.filter(row => valid(row[horizontal]) && valid(row[y]));
+    if (chartMode === 'line') points.sort((a, b) => Number(a[horizontal]) - Number(b[horizontal]));
+    $('line').setAttribute('aria-pressed', String(chartMode === 'line'));
+    $('scatter').setAttribute('aria-pressed', String(chartMode === 'scatter'));
     function svg(tag, attrs, text) {
       const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
       Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
@@ -66,7 +77,7 @@
       chart.append(node); return node;
     }
     if (points.length) {
-      const xs = points.map(row => Number(row[x])), ys = points.map(row => Number(row[y]));
+      const xs = points.map(row => Number(row[horizontal])), ys = points.map(row => Number(row[y]));
       let xmin = Math.min(...xs), xmax = Math.max(...xs), ymin = Math.min(...ys), ymax = Math.max(...ys);
       if (xmin === xmax) { xmin -= 1; xmax += 1; } if (ymin === ymax) { ymin -= 1; ymax += 1; }
       for (let i = 0; i <= 4; i++) {
@@ -77,13 +88,19 @@
         svg('text', {x: 87, y: yTick + 5, 'text-anchor': 'end'}, (ymin + (ymax - ymin) * i / 4).toPrecision(4));
       }
       svg('path', {d: 'M96 20V290H648', fill: 'none', stroke: '#6685a5'});
-      points.forEach(row => {
-        const dot = svg('circle', {cx: 96 + (Number(row[x]) - xmin) / (xmax - xmin) * 552, cy: 290 - (Number(row[y]) - ymin) / (ymax - ymin) * 270, r: 4.7, fill: '#84e4f8', opacity: .78});
+      const coords = points.map(row => [96 + (Number(row[horizontal]) - xmin) / (xmax - xmin) * 552, 290 - (Number(row[y]) - ymin) / (ymax - ymin) * 270]);
+      if (chartMode === 'line' && coords.length > 1) {
+        const d = coords.map(([xPos, yPos], index) => `${index ? 'L' : 'M'}${xPos} ${yPos}`).join(' ');
+        svg('path', {d, fill: 'none', stroke: '#62acff', 'stroke-width': 9, opacity: .21, 'stroke-linejoin': 'round'});
+        svg('path', {d, fill: 'none', stroke: '#9eeeff', 'stroke-width': 2.5, pathLength: 1, class: 'science-series-line', 'stroke-linejoin': 'round'});
+      }
+      points.forEach((row, index) => {
+        const dot = svg('circle', {cx: coords[index][0], cy: coords[index][1], r: chartMode === 'line' ? 2.8 : 4.7, fill: '#84e4f8', opacity: .78});
         const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-        title.textContent = `Fila ${row.source_record} · ${row[group] ?? ''} · ${row[x]} ${xu}; ${row[y]} ${yu}`; dot.append(title);
+        title.textContent = `Fila ${row.source_record} · ${row[group] ?? ''} · ${vertical}: ${row[y]}`; dot.append(title);
       });
     }
-    $('caption').textContent = `X: ${x} (${xu}) · Y: ${y} (${yu}). ${points.length} puntos. Vista descriptiva; no implica causalidad ni equivalencia de condiciones.`;
+    $('caption').textContent = `${vertical} por ${axis}. ${points.length} puntos observados. ${chartMode === 'line' ? 'La línea sigue el orden de las filas del CSV.' : 'Cada punto muestra dos mediciones de la misma fila.'}`;
   }
   async function load() {
     const token = ++generation; $('result').hidden = true; $('status').textContent = 'Cargando resultado…';
@@ -106,6 +123,8 @@
   }
   $('analysis').addEventListener('change', load); $('cohort').addEventListener('change', selectCohort);
   $('group').addEventListener('change', () => { page = 0; render(); });
+  $('line').addEventListener('click', () => { chartMode = 'line'; render(); });
+  $('scatter').addEventListener('click', () => { chartMode = 'scatter'; render(); });
   $('prev').addEventListener('click', () => { page--; render(); });
   $('next').addEventListener('click', () => { page++; render(); });
   fetchJSON('/api/v1/analyses').then(catalog => {

@@ -17,6 +17,31 @@ export function reveal(elements: Iterable<Element>) {
   return () => { animation.revert() }
 }
 
+export function watchReveal(root: Element) {
+  if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  const revealed = new WeakSet<Element>()
+  const observer = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue
+      observer.unobserve(entry.target)
+      revealed.add(entry.target)
+      reveal([entry.target])
+    }
+  }, { threshold: 0.12 })
+  const register = (node: Element) => {
+    if (node.matches('[data-reveal]') && !revealed.has(node)) observer.observe(node)
+    node.querySelectorAll('[data-reveal]').forEach(element => {
+      if (!revealed.has(element)) observer.observe(element)
+    })
+  }
+  register(root)
+  const inserted = new MutationObserver(records => {
+    records.forEach(record => record.addedNodes.forEach(node => { if (node instanceof Element) register(node) }))
+  })
+  inserted.observe(root, { childList: true, subtree: true })
+  return () => { observer.disconnect(); inserted.disconnect() }
+}
+
 export function enableOrbitalField(canvas: HTMLCanvasElement) {
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
   const pointer = window.matchMedia('(any-pointer: fine)')

@@ -160,6 +160,35 @@ def test_numeric_question_without_selected_trials_abstains() -> None:
     assert response.claims == [] and response.evidence == []
 
 
+def test_documentary_question_with_numeric_vocabulary_uses_reviewed_passages() -> None:
+    query = request(question="Explícame por qué se estudia la presión", query_type=None,
+                    experiment_ids=[], scientific_results=[], chart_refs=[])
+    result = AiEngine(FakeRetriever((passage(),)), FakeSelector()).answer(query)
+    assert result.intent == "document_question"
+    assert result.status == "supported"
+
+
+def test_exact_row_without_scientific_context_still_abstains() -> None:
+    query = request(question="Explícame el valor exacto de presión en la fila 4", query_type=None,
+                    experiment_ids=[], scientific_results=[], chart_refs=[])
+    retriever = FakeRetriever((passage(),))
+    result = AiEngine(retriever, FakeSelector()).answer(query)
+    assert result.status == "insufficient_evidence"
+    assert retriever.calls == 0
+
+
+def test_unknown_intent_can_still_retrieve_evidence_about_microgravity() -> None:
+    class UnknownIntent:
+        def classify(self, question, *, scientific_available):
+            return "unknown"
+
+    query = request(question="Llamas en microgravedad", query_type=None,
+                    experiment_ids=[], scientific_results=[], chart_refs=[])
+    result = AiEngine(FakeRetriever((passage(),)), FakeSelector(), classifier=UnknownIntent()).answer(query)
+    assert result.intent == "document_question"
+    assert result.status == "supported"
+
+
 def test_passage_hash_mismatch_fails_closed() -> None:
     hit = passage()
     altered = copy.copy(hit)

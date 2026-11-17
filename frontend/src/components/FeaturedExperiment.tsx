@@ -57,7 +57,7 @@ export function FeaturedExperiment() {
   const unit = result?.dataset.unit === '% by vol' ? '% vol.' : result?.dataset.unit
 
   return (
-    <section className="feature-experiment" aria-labelledby="featured-title" id="primer-experimento">
+    <section className="feature-experiment" aria-labelledby="featured-title" id="primer-experimento" data-reveal>
       <div className="feature-experiment__intro">
         <p className="editorial-label">FLEX y BASS-II</p>
         <h2 id="featured-title">¿Qué muestran tres ensayos?</h2>

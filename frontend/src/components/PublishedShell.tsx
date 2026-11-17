@@ -2,7 +2,8 @@ import { ArrowUpRight, Menu, X } from 'lucide-react'
 import { useEffect, useRef, useState, type PropsWithChildren } from 'react'
 import mark from '../assets/pyrogravity-mark-small.webp'
 import { scientificCatalogUrl } from '../scientificCatalog'
-import { enableOrbitalField } from '../space/motion'
+import { enableOrbitalField, watchReveal } from '../space/motion'
+import { ChatWidget } from './ChatWidget'
 
 const destinations = [
   ['Tablas NASA', 'catalog-title'],
@@ -13,10 +14,14 @@ const destinations = [
 export function PublishedShell({ children }: PropsWithChildren) {
   const orbit = useRef<HTMLCanvasElement>(null)
   const menuButton = useRef<HTMLButtonElement>(null)
+  const main = useRef<HTMLElement>(null)
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
     if (orbit.current) return enableOrbitalField(orbit.current)
+  }, [])
+  useEffect(() => {
+    if (main.current) return watchReveal(main.current)
   }, [])
 
   return (
@@ -39,16 +44,18 @@ export function PublishedShell({ children }: PropsWithChildren) {
             onClick={() => setOpen(!open)}>{open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}</button>
           <nav id="observatory-navigation" className="observatory-navigation" data-open={open} aria-label="Navegación principal">
             {destinations.map(([label, id]) => <a key={id} href={id === 'science-title' ? '/#estudios' : scientificCatalogUrl(id)} onClick={() => setOpen(false)}>{label}</a>)}
-            <a className="observatory-query-link" href="#scientific-query" onClick={() => setOpen(false)}>Consultar fuentes <ArrowUpRight aria-hidden="true" /></a>
+            <button className="observatory-query-link" type="button" data-open-pyrogravity-chat aria-haspopup="dialog"
+              onClick={() => setOpen(false)}>Consultar fuentes <ArrowUpRight aria-hidden="true" /></button>
           </nav>
         </div>
       </header>
-      <main id="main-content">{children}</main>
+      <main id="main-content" ref={main}>{children}</main>
       <footer className="observatory-footer">
         <a className="observatory-brand" href="/"><img src={mark} alt="" width="28" height="28" /><span>Pyrogravity</span></a>
         <a href={scientificCatalogUrl('catalog-title')}>Explorar el catálogo</a>
         <a href="https://psi.nasa.gov/">Repositorio NASA PSI <ArrowUpRight aria-hidden="true" /></a>
       </footer>
+      <ChatWidget />
     </div>
   )
 }

@@ -1,6 +1,5 @@
 import { ArrowLeft, ArrowUpRight, Copy, Download } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { AiCopilot } from '../components/AiCopilot'
 import { scientificCatalogUrl } from '../scientificCatalog'
 import { getStudy, groupValue, makeCsv, measureLabel, studyIds, studies, valuesFor, variableNames, variableUnits, type StudyResult, type StudyRow } from '../studies'
 import './studyDetail.css'
@@ -10,6 +9,7 @@ const cohortLabels: Record<string, string> = {
 }
 const decimal = new Intl.NumberFormat('es', { maximumSignificantDigits: 4 })
 const perPage = 12
+const recordAxis = { key: 'source_record', label: 'Fila del CSV' }
 
 function display(value: unknown) {
   if (value == null || value === '') return '—'
@@ -50,6 +50,8 @@ function StudyResults({ id, data }: { id: string; data: StudyResult }) {
   const [message, setMessage] = useState('')
   const [manualLink, setManualLink] = useState(false)
   const [question, setQuestion] = useState('resultado')
+  const [view, setView] = useState<'line' | 'scatter'>(() => new URLSearchParams(location.search).get('grafica') === 'dispersion' ? 'scatter' : 'line')
+  const [highlight, setHighlight] = useState(0)
   const chart = useRef<SVGSVGElement>(null)
   const result = data.result
   const cohorts = Object.keys(result.configurations ?? result.cohorts ?? { all: true })
@@ -62,16 +64,23 @@ function StudyResults({ id, data }: { id: string; data: StudyResult }) {
   const group = groups.includes(selection.group) ? selection.group : ''
   const rows = group ? allRows.filter(row => groupValue(row, study.group.key) === group) : allRows
   const [x, y] = study.axes
+  const horizontal = view === 'line' ? recordAxis : x
   const fields = [study.group, ...study.axes.filter(axis => axis.key !== 'source_record'),
     ...Object.entries(variableNames).filter(([key]) => allRows.some(row => row[key] != null)).map(([key, label]) => ({ key, label, unit: variableUnits[key] }))]
   const fieldLabels = new Map(fields.map(field => [field.key, measureLabel(field)]))
   const selectedKeys = columns ?? study.axes.map(axis => axis.key)
   const visibleFields = fields.filter(field => selectedKeys.includes(field.key))
-  const points = rows.map(row => ({ row, x: number(row[x.key]), y: number(row[y.key]) }))
+  const points = rows.map(row => ({ row, x: number(row[horizontal.key]), y: number(row[y.key]) }))
     .filter(point => Number.isFinite(point.x) && Number.isFinite(point.y))
+  if (view === 'line') points.sort((a, b) => a.x - b.x)
   const [xmin, xmax] = bounds(points.map(point => point.x))
   const [ymin, ymax] = bounds(points.map(point => point.y))
-  const label = `${measureLabel(x)} frente a ${measureLabel(y)}`
+  const label = `${measureLabel(y)} por ${measureLabel(horizontal)}`
+  const plotted = points.map(point => ({ ...point, px: 78 + (point.x - xmin) / (xmax - xmin) * 576,
+    py: 278 - (point.y - ymin) / (ymax - ymin) * 232 }))
+  const trend = plotted.map((point, index) => `${index ? 'L' : 'M'}${point.px} ${point.py}`).join(' ')
+  const activeIndex = Math.min(highlight, Math.max(0, plotted.length - 1))
+  const active = plotted[activeIndex]
   const filename = `pyrogravity-${id}-${cohort}`
   const totalPages = Math.max(1, Math.ceil(rows.length / perPage))
   const records = rows.slice(page * perPage, (page + 1) * perPage)
@@ -87,6 +96,16 @@ function StudyResults({ id, data }: { id: string; data: StudyResult }) {
     setManualLink(false)
     setMessage('')
     setPage(0)
+    setHighlight(0)
+  }
+
+  function changeChart(next: 'line' | 'scatter') {
+    const url = new URL(window.location.href)
+    if (next === 'scatter') url.searchParams.set('grafica', 'dispersion')
+    else url.searchParams.delete('grafica')
+    window.history.replaceState(window.history.state, '', url)
+    setView(next)
+    setHighlight(0)
   }
 
   async function copyLink() {
@@ -123,38 +142,58 @@ function StudyResults({ id, data }: { id: string; data: StudyResult }) {
       {manualLink && <input aria-label="Enlace a la selección" readOnly value={window.location.href.split('#')[0]} onFocus={event => event.currentTarget.select()} />}
     </section>
 
-    <section id="resultados" className="study-card study-result" aria-labelledby="study-result-title">
+    <section id="resultados" className="study-card study-result" aria-labelledby="study-result-title" data-reveal>
       <div className="study-section-heading"><div><h2 id="study-result-title">Resultados</h2><p>{rows.length} de {allRows.length} registros de la selección · {cohortLabels[cohort] ?? cohort}</p></div>
         <button type="button" disabled={!points.length} onClick={exportChart}><Download aria-hidden="true" /> Descargar gráfica SVG</button>
       </div>
+      <div className="study-plot-controls" role="group" aria-label="Tipo de gráfica">
+        <button type="button" aria-pressed={view === 'line'} onClick={() => changeChart('line')}>Líneas por fila</button>
+        <button type="button" aria-pressed={view === 'scatter'} onClick={() => changeChart('scatter')}>Relación entre variables</button>
+      </div>
       {points.length ? <figure className="study-chart">
-        <svg ref={chart} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 354" role="img" aria-labelledby="study-chart-title study-chart-caption">
+        <svg ref={chart} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 354" role="img" aria-labelledby="study-chart-title study-chart-caption" data-view={view}>
           <title id="study-chart-title">{study.name} · {label}</title>
-          <rect width="680" height="354" rx="12" fill="#0b1421" />
+          <defs>
+            <linearGradient id="study-plot-background" x2="0%" y2="100%"><stop stopColor="#162d43" /><stop offset="100%" stopColor="#0a1321" /></linearGradient>
+            <linearGradient id="study-plot-line"><stop stopColor="#6cafff" /><stop offset="100%" stopColor="#b5fbff" /></linearGradient>
+          </defs>
+          <rect width="680" height="354" rx="12" fill="url(#study-plot-background)" />
           {Array.from({ length: 5 }, (_, step) => {
             const xx = 78 + step * 144
             const yy = 278 - step * 58
             return <g key={step} fontSize="14" fontFamily="system-ui" fill="#a9bdd1">
               <path d={`M78 ${yy}H654 M${xx} 46V278`} stroke="#263a51" />
-              <text x={xx} y="301" textAnchor="middle">{decimal.format(xmin + step * (xmax - xmin) / 4)}</text>
+              <text x={xx} y="301" textAnchor="middle">{decimal.format(view === 'line' ? Math.round(xmin + step * (xmax - xmin) / 4) : xmin + step * (xmax - xmin) / 4)}</text>
               <text x="68" y={yy + 5} textAnchor="end">{decimal.format(ymin + step * (ymax - ymin) / 4)}</text>
             </g>
           })}
           <path d="M78 46V278H654" fill="none" stroke="#64809a" />
           <g fill="#d0e2ef" fontFamily="system-ui" fontSize="15">
             <text x="78" y="26">{measureLabel(y)}</text>
-            <text x="366" y="331" textAnchor="middle">{measureLabel(x)}</text>
+            <text x="366" y="331" textAnchor="middle">{measureLabel(horizontal)}</text>
           </g>
-          {points.map(point => <circle key={point.row.source_record} cx={78 + (point.x - xmin) / (xmax - xmin) * 576}
-            cy={278 - (point.y - ymin) / (ymax - ymin) * 232} r="4" fill="#81d7f7" fillOpacity=".68">
-            <title>Fila {point.row.source_record} · {measureLabel(x)}: {display(point.row[x.key])} · {measureLabel(y)}: {display(point.row[y.key])}</title>
+          {view === 'line' && plotted.length > 1 && <g key={`${cohort}:${group}`}>
+            <path d={trend} fill="none" stroke="#50a7fc" opacity=".22" strokeWidth="9" strokeLinejoin="round" />
+            <path className="study-series-line" data-study-series d={trend} pathLength="1" fill="none" stroke="url(#study-plot-line)" strokeWidth="2.4" strokeLinejoin="round" />
+          </g>}
+          {plotted.map((point, index) => <circle key={point.row.source_record} cx={point.px} cy={point.py}
+            r={index === activeIndex ? 5.3 : view === 'line' ? 2.2 : 4} fill={index === activeIndex ? '#ffc98e' : '#81d7f7'}
+            fillOpacity={index === activeIndex ? 1 : .72} onPointerDown={() => setHighlight(index)}>
+            <title>Fila {point.row.source_record} · {measureLabel(y)}: {display(point.row[y.key])}</title>
           </circle>)}
         </svg>
-        <figcaption id="study-chart-caption">{label}. {points.length} puntos observados. La gráfica describe las mediciones seleccionadas. Consulta los valores exactos por fila en la tabla.</figcaption>
+        <figcaption id="study-chart-caption">{label}. {points.length} puntos observados. {view === 'line'
+          ? 'La línea sigue el orden de las filas del CSV. El eje horizontal muestra filas y el intervalo entre ellas puede incluir registros excluidos.'
+          : 'Cada punto muestra dos mediciones de la misma fila.'}</figcaption>
+        {active && <div className="study-plot-inspect">
+          <label>Inspeccionar punto<input type="range" min={0} max={points.length - 1} value={activeIndex} disabled={points.length < 2}
+            onChange={event => setHighlight(Number(event.target.value))} /></label>
+          <output>Fila {active.row.source_record} · {y.label}: {display(active.row[y.key])} {y.unit}</output>
+        </div>}
       </figure> : <p role="status">La selección no contiene pares de mediciones que se puedan graficar.</p>}
     </section>
 
-    <section id="datos" className="study-card study-table" aria-labelledby="study-table-title">
+    <section id="datos" className="study-card study-table" aria-labelledby="study-table-title" data-reveal>
       <div className="study-section-heading"><div><h2 id="study-table-title">Mediciones por fila</h2><p>Abre una fila para consultar todas sus variables y alertas.</p></div></div>
       <details className="study-column-choice"><summary>Elegir columnas</summary><fieldset><legend className="sr-only">Columnas visibles</legend>
         {fields.map(field => <label key={field.key}><input type="checkbox" checked={selectedKeys.includes(field.key)}
@@ -179,7 +218,7 @@ function StudyResults({ id, data }: { id: string; data: StudyResult }) {
       </nav>
     </section>
 
-    <div className="study-evidence-grid">
+    <div className="study-evidence-grid" data-reveal>
       <section id="metodo" className="study-card" aria-labelledby="study-method-title">
         <h2 id="study-method-title">Metodología</h2>
         <ul className="study-method-list">{study.method.map(step => <li key={step}>{step}</li>)}</ul>
@@ -195,8 +234,7 @@ function StudyResults({ id, data }: { id: string; data: StudyResult }) {
       </section>
     </div>
 
-    <div id="scientific-query" className="study-query" tabIndex={-1}>
-      {study.document ? <AiCopilot experimentId={id} experimentName={study.name} studySource={study.document} /> :
+    {!study.document && <div id="scientific-query" className="study-query" tabIndex={-1} data-reveal>
         <section className="study-card" aria-labelledby="study-lookup-title">
           <h2 id="study-lookup-title">Consulta del estudio</h2>
           <p>Consulta la ficha verificada. La biblioteca de IA todavía no tiene un documento indexado para {study.name}.</p>
@@ -209,8 +247,8 @@ function StudyResults({ id, data }: { id: string; data: StudyResult }) {
             {question === 'metodo' && <p>{study.method[0]} <a href="#metodo">Leer metodología</a></p>}
             {question === 'fuente' && <p>El conjunto procede de <a href={part.dataset.nasa_psi_url}>NASA {data.psi_code}</a>. <a href="#fuentes">Ver el CSV y su huella</a></p>}
           </div>
-        </section>}
-    </div>
+        </section>
+    </div>}
   </>
 }
 
@@ -251,7 +289,7 @@ export function StudyDetail({ id }: { id: string }) {
         <h1>{study.title}</h1><p>{study.description}</p>
         <nav aria-label="Secciones del estudio">
           <a href="#resultados">Resultados</a><a href="#datos">Mediciones</a><a href="#metodo">Metodología</a>
-          <a href="#fuentes">Procedencia</a><a href="#scientific-query">Consultar estudio</a>
+          <a href="#fuentes">Procedencia</a><button type="button" data-open-pyrogravity-chat aria-haspopup="dialog">Consultar estudio</button>
         </nav>
       </header>
       {failed && <div className="study-card" role="alert"><p>No pudimos cargar el estudio.</p>
