@@ -1,6 +1,14 @@
 import { expect, it } from 'vitest'
 import { planChat } from './chatRouting'
 
+it('guía la exploración y la verificación sin inventar evidencia científica', () => {
+  expect(planChat('Hola, ¿cómo estás?', 'flex')).toHaveProperty('study', 'flex')
+  expect(planChat('Ayúdame a explorar los datos')).toHaveProperty('links', expect.arrayContaining([{ title: 'FLEX', href: '/estudios/flex' }]))
+  expect(planChat('¿Cómo verifico una respuesta?', 'bass-ii')).toHaveProperty('links', [{ title: 'Revisar las fuentes de BASS-II', href: '/estudios/bass-ii#fuentes' }])
+  expect(planChat('¿Qué significa evidencia insuficiente?')).toHaveProperty('text', expect.stringContaining('No significa que el fenómeno no exista'))
+  expect(planChat('Fuentes', 'flex')).toHaveProperty('links', [{ title: 'Fuentes de FLEX', href: '/estudios/flex#fuentes' }])
+})
+
 it('responde saludos, temas amplios y preguntas por el catálogo', () => {
   expect(planChat('¡Hola!')).toHaveProperty('text')
   expect(planChat('¿Qué estudios hay?')).toHaveProperty('links', expect.arrayContaining([{ title: 'FLEX', href: '/estudios/flex' }]))

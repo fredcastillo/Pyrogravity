@@ -1,4 +1,4 @@
-import { ArrowUpRight, BookOpen, MessageCircle, RotateCcw, Send, X } from 'lucide-react'
+import { ArrowUpRight, BookOpen, Check, Copy, Database, MessageCircle, RotateCcw, Send, Square, UserRound, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { planChat, studyOnPage, type ChatLink } from '../chatRouting'
 import type { AiResponse } from '../contracts/ai'
@@ -6,6 +6,7 @@ import { AiHttpError, buildAiQuery, queryAi } from '../services/ai'
 import { getStudy, studies, studyIds, type StudyId } from '../studies'
 import { spanishCitationSummary } from '../studyQuestions'
 import './chatWidget.css'
+import pyrogravityMark from '../assets/pyrogravity-mark.png'
 
 type Message = { id: string; role: 'user' | 'assistant'; text: string; links?: ChatLink[]; answer?: AiResponse }
 const key = 'pyrogravity-chat-v1'
@@ -50,6 +51,8 @@ export function ChatWidget({ autoOpen = false, trigger }: { autoOpen?: boolean; 
   const [draft, setDraft] = useState('')
   const [opened, setOpened] = useState(false)
   const [waiting, setWaiting] = useState(false)
+  const [copied, setCopied] = useState<string>()
+  const [copyError, setCopyError] = useState('')
   const dialog = useRef<HTMLDialogElement>(null)
   const launch = useRef<HTMLButtonElement>(null)
   const title = useRef<HTMLHeadingElement>(null)
@@ -84,11 +87,11 @@ export function ChatWidget({ autoOpen = false, trigger }: { autoOpen?: boolean; 
     try { sessionStorage.setItem(key, JSON.stringify({ messages: messages.slice(-24), study })) } catch { /* optional */ }
   }, [messages, study])
   useEffect(() => {
-    if (opened && log.current) log.current.scrollTop = log.current.scrollHeight
+    if (opened && log.current) log.current.scrollTop = messages.length === 1 && messages[0].id === initial.id ? 0 : log.current.scrollHeight
   }, [messages, opened, waiting])
 
   function add(message: Omit<Message, 'id'>) {
-    setMessages(current => [...current, { ...message, id: crypto.randomUUID?.() ?? `chat-${Date.now()}-${Math.random()}` }].slice(-24))
+    setMessages(current => [...current.filter(item => item.id !== initial.id), { ...message, id: crypto.randomUUID?.() ?? `chat-${Date.now()}-${Math.random()}` }].slice(-24))
   }
 
   async function send(value: string) {
@@ -124,7 +127,7 @@ export function ChatWidget({ autoOpen = false, trigger }: { autoOpen?: boolean; 
           : 'No pude completar la consulta. Intenta otra vez o escoge un estudio para acotar la búsqueda.',
       })
     } finally {
-      pending.current = null
+      if (pending.current === controller) pending.current = null
       if (!controller.signal.aborted) setWaiting(false)
     }
   }
@@ -134,10 +137,28 @@ export function ChatWidget({ autoOpen = false, trigger }: { autoOpen?: boolean; 
     void send(draft)
   }
 
+  async function copyAnswer(message: Message) {
+    try {
+      const sources = message.answer?.citations.map(c => `${c.title}${c.page ? ` · p. ${c.page}` : ''}\n${c.url}`).join('\n\n')
+      await navigator.clipboard.writeText([message.text, sources, 'Respuesta de IA: puede contener errores. Verifica las fuentes.'].filter(Boolean).join('\n\n'))
+      setCopied(message.id)
+      setCopyError('')
+    } catch { setCopyError('No se pudo copiar. Puedes seleccionar el texto de la respuesta.') }
+  }
+
+  function cancelQuery() {
+    pending.current?.abort()
+    pending.current = null
+    setWaiting(false)
+    add({ role: 'assistant', text: 'Consulta detenida. Puedes reformular la pregunta o explorar las fuentes del estudio.' })
+  }
+
+  const welcoming = messages.length === 1 && messages[0].id === initial.id
+
   return <div className="pyro-chat">
     <button className="pyro-chat-launch" type="button" ref={launch} onClick={() => openChat(launch.current ?? undefined)}
       aria-label="Abrir chat científico" aria-haspopup="dialog" aria-controls="pyro-chat-dialog" aria-expanded={opened}>
-      <MessageCircle aria-hidden="true" /><span>Pregunta a Pyrogravity</span>
+      <img src={pyrogravityMark} alt="" /><span>Pregunta a Pyrogravity</span>
     </button>
     <dialog ref={dialog} id="pyro-chat-dialog" className="pyro-chat-dialog" aria-labelledby="pyro-chat-title"
       onClose={() => {
@@ -147,10 +168,10 @@ export function ChatWidget({ autoOpen = false, trigger }: { autoOpen?: boolean; 
         else launch.current?.focus()
       }}>
       <header className="pyro-chat-header">
-        <div className="pyro-chat-icon" aria-hidden="true"><MessageCircle /></div>
+        <div className="pyro-chat-icon" aria-hidden="true"><img src={pyrogravityMark} alt="" /></div>
         <div><h2 ref={title} tabIndex={-1} id="pyro-chat-title">Pyrogravity</h2><p>Asistente científico</p></div>
         <button type="button" aria-label="Nueva conversación" title="Nueva conversación" disabled={waiting}
-          onClick={() => { setMessages([initial]); setStudy(studyOnPage()); input.current?.focus() }}><RotateCcw aria-hidden="true" /></button>
+          onClick={() => { setMessages([initial]); setStudy(studyOnPage()); setDraft(''); setCopied(undefined); setCopyError(''); input.current?.focus() }}><RotateCcw aria-hidden="true" /></button>
         <button type="button" aria-label="Cerrar chat" onClick={() => dialog.current?.close()}><X aria-hidden="true" /></button>
       </header>
       <label className="pyro-chat-context"><span>Estudio</span>
@@ -160,8 +181,17 @@ export function ChatWidget({ autoOpen = false, trigger }: { autoOpen?: boolean; 
         </select>
       </label>
       <div className="pyro-chat-log" ref={log} role="log" aria-label="Conversación" aria-relevant="additions">
-        {messages.map(message => <article key={message.id} className={`pyro-chat-message pyro-chat-message--${message.role}`}>
-          <span className="pyro-chat-speaker">{message.role === 'user' ? 'Tú' : 'Pyrogravity'}</span>
+        {welcoming && <div className="pyro-chat-welcome">
+          <img src={pyrogravityMark} alt="" width="54" height="54" />
+          <h3>Una pregunta abre<br />otra perspectiva.</h3>
+          <p>Explora el fuego en microgravedad, sigue la pista de un ensayo y descubre qué respalda cada resultado.</p>
+          <div className="pyro-chat-paths">
+            <button type="button" onClick={() => void send('Ayúdame a explorar los datos')}><Database aria-hidden="true" /><span>Explorar los datos<small>Encuentra un estudio y sus mediciones</small></span><ArrowUpRight aria-hidden="true" /></button>
+            <button type="button" onClick={() => void send('¿Cómo verifico una respuesta?')}><BookOpen aria-hidden="true" /><span>Seguir la evidencia<small>Aprende a leer las fuentes y los límites</small></span><ArrowUpRight aria-hidden="true" /></button>
+          </div>
+        </div>}
+        {!welcoming && messages.map(message => <article key={message.id} className={`pyro-chat-message pyro-chat-message--${message.role}`}>
+          <span className="pyro-chat-speaker">{message.role === 'user' ? <UserRound aria-hidden="true" /> : <img src={pyrogravityMark} alt="" />}{message.role === 'user' ? 'Tú' : 'Pyrogravity'}</span>
           <p>{message.text}</p>
           {message.links?.length ? <div className="pyro-chat-links">{message.links.map(item => {
             const href = safeLink(item.href)
@@ -177,6 +207,8 @@ export function ChatWidget({ autoOpen = false, trigger }: { autoOpen?: boolean; 
               </section>
             })}
           </details>}
+          {!!message.answer?.limitations.length && <details className="pyro-chat-limitations"><summary>Alcance y limitaciones</summary><ul>{message.answer.limitations.map((limit, i) => <li key={i}>{limit}</li>)}</ul></details>}
+          {message.role === 'assistant' && message.id !== initial.id && <div className="pyro-chat-message-actions"><button type="button" onClick={() => void copyAnswer(message)} aria-label={copied === message.id ? 'Respuesta copiada' : 'Copiar respuesta'}>{copied === message.id ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}{copied === message.id ? 'Copiado' : 'Copiar'}</button></div>}
         </article>)}
         {waiting && <p className="pyro-chat-wait" role="status"><span /> Buscando evidencia…</p>}
       </div>
@@ -185,16 +217,18 @@ export function ChatWidget({ autoOpen = false, trigger }: { autoOpen?: boolean; 
           {(study ? studySuggestions : suggestions).map(item =>
             <button key={item} type="button" disabled={waiting} onClick={() => void send(item)}>{item}</button>)}
         </div>
+        <p className="pyro-chat-action-status" role="status">{copyError}</p>
         <form className="pyro-chat-form" onSubmit={submit}>
           <textarea ref={input} rows={1} maxLength={430} value={draft} onChange={event => setDraft(event.target.value)}
-            aria-label="Escribe tu pregunta" placeholder="Escribe tu pregunta…" onKeyDown={event => {
+            aria-label="Escribe tu pregunta" aria-describedby="pyro-chat-disclaimer" placeholder="Escribe tu pregunta…" onKeyDown={event => {
               if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
                 event.preventDefault()
                 void send(draft)
               }
             }} />
-          <button type="submit" aria-label="Enviar mensaje" disabled={!draft.trim() || waiting}><Send aria-hidden="true" /></button>
+          {waiting ? <button type="button" aria-label="Detener consulta" onClick={cancelQuery}><Square aria-hidden="true" /></button> : <button type="submit" aria-label="Enviar mensaje" disabled={!draft.trim()}><Send aria-hidden="true" /></button>}
         </form>
+        <p id="pyro-chat-disclaimer" className="pyro-chat-disclaimer"><MessageCircle aria-hidden="true" /> Estás hablando con una IA. Puede cometer errores. Verifica los datos y las fuentes antes de usar sus respuestas.</p>
       </div>
     </dialog>
   </div>
