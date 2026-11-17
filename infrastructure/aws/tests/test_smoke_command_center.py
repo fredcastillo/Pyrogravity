@@ -8,7 +8,7 @@ from infrastructure.aws.smoke_command_center import verify
 
 
 class SmokeCommandCenterTests(unittest.TestCase):
-    def exercise(self, supported=False):
+    def exercise(self, supported=False, split_bundle=False):
         requests = []
 
         def open_url(request, timeout):
@@ -18,6 +18,12 @@ class SmokeCommandCenterTests(unittest.TestCase):
                     'https://example.test/assets/command-center/index.html': '<div id="root"></div><script src="app.js"></script>',
                     'https://example.test/assets/command-center/app.js': '/api/v1/ai/query',
                 }
+                if split_bundle:
+                    resources['https://example.test/assets/command-center/index.html'] += (
+                        '<link rel="modulepreload" crossorigin href="chat.js">'
+                    )
+                    resources['https://example.test/assets/command-center/app.js'] = 'import "./chat.js"'
+                    resources['https://example.test/assets/command-center/chat.js'] = '/api/v1/ai/query'
                 return io.BytesIO(resources[request].encode())
             payload = json.loads(request.data)
             requests.append(payload)
@@ -40,3 +46,6 @@ class SmokeCommandCenterTests(unittest.TestCase):
     def test_probe_rejects_unsupported_claims_about_missing_evidence(self):
         with self.assertRaises(AssertionError):
             self.exercise(supported=True)
+
+    def test_probe_finds_api_path_in_preloaded_chat_module(self):
+        self.assertEqual(len(self.exercise(split_bundle=True)), 1)

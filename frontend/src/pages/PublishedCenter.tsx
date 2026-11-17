@@ -1,6 +1,5 @@
 import { ArrowRight, ArrowUpRight, Database } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { AiCopilot } from '../components/AiCopilot'
 import { FeaturedExperiment } from '../components/FeaturedExperiment'
 import { scientificCatalogUrl } from '../scientificCatalog'
 import { getStudy, variableNames } from '../studies'
@@ -63,7 +62,7 @@ export function PublishedCenter() {
       </section>
       <FeaturedExperiment />
       <div className="published-grid">
-        <section id="estudios" className="panel published-catalog" aria-labelledby="published-analysis-title">
+        <section id="estudios" className="panel published-catalog" aria-labelledby="published-analysis-title" data-reveal>
           <div className="panel__header">
             <div><p className="eyebrow">Datos experimentales</p><h2 id="published-analysis-title">Análisis científicos</h2></div>
             <Database aria-hidden="true" />
@@ -93,7 +92,6 @@ export function PublishedCenter() {
           </ul>
           <a className="published-analysis-link" href={scientificCatalogUrl('science-title')}>Explorar gráficas y metodologías <ArrowRight aria-hidden="true" /></a>
         </section>
-        <div id="scientific-query" tabIndex={-1}><AiCopilot experimentId="catalogo" experimentName="Fuentes NASA" /></div>
       </div>
     </div>
   )

@@ -18,6 +18,7 @@ _LINK = "(?:de |del |sobre |acerca de )?"
 _TOPICS = (
     (rf"{_STUDY}|(?:hablame|cuentame|dime|explica|informacion) {_LINK}{_STUDY}|"
      rf"que (?:es|fue|estudio|estudiaron|investigo|investigaron) {_STUDY}|"
+     rf"de que (?:trata|trataba|se trato|se trata) {_STUDY}|"
      rf"que (?:se estudio|se investigo) (?:en )?{_STUDY}|"
      rf"(?:(?:cual(?:es)? (?:es|son|fue|fueron) (?:el|los)) )?"
      rf"(?:objetivos?(?: principales)?|proposito|finalidad) {_LINK}{_STUDY}",

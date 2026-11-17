@@ -27,7 +27,12 @@ from pyrogravity_ai.schemas.scientific_canonical import canonical_decimal
 Intent = Literal["scientific_analysis", "document_question", "combined", "unknown"]
 _NUMBER_WORDS = re.compile(r"\b(cu[aá]nto|valor|duraci[oó]n|di[aá]metro|presi[oó]n|co2|media|mediana|compar|how much|value|duration|diameter|pressure|average)\b", re.I)
 _WHICH_WORDS = re.compile(r"\b(cu[aá]l|which)\b", re.I)
-_DOCUMENT_WORDS = re.compile(r"\b(por qu[eé]|explica|describ|mecanismo|evidencia|fuente|why|explain|describe|source)\b", re.I)
+_DOCUMENT_WORDS = re.compile(
+    r"\b(por qu[eé]|c[oó]mo|expl[ií]ca(?:me)?|descr[ií]be(?:me)?|cu[eé]nta(?:me)?|"
+    r"mecanismo|evidencia|fuentes?|why|explain|describe|source)\b", re.I,
+)
+_EXACT_CONTEXT = re.compile(r"\b(exact[oa]|exactamente|fila|registro|ensayo\s+[a-z]*\d+|exact|row|trial\s+\w+\d+)\b", re.I)
+_TOPICAL = re.compile(r"\b(combusti[oó]n|microgravedad|llamas?|combustion|microgravity|flames?)\b", re.I)
 
 
 class EvidenceError(RuntimeError):
@@ -68,12 +73,15 @@ def route(request: AiQueryRequest, classifier: IntentClassifier | None = None) -
     )
     documentary = bool(_DOCUMENT_WORDS.search(request.question))
     if numeric and documentary:
-        return "combined" if scientific_available else "scientific_analysis"
+        if scientific_available:
+            return "combined"
+        return "scientific_analysis" if _EXACT_CONTEXT.search(request.question) else "document_question"
     if numeric:
         return "scientific_analysis"
     if documentary:
         return "document_question"
-    return classifier.classify(request.question, scientific_available=scientific_available) if classifier else "unknown"
+    intent = classifier.classify(request.question, scientific_available=scientific_available) if classifier else "unknown"
+    return "document_question" if intent == "unknown" and _TOPICAL.search(request.question) else intent
 
 
 def _scientific_candidates(request: AiQueryRequest) -> tuple[Candidate, ...]:
@@ -146,6 +154,8 @@ class AiEngine:
             )
         use_shorthand = lookup.question is not None and request.query_type not in {"exact_value", "comparison"}
         intent = "document_question" if use_shorthand and request.query_type is None else route(request, self._classifier)
+        if intent == "unknown" and lookup.source_ids and request.query_type is None:
+            intent = "document_question"
         question = (lookup.question if use_shorthand else None) or request.question
         scientific = _scientific_candidates(request)[:10] if intent in {"scientific_analysis", "combined"} else ()
         documents = ()

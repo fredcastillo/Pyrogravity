@@ -1,5 +1,12 @@
 # Handoff de Pyrogravity AI
 
+## Chat global y preguntas amplias · 2026-11-17
+
+- La portada, el Atlas y las fichas abren el mismo chat desde una burbuja o **Consultar fuentes**. El navegador conserva el estudio seleccionado para los seguimientos y presenta orientación del catálogo cuando el visitante empieza con una pregunta amplia.
+- `core/engine.py` intenta recuperar documentos revisados cuando una pregunta conceptual menciona una variable numérica y no solicita una medición exacta. Una clasificación desconocida puede recuperar evidencia si la pregunta es del dominio científico o identifica un estudio documentado.
+- Las solicitudes de filas o valores exactos conservan los requisitos de evidencia científica. El selector de pasajes sigue validando las premisas antes de devolver citas.
+- `tests/test_engine.py` cubre preguntas conceptuales con vocabulario numérico y la abstención ante filas sin datos. Playwright cubre chat global, cambio de contexto, apertura desde el Atlas, errores controlados y las dos vistas de gráficas.
+
 ## Consultas por nombre de estudio · 2026-11-16
 
 - `core/document_queries.py` reconoce nombres, códigos PSI y preguntas breves de BASS-II y FLEX. Las variantes con y sin tilde llegan a la misma búsqueda. Si falta el estudio en una pregunta de seguimiento, se pide identificarlo.

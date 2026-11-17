@@ -1,0 +1,103 @@
+.pyro-chat-launch, .pyro-chat-dialog {
+  --chat-ink: #edf7ff;
+  --chat-muted: #b3c8de;
+  --chat-line: #35536e;
+  color: var(--chat-ink);
+  font: 500 1rem/1.5 Manrope, system-ui, sans-serif;
+}
+.pyro-chat-launch {
+  position: fixed; z-index: 15; right: max(1.2rem, env(safe-area-inset-right)); bottom: max(1.15rem, env(safe-area-inset-bottom));
+  min-height: 56px; display: inline-flex; align-items: center; gap: .65rem;
+  padding: .62rem 1.08rem; border: 1px solid #83d5f2; border-radius: 999px; color: #061b2a;
+  background: linear-gradient(135deg, #c8f1ff, #7dd6f1 66%, #72b8e7);
+  box-shadow: 0 4px 0 #437791, 0 10px 30px #0008; font-size: .92rem; font-weight: 800; cursor: pointer;
+}
+.pyro-chat-launch svg { width: 22px; height: 22px; flex: none; }
+.pyro-chat-dialog {
+  position: fixed; inset: auto max(1.1rem, env(safe-area-inset-right)) max(1.05rem, env(safe-area-inset-bottom)) auto;
+  margin: 0; padding: 0; width: min(560px, calc(100vw - 2.2rem)); height: min(720px, calc(100dvh - 2.1rem));
+  max-width: none; max-height: none; overflow: hidden; border-radius: 20px;
+  border: 1px solid #5d829e; background: #0a1220; color-scheme: dark;
+  box-shadow: 0 34px 100px #010409c9; isolation: isolate;
+}
+.pyro-chat-dialog[open] { display: flex; flex-direction: column; }
+.pyro-chat-dialog::backdrop { background: #0208108c; }
+.pyro-chat-dialog *, .pyro-chat-launch { box-sizing: border-box; }
+.pyro-chat-header {
+  display: flex; gap: .65rem; align-items: center; padding: .84rem 1rem;
+  background: radial-gradient(ellipse at 16% 2%, #2a5273, #142b41 58%, #122337);
+}
+.pyro-chat-header h2 { margin: 0; color: #f3faff; font-size: 1.3rem; line-height: 1.14; letter-spacing: -.03em; }
+.pyro-chat-header p { margin: .13rem 0 0; color: #c5def1; font-size: .81rem; }
+.pyro-chat-header > div:nth-child(2) { flex: 1; min-width: 0; }
+.pyro-chat-icon { width: 39px; height: 39px; display: grid; place-items: center; border-radius: 11px; background: #bceaff; color: #163954; }
+.pyro-chat-icon svg { width: 21px; height: 21px; }
+.pyro-chat-dialog button {
+  font: inherit; display: inline-flex; justify-content: center; align-items: center; min-height: 44px;
+  padding: .34rem .65rem; border: 1px solid var(--chat-line); border-radius: 8px; color: var(--chat-ink);
+  background: #172e45; cursor: pointer;
+}
+.pyro-chat-dialog button svg { width: 19px; height: 19px; }
+.pyro-chat-header button { min-width: 44px; padding: 0; }
+.pyro-chat-dialog button:not(:disabled):hover { border-color: #8ac9e9; background: #244862; }
+.pyro-chat-dialog button:disabled { opacity: .54; cursor: default; }
+.pyro-chat-dialog :focus-visible, .pyro-chat-launch:focus-visible { outline: 2px solid #a5e5ff; outline-offset: 2px; }
+.pyro-chat-context {
+  display: flex; align-items: center; gap: .65rem; padding: .45rem 1rem;
+  background: #132133; border-bottom: 1px solid #2a425a; color: #d0e3f6; font-size: .85rem;
+}
+.pyro-chat-context select { min-height: 44px; min-width: 0; flex: 1; padding: .35rem .55rem; background: #101d2d; color: var(--chat-ink); border: 1px solid var(--chat-line); border-radius: 6px; font: inherit; }
+.pyro-chat-log {
+  flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-color: #60849f #0a1220;
+  display: flex; flex-direction: column; gap: .8rem; padding: 1rem; scroll-padding-bottom: .7rem;
+}
+.pyro-chat-message {
+  align-self: flex-start; max-width: 93%; min-width: 0; padding: .65rem .85rem; border-radius: 4px 13px 13px 13px;
+  background: #142134; border: 1px solid #2d425a; color: #edf5fc; flex: none;
+}
+.pyro-chat-message--user { align-self: flex-end; background: #20455c; border-color: #426a86; border-radius: 13px 4px 13px 13px; }
+.pyro-chat-speaker { color: #a7d5ef; font-size: .76rem; font-weight: 750; }
+.pyro-chat-message p, .pyro-chat-message blockquote {
+  margin: .28rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.62;
+}
+.pyro-chat-citations { margin-top: .55rem; border: 1px solid #3a5976; border-radius: 7px; padding: 0 .6rem; }
+.pyro-chat-citations summary { display: flex; gap: .4rem; align-items: center; min-height: 44px; cursor: pointer; color: #a9e4fd; font-weight: 700; font-size: .86rem; }
+.pyro-chat-citations summary::after { content: '+'; margin-inline-start: auto; }
+.pyro-chat-citations[open] summary::after { content: '−'; }
+.pyro-chat-citations section { padding: .5rem 0; border-top: 1px solid #33506a; font-size: .88rem; }
+.pyro-chat-citations blockquote { border-inline-start: 2px solid #648cae; padding-inline-start: .55rem; color: #d2e2f3; }
+.pyro-chat-dialog a { color: #b2e8ff; text-decoration: underline; text-underline-offset: .2em; }
+.pyro-chat-links { display: flex; flex-wrap: wrap; gap: .2rem .75rem; margin-block-start: .28rem; }
+.pyro-chat-links a, .pyro-chat-citations a { display: inline-flex; align-items: center; gap: .3rem; min-height: 44px; font-size: .86rem; }
+.pyro-chat-links svg, .pyro-chat-citations svg { width: 15px; height: 15px; flex: none; }
+.pyro-chat-wait { margin: 0; padding: .3rem .5rem; color: var(--chat-muted); font-size: .92rem; }
+.pyro-chat-wait span { display: inline-block; width: .65rem; height: .65rem; border-radius: 50%; background: #8cdef6; margin-inline-end: .25rem; }
+.pyro-chat-bottom { flex: none; border-top: 1px solid #324960; background: #101b2b; padding: .55rem 1rem .85rem; }
+.pyro-chat-suggestions { display: flex; gap: .4rem; overflow-x: auto; padding: .12rem .14rem .5rem; scrollbar-width: thin; }
+.pyro-chat-suggestions button { white-space: nowrap; font-size: .8rem; min-height: 38px; }
+.pyro-chat-form { display: flex; align-items: end; gap: .5rem; margin: 0; }
+.pyro-chat-form textarea {
+  display: block; flex: 1; min-width: 0; width: 100%; min-height: 48px; max-height: 120px;
+  resize: vertical; padding: .7rem .68rem; border: 1px solid #49647d; border-radius: 9px;
+  background: #081321; color: #edf7ff; font: inherit; font-size: 1rem;
+}
+.pyro-chat-form button { min-height: 48px; min-width: 48px; color: #072034; background: #a4e4ff; border-color: #a4e4ff; }
+.pyro-chat-form button:not(:disabled):hover { color: #062338; background: #d5f1ff; }
+@media (max-width: 600px) {
+  .pyro-chat-dialog { inset: auto .38rem max(.38rem, env(safe-area-inset-bottom)) .38rem; width: auto; height: min(760px, calc(100dvh - .76rem)); border-radius: 14px; }
+  .pyro-chat-launch { right: max(.78rem, env(safe-area-inset-right)); bottom: max(.87rem, env(safe-area-inset-bottom)); min-width: 56px; justify-content: center; padding-inline: .75rem; }
+  .pyro-chat-launch > span { display: none; }
+  .pyro-chat-header, .pyro-chat-context, .pyro-chat-log, .pyro-chat-bottom { padding-inline: .7rem; }
+  .pyro-chat-message { max-width: 97%; padding-inline: .65rem; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pyro-chat-launch, .pyro-chat-dialog button, .pyro-chat-dialog a { transition: transform .18s ease, background-color .18s ease, box-shadow .18s ease; }
+  .pyro-chat-launch:hover { transform: translateY(-3px); box-shadow: 0 4px 0 #437791, 0 15px 32px #000a; }
+  .pyro-chat-launch:active, .pyro-chat-dialog button:not(:disabled):active { transform: scale(.96); }
+  .pyro-chat-dialog[open] { animation: pyro-chat-open .24s ease-out both; }
+  .pyro-chat-message { animation: pyro-chat-message .20s ease-out both; }
+  .pyro-chat-wait span { animation: pyro-chat-breathe 1s ease-in-out infinite alternate; }
+}
+@keyframes pyro-chat-open { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes pyro-chat-message { from { opacity: .55; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes pyro-chat-breathe { from { opacity: .5; } to { opacity: 1; } }
