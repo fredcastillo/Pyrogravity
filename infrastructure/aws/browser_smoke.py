@@ -2,7 +2,7 @@
 import argparse
 import json
 from pathlib import Path
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, urljoin, urlsplit
 from playwright.sync_api import sync_playwright, expect
 
 
@@ -28,6 +28,23 @@ def verify_analysis_links(page, home_url):
     assert visited == {"bass-ii", "flex", "flame-design", "cfi-g", "spice"}
 
 
+def verify_home_layout(page):
+    for width in (320, 390, 850, 1024, 1280, 1885, 2560):
+        page.set_viewport_size({"width": width, "height": 1000})
+        assert page.evaluate("""() => {
+            const copy = document.querySelector('.published-hero__copy').getBoundingClientRect()
+            const photo = document.querySelector('.published-hero__figure').getBoundingClientRect()
+            const content = document.querySelector('.observatory-content').getBoundingClientRect()
+            const range = document.createRange()
+            range.selectNodeContents(document.querySelector('#home-title span'))
+            return content.width >= innerWidth - 130
+                && document.documentElement.scrollWidth <= innerWidth
+                && [...range.getClientRects()].every(rect => rect.right <= copy.right + 1
+                    && (rect.right <= photo.left + 1 || rect.bottom <= photo.top + 1))
+        }"""), f"El título o la portada excede su espacio a {width}px"
+    page.set_viewport_size({"width": 1280, "height": 1000})
+
+
 def verify(url, executable=None, screenshots=None, command_center=False):
     errors = []
     results = []
@@ -38,6 +55,7 @@ def verify(url, executable=None, screenshots=None, command_center=False):
         page.goto(url, wait_until="networkidle")
         if page.locator('meta[name="pyrogravity-science"]').count():
             expect(page.get_by_role("heading", name="El fuego en microgravedad.")).to_be_visible()
+            verify_home_layout(page)
             verify_analysis_links(page, url)
             featured = page.locator(".feature-chart")
             expect(featured.get_by_text("4,30 s", exact=True)).to_be_visible()
@@ -89,16 +107,22 @@ def verify(url, executable=None, screenshots=None, command_center=False):
                     assert page.locator("#science-rows tr").first.inner_text() != before
                     page.click("#science-prev")
                 results.append({"analysis": item["id"], "cohort": cohort, "points": count})
-        for width in (1280, 390):
+        for width in (1885, 1280, 390):
             page.set_viewport_size({"width": width, "height": 1000})
             assert page.evaluate("document.documentElement.scrollWidth <= innerWidth"), f"Horizontal overflow at {width}px"
+            assert page.locator("main").bounding_box()["width"] >= width - 130
             if screenshots:
                 Path(screenshots).mkdir(parents=True, exist_ok=True)
                 page.screenshot(path=str(Path(screenshots) / f"science-{width}.png"), full_page=True)
         if command_center:
             page.set_viewport_size({"width": 1280, "height": 1000})
-            page.get_by_role("link", name="Abrir Command Center").click()
+            legacy_home = urljoin(page.url, "../command-center/index.html")
+            page.get_by_role("link", name="Inicio", exact=True).click()
+            assert urlsplit(page.url).path == "/"
             expect(page.get_by_role("heading", name="El fuego en microgravedad.")).to_be_visible()
+            page.goto(legacy_home, wait_until="domcontentloaded")
+            expect(page.get_by_role("heading", name="El fuego en microgravedad.")).to_be_visible()
+            assert urlsplit(page.url).path == "/"
             verify_analysis_links(page, page.url)
             page.get_by_role("textbox", name="Pregunta para el copiloto").fill("Explica el resultado de los ensayos de combustión de antimateria de BASS-II.")
             page.get_by_role("button", name="Enviar pregunta").click()
